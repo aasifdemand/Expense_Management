@@ -7,29 +7,54 @@ import {
     FormControlLabel,
     InputAdornment,
     InputLabel,
-    MenuItem,
     OutlinedInput,
-    Select,
     TextField,
     Typography,
     IconButton,
     FormHelperText,
+    Paper,
+    Alert,
+    Fade,
+    useTheme,
+    useMediaQuery
 } from "@mui/material";
-
+import { motion } from "framer-motion";
 import {
     Person,
-    Shield,
     Visibility,
     VisibilityOff,
     LockOutlined,
-    ExpandMore,
+    TrendingUp
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            delayChildren: 0.2,
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 10, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { duration: 0.5 }
+    }
+};
+
 const Login = () => {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    
     const [formData, setFormData] = useState({
-        role: "user",
         name: "",
         password: "",
         rememberMe: false,
@@ -38,6 +63,7 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [loginError, setLoginError] = useState("");
 
     const handleChange = (event) => {
         const { name, value, checked, type } = event.target;
@@ -45,11 +71,15 @@ const Login = () => {
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
+        if (errors[name]) {
+            setErrors({...errors, [name]: ""});
+        }
+        if (loginError) setLoginError("");
     };
 
     const validate = () => {
         let tempErrors = {};
-        if (!formData.name.trim()) tempErrors.name = "Name is required";
+        if (!formData.name.trim()) tempErrors.name = "Username is required";
         if (!formData.password) tempErrors.password = "Password is required";
         else if (formData.password.length < 6)
             tempErrors.password = "Password must be at least 6 characters";
@@ -60,6 +90,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("handleSubmit called"); // <-- debug log
         if (!validate()) return;
 
         setIsLoading(true);
@@ -73,24 +104,24 @@ const Login = () => {
                     name: formData?.name,
                     password: formData?.password
                 })
-            })
+            });
 
             const data = await response.json();
 
             if (response.ok) {
-                console.log(data);
-                localStorage.setItem("user",JSON.stringify(data.user))
-                localStorage.setItem("qr",JSON.stringify(data.qr))
-                navigate("/qr")
+                localStorage.setItem("user",JSON.stringify(data.user));
+                localStorage.setItem("qr",JSON.stringify(data.qr));
+                navigate("/qr");
+            } else {
+                setLoginError(data.message || "Login failed. Please try again.");
             }
 
         } catch (error) {
+            setLoginError("Network error. Please try again.");
             console.log(error?.message);
-
-            setIsLoading(false)
         }
         finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
     };
 
@@ -98,171 +129,266 @@ const Login = () => {
         <Box
             sx={{
                 minHeight: "100vh",
-                bgcolor: "#e3f2fd",
+                background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                px: 2,
+                px: isMobile ? 1 : 2,
+                py: 2,
             }}
         >
-            <Box
-                component="form"
-                onSubmit={handleSubmit}
-                sx={{
-                    width: "100%",
-                    maxWidth: 420,
-                    bgcolor: "white",
-                    p: 3, // less padding
-                    borderRadius: 3,
-                    boxShadow: "0 8px 20px rgb(0 0 0 / 0.1)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 2.5, // less gap between elements
-                }}
-                noValidate
-                autoComplete="off"
-            >
-                <Typography variant="h5" align="center" gutterBottom>
-                    Welcome Back
-                </Typography>
-                <Typography variant="body2" color="text.secondary" align="center" mb={1}>
-                    Sign in to your Expense Tracker account
-                </Typography>
-
-                {/* Role Select */}
-                <FormControl fullWidth variant="outlined" size="small" error={Boolean(errors.role)}>
-                    <InputLabel id="role-label">Login as</InputLabel>
-                    <Select
-                        labelId="role-label"
-                        id="role"
-                        name="role"
-                        value={formData.role}
-                        label="Login as"
-                        onChange={handleChange}
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <ExpandMore />
-                            </InputAdornment>
-                        }
-                        startAdornment={
-                            <InputAdornment position="start" sx={{ mr: 1 }}>
-                                {formData.role === "admin" ? (
-                                    <Shield color="primary" />
-                                ) : (
-                                    <Person color="primary" />
-                                )}
-                            </InputAdornment>
-                        }
-                    >
-                        <MenuItem value="user">User</MenuItem>
-                        <MenuItem value="admin">Super Admin</MenuItem>
-                    </Select>
-                    {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
-                </FormControl>
-
-                {/* Name (instead of Email) */}
-                <TextField
-                    label="Name"
-                    name="name"
-                    variant="outlined"
-                    size="small"
-                    value={formData.name || ""}
-                    onChange={handleChange}
-                    error={Boolean(errors.name)}
-                    helperText={errors.name}
-                    required
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <Person color="action" />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-
-                {/* Password */}
-                <FormControl variant="outlined" size="small" fullWidth error={Boolean(errors.password)} required>
-                    <InputLabel htmlFor="password">Password</InputLabel>
-                    <OutlinedInput
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={handleChange}
-                        startAdornment={
-                            <InputAdornment position="start">
-                                <LockOutlined color="action" />
-                            </InputAdornment>
-                        }
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <IconButton
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    edge="end"
-                                    size="small"
-                                >
-                                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                                </IconButton>
-                            </InputAdornment>
-                        }
-                        label="Password"
-                    />
-                    {errors.password && <FormHelperText>{errors.password}</FormHelperText>}
-                </FormControl>
-
-                {/* Remember me and Forgot password */}
-                <Box
+            <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: 450 }}>
+                <Paper
+                    elevation={isMobile ? 2 : 8}
+                    component={motion.div}
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
                     sx={{
+                        bgcolor: "white",
+                        p: isMobile ? 3 : 4,
+                        borderRadius: 3,
+                        boxShadow: "0 10px 25px rgba(0, 0, 0, 0.05)",
                         display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        flexDirection: "column",
+                        gap: 2.5,
                     }}
                 >
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                name="rememberMe"
-                                checked={formData.rememberMe}
-                                onChange={handleChange}
-                                color="primary"
-                                size="small"
+                    {/* Logo and Header */}
+                    <Box 
+                        sx={{ 
+                            display: "flex", 
+                            flexDirection: "column", 
+                            alignItems: "center", 
+                            mb: 2 
+                        }}
+                        component={motion.div}
+                        variants={itemVariants}
+                    >
+                        <Box 
+                            sx={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                mb: 2,
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <img 
+                                src="/image.png"
+                                alt="Expense Tracker Logo"
+                                style={{ 
+                                    height: isMobile ? '60px' : '100px', 
+                                    width: isMobile ? '60px' : '200px', 
+                                    objectFit: 'contain',
+                                }} 
                             />
-                        }
-                        label="Remember me"
+                        </Box>
+                        <Typography 
+                            variant="h4" 
+                            component="h1" 
+                            fontWeight="600"
+                            color="primary.main"
+                            textAlign="center"
+                            gutterBottom
+                        >
+                            Expense Tracker
+                        </Typography>
+                        <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            textAlign="center"
+                            sx={{ fontWeight: 500 }}
+                        >
+                            Manage your expenses efficiently
+                        </Typography>
+                    </Box>
+
+                    
+                    {loginError && (
+                        <Fade in={!!loginError}>
+                            <Alert 
+                                severity="error" 
+                                sx={{ 
+                                    mb: 1,
+                                    borderRadius: 2,
+                                    alignItems: "center"
+                                }}
+                                component={motion.div}
+                                variants={itemVariants}
+                            >
+                                {loginError}
+                            </Alert>
+                        </Fade>
+                    )}
+
+                    {/* Username Field */}
+                    <TextField
+                        label="Username"
+                        name="name"
+                        variant="outlined"
+                        size="medium"
+                        value={formData.name || ""}
+                        onChange={handleChange}
+                        error={Boolean(errors.name)}
+                        helperText={errors.name}
+                        required
+                        fullWidth
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Person color={errors.name ? "error" : "action"} />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{
+                            "& .MuiOutlinedInput-root": {
+                                borderRadius: 2,
+                                transition: "all 0.2s ease",
+                                "&:hover fieldset": {
+                                    borderColor: "primary.main",
+                                },
+                                "&.Mui-focused fieldset": {
+                                    borderWidth: "2px",
+                                    borderColor: "primary.main",
+                                },
+                            }
+                        }}
+                        component={motion.div}
+                        variants={itemVariants}
                     />
-                    <Button size="small" sx={{ textTransform: "none", minWidth: "auto", p: 0 }}>
-                        Forgot password?
-                    </Button>
-                </Box>
 
-                {/* Submit Button */}
-                <Button
-                    type="submit"
-                    variant="contained"
-                    size="medium" // smaller than large, but still comfortable
-                    disabled={isLoading}
-                    fullWidth
-                    sx={{
-                        bgcolor: "primary.main",
-                        fontWeight: "bold",
-                        py: 1.5,
-                        fontSize: "0.9rem",
-                    }}
-                >
-                    {isLoading ? "Signing in..." : `Sign in as ${formData.role === "admin" ? "Administrator" : "User"}`}
-                </Button>
+                    {/* Password Field */}
+                    <FormControl 
+                        variant="outlined" 
+                        size="medium" 
+                        fullWidth 
+                        error={Boolean(errors.password)} 
+                        required
+                        component={motion.div}
+                        variants={itemVariants}
+                    >
+                        <InputLabel htmlFor="password">Password</InputLabel>
+                        <OutlinedInput
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={handleChange}
+                            startAdornment={
+                                <InputAdornment position="start">
+                                    <LockOutlined color={errors.password ? "error" : "action"} />
+                                </InputAdornment>
+                            }
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        edge="end"
+                                        size="medium"
+                                        sx={{ color: errors.password ? "error.main" : "action.active" }}
+                                    >
+                                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            }
+                            label="Password"
+                            sx={{
+                                borderRadius: 2,
+                                transition: "all 0.2s ease",
+                                "&:hover fieldset": {
+                                    borderColor: "primary.main",
+                                },
+                                "&.Mui-focused fieldset": {
+                                    borderWidth: "2px",
+                                    borderColor: "primary.main",
+                                },
+                            }}
+                        />
+                        {errors.password && (
+                            <FormHelperText sx={{ mx: 0, fontSize: "0.75rem" }}>
+                                {errors.password}
+                            </FormHelperText>
+                        )}
+                    </FormControl>
 
-                {/* Sign up */}
-                <Typography variant="body2" color="text.secondary" align="center" mt={2}>
-                    Don't have an account?{" "}
-                    <Button variant="text" size="small" sx={{ textTransform: "none" }}>
-                        Sign up here
+                    {/* Remember me and Forgot password */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                        component={motion.div}
+                        variants={itemVariants}
+                    >
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    name="rememberMe"
+                                    checked={formData.rememberMe}
+                                    onChange={handleChange}
+                                    color="primary"
+                                    size={isMobile ? "small" : "medium"}
+                                    sx={{
+                                        "&.Mui-checked": {
+                                            color: "primary.main",
+                                        },
+                                    }}
+                                />
+                            }
+                            label={
+                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    Remember me
+                                </Typography>
+                            }
+                        />
+                        <Button 
+                            size="small" 
+                            sx={{ 
+                                textTransform: "none", 
+                                minWidth: "auto", 
+                                color: "primary.main",
+                                fontWeight: 600,
+                                "&:hover": {
+                                    background: "rgba(25, 118, 210, 0.04)"
+                                }
+                            }}
+                        >
+                            Forgot password?
+                        </Button>
+                    </Box>
+
+                    {/* Submit Button */}
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        size="large"
+                        disabled={isLoading}
+                        fullWidth
+                        sx={{
+                            bgcolor: "primary.main",
+                            fontWeight: "bold",
+                            py: 1.5,
+                            fontSize: "1rem",
+                            mt: 1,
+                            borderRadius: 2,
+                            "&:hover": {
+                                bgcolor: "primary.dark",
+                            },
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                        }}
+                        component={motion.button}
+                        variants={itemVariants}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {isLoading ? "Logging in..." : "Log In"}
                     </Button>
-                </Typography>
-            </Box>
+                </Paper>
+            </form>
         </Box>
-
     );
 };
 
