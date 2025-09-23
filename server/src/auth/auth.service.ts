@@ -50,16 +50,11 @@ export class AuthService {
         session.twoFactorVerified = false;
         session.authenticated = false
 
-        await new Promise((resolve, reject) => {
-            session.save((err) => (err ? reject(err) : resolve(true)));
-        });
-
 
         return {
             status: HttpStatus.OK,
             session: {
                 userId: session?.user.id,
-                role: session?.user?.role,
                 twoFactorPending: session?.twoFactorPending,
                 twoFactorVerified: session?.twoFactorVerified,
                 authenticated: session?.authenticated
@@ -69,14 +64,11 @@ export class AuthService {
     }
 
 
-    async verifyTwoFactorCode(token: string, userId: string, session: Record<string, any>) {
-
-        console.log("session: ", session);
-
+    async verifyTwoFactorCode(token: string, userId:string, session: Record<string, any>) {
 
         const user = await this.userModel.findById(userId)
 
-        if (user?.twoFactorSecret !== session.twoFactorSecret) {
+        if(user?.twoFactorSecret !== session.twoFactorSecret) {
             throw new UnauthorizedException("Unauthorized, please login again")
         }
 
@@ -99,12 +91,7 @@ export class AuthService {
 
         return {
             verified,
-            message: verified ? "Verified successfully" : "Invalid token",
-            session: {
-                twoFactorPending: session.twoFactorPending,
-                twoFactorVerified: session.twoFactorVerified,
-                authenticated: session.authenticated
-            }
+            message: verified ? "Verified successfully" : "Invalid token"
         };
     }
 
@@ -114,7 +101,7 @@ export class AuthService {
             throw new NotFoundException('Session not found or has expired');
         }
 
-        if (session.twoFactorPending) {
+        if(session.twoFactorPending){
             throw new UnauthorizedException("Please verify first by 2FA")
         }
 
@@ -130,16 +117,10 @@ export class AuthService {
 
 
     clearSession(session: Record<string, any>) {
-        return new Promise((resolve, reject) => {
-            session.destroy((err) => {
-                if (err) {
-                    console.error('Error destroying session:', err);
-                    reject(err);
-                } else {
-                    resolve(true);
-                }
-            });
+        session.destroy((err) => {
+            if (err) {
+                console.error('Error destroying session:', err);
+            }
         });
     }
-
 }

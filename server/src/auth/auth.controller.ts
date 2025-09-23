@@ -1,10 +1,10 @@
 
 /* eslint-disable no-useless-catch */
-import { Body, Controller, HttpCode, HttpStatus, Logger, Post, UnauthorizedException, Session, Get, Req, UseGuards, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Logger, Post, UnauthorizedException, Session, Get, Req,  UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { CsrfGuard } from 'src/guards/csrf/csrf.guard';
 
 @ApiTags('Authentication')
@@ -75,11 +75,11 @@ export class AuthController {
 
   @ApiResponse({ status: 401, description: 'Invalid 2FA token' })
   async verify2FA(
-    @Body() body: { token: string, userId: string },
+    @Body() body: { token: string,userId:string },
     @Session() session: Record<string, any>,
 
   ) {
-    const result = await this.authService.verifyTwoFactorCode(body.token, body.userId, session);
+    const result = await this.authService.verifyTwoFactorCode(body.token,body.userId, session);
     if (!result.verified) {
       throw new UnauthorizedException('Invalid 2FA token');
     }
@@ -114,19 +114,7 @@ export class AuthController {
   @UseGuards(CsrfGuard)
   @ApiOperation({ summary: 'Logout user and clear session' })
   @ApiResponse({ status: 200, description: 'User logged out successfully' })
-  async logout(@Session() session: Record<string, any>, @Res() res: Response) {
-    try {
-      await this.authService.clearSession(session);
-
-      // Clear the cookie in the browser
-      res.clearCookie('connect.sid', {
-        httpOnly: true,
-        sameSite: 'lax', // same as your session cookie config
-      });
-
-      return res.json({ message: 'Session destroyed, logged out' });
-    } catch (err) {
-      return res.status(500).json({ message: 'Failed to logout' });
-    }
+  logout(@Session() session: Record<string, any>) {
+    return this.authService.clearSession(session);
   }
 }

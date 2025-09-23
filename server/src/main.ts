@@ -40,14 +40,7 @@ async function bootstrap() {
       port: Number(process.env.REDIS_PORT) || 6379,
     },
   });
-
-
-
-  await redisClient.connect().catch(err => {
-    console.error("Redis connection failed:", err);
-    process.exit(1); // stop server if Redis not available
-  });
-
+  redisClient.connect().catch(console.error);
 
   app.use(
     session({
@@ -62,28 +55,28 @@ async function bootstrap() {
         secure: false, // for https set it to true
         maxAge: 1000 * 60 * 60 * 24,
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "strict",
       },
     }),
   );
 
-
+  
 
 
   const skipCsrfPaths = [
-    '/api-docs',
-    '/api-docs/json',
-    '/auth/login',
-    '/auth/2fa/verify',
-  ];
+  '/api-docs',
+  '/api-docs/json',
+  '/auth/login',
+  '/auth/2fa/verify',
+];
 
-  app.use((req, res, next) => {
-    const originalPath = req.originalUrl; // includes /api/v1 prefix
-    if (skipCsrfPaths.some(path => originalPath.startsWith(path) || originalPath.includes(path))) {
-      return next();
-    }
-    csrfProtection(req, res, next);
-  });
+app.use((req, res, next) => {
+  const originalPath = req.originalUrl; // includes /api/v1 prefix
+  if (skipCsrfPaths.some(path => originalPath.startsWith(path) || originalPath.includes(path))) {
+    return next();
+  }
+  csrfProtection(req, res, next);
+});
 
 
   app.use((err, req, res, next) => {
