@@ -27,6 +27,7 @@ import {
     TrendingUp
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 // Animation variants
 const containerVariants = {
@@ -50,10 +51,11 @@ const itemVariants = {
 };
 
 const Login = () => {
+    const { authState, setAuthState, setCsrf } = useAuth();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    
+
     const [formData, setFormData] = useState({
         name: "",
         password: "",
@@ -72,7 +74,7 @@ const Login = () => {
             [name]: type === "checkbox" ? checked : value,
         }));
         if (errors[name]) {
-            setErrors({...errors, [name]: ""});
+            setErrors({ ...errors, [name]: "" });
         }
         if (loginError) setLoginError("");
     };
@@ -90,46 +92,72 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("handleSubmit called"); // <-- debug log
         if (!validate()) return;
 
         setIsLoading(true);
         try {
             const response = await fetch(`http://localhost:5000/api/v1/auth/login`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: formData?.name,
-                    password: formData?.password
-                })
+                    password: formData?.password,
+                }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem("user",JSON.stringify(data.user));
-                localStorage.setItem("qr",JSON.stringify(data.qr));
-                navigate("/qr");
+                console.log("Login response:", data);
+
+                setAuthState({
+                    isAuthenticated: data.session.authenticated,
+                    isTwoFactorPending: data.session.twoFactorPending,
+                    isTwoFactorVerified: data.session.twoFactorVerified,
+                    role: data.session.role,
+                    userId: data.session.userId,
+                    qr: data.qr,
+                });
+
+
+                const csrfRes = await fetch("http://localhost:5000/api/v1/auth/csrf-token", {
+                    credentials: "include",
+                });
+
+                const csrfData = await csrfRes.json();
+
+                if (csrfRes.ok) {
+                    localStorage.setItem("csrf", csrfData.csrfToken);
+                    setCsrf(csrfData.csrfToken);
+                }
+
+                if (data?.session?.twoFactorPending) {
+                    navigate("/qr");
+                } else if (data.session.role === "superadmin") {
+                    navigate("/admin-dashboard");
+                } else {
+                    navigate("/");
+                }
+
+                //navigate("/qr"); // enable if you want auto redirect
             } else {
                 setLoginError(data.message || "Login failed. Please try again.");
             }
-
         } catch (error) {
             setLoginError("Network error. Please try again.");
-            console.log(error?.message);
-        }
-        finally {
+            console.error(error);
+        } finally {
             setIsLoading(false);
         }
     };
+
 
     return (
         <Box
             sx={{
                 minHeight: "100vh",
-                background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                background: "linear-gradient(135deg, #1868b7ff 0%, #5fdc87ff 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -155,37 +183,37 @@ const Login = () => {
                     }}
                 >
                     {/* Logo and Header */}
-                    <Box 
-                        sx={{ 
-                            display: "flex", 
-                            flexDirection: "column", 
-                            alignItems: "center", 
-                            mb: 2 
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            mb: 2
                         }}
                         component={motion.div}
                         variants={itemVariants}
                     >
-                        <Box 
-                            sx={{ 
-                                display: "flex", 
-                                alignItems: "center", 
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
                                 mb: 2,
                                 justifyContent: 'center'
                             }}
                         >
-                            <img 
+                            <img
                                 src="/image.png"
                                 alt="Expense Tracker Logo"
-                                style={{ 
-                                    height: isMobile ? '60px' : '100px', 
-                                    width: isMobile ? '60px' : '200px', 
+                                style={{
+                                    height: isMobile ? '80px' : '100px',
+                                    width: isMobile ? '80px' : '250px',
                                     objectFit: 'contain',
-                                }} 
+                                }}
                             />
                         </Box>
-                        <Typography 
-                            variant="h4" 
-                            component="h1" 
+                        <Typography
+                            variant="h4"
+                            component="h1"
                             fontWeight="600"
                             color="primary.main"
                             textAlign="center"
@@ -193,9 +221,9 @@ const Login = () => {
                         >
                             Expense Tracker
                         </Typography>
-                        <Typography 
-                            variant="body2" 
-                            color="text.secondary" 
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
                             textAlign="center"
                             sx={{ fontWeight: 500 }}
                         >
@@ -203,12 +231,12 @@ const Login = () => {
                         </Typography>
                     </Box>
 
-                    
+
                     {loginError && (
                         <Fade in={!!loginError}>
-                            <Alert 
-                                severity="error" 
-                                sx={{ 
+                            <Alert
+                                severity="error"
+                                sx={{
                                     mb: 1,
                                     borderRadius: 2,
                                     alignItems: "center"
@@ -258,11 +286,11 @@ const Login = () => {
                     />
 
                     {/* Password Field */}
-                    <FormControl 
-                        variant="outlined" 
-                        size="medium" 
-                        fullWidth 
-                        error={Boolean(errors.password)} 
+                    <FormControl
+                        variant="outlined"
+                        size="medium"
+                        fullWidth
+                        error={Boolean(errors.password)}
                         required
                         component={motion.div}
                         variants={itemVariants}
@@ -343,11 +371,11 @@ const Login = () => {
                                 </Typography>
                             }
                         />
-                        <Button 
-                            size="small" 
-                            sx={{ 
-                                textTransform: "none", 
-                                minWidth: "auto", 
+                        <Button
+                            size="small"
+                            sx={{
+                                textTransform: "none",
+                                minWidth: "auto",
                                 color: "primary.main",
                                 fontWeight: 600,
                                 "&:hover": {
@@ -367,7 +395,7 @@ const Login = () => {
                         disabled={isLoading}
                         fullWidth
                         sx={{
-                            bgcolor: "primary.main",
+                            bgcolor: "#4ca3f5ff",
                             fontWeight: "bold",
                             py: 1.5,
                             fontSize: "1rem",
