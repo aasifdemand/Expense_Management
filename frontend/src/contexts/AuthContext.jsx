@@ -1,8 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useContext } from "react";
 
 const AuthContext = createContext(null);
 
-// helper to avoid JSON.parse("undefined") errors
+
 const safeJSONParse = (key, fallback = null) => {
     try {
         const value = localStorage.getItem(key);
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
     const [csrf, setCsrf] = useState(safeJSONParse("csrf"))
 
     useEffect(() => {
-        // keep localStorage in sync
+
         localStorage.setItem("authenticated", JSON.stringify(authState.isAuthenticated));
         localStorage.setItem("twoFactorVerified", JSON.stringify(authState.isTwoFactorVerified));
         localStorage.setItem("twoFactorPending", JSON.stringify(authState.isTwoFactorPending));
@@ -34,6 +35,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("userId", JSON.stringify(authState.userId));
         localStorage.setItem("qr", JSON.stringify(authState.qr));
     }, [authState]);
+
+    useEffect(() => {
+        if (csrf !== undefined && csrf !== null) {
+            localStorage.setItem("csrf", JSON.stringify(csrf));
+        } else {
+            localStorage.removeItem("csrf");
+        }
+    }, [csrf]);
 
 
 

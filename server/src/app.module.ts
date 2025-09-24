@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ExpensesModule } from './expenses/expenses.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { MongooseModule } from '@nestjs/mongoose';
         uri: configService.get("MONGO_URI")
       })
     }),
-    AuthModule
+    AuthModule,
+    ExpensesModule
   ],
   controllers: [],
   providers: [],
