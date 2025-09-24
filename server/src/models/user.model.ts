@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 
 export enum UserRole {
@@ -8,7 +8,7 @@ export enum UserRole {
 }
 
 
-@Schema({timestamps:true})
+@Schema({ timestamps: true })
 export class User extends Document {
 
   @Prop({ required: true, unique: true })
@@ -20,8 +20,11 @@ export class User extends Document {
   @Prop({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Prop({default:""})
+  @Prop({ default: "" })
   twoFactorSecret?: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
+  expenses: Types.ObjectId[];
 
 }
 

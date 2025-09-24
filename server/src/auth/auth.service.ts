@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -50,11 +51,16 @@ export class AuthService {
         session.twoFactorVerified = false;
         session.authenticated = false
 
+        await new Promise((resolve, reject) => {
+            session.save((err) => (err ? reject(err) : resolve(true)));
+        });
+
 
         return {
             status: HttpStatus.OK,
             session: {
                 userId: session?.user.id,
+                role: session?.user?.role,
                 twoFactorPending: session?.twoFactorPending,
                 twoFactorVerified: session?.twoFactorVerified,
                 authenticated: session?.authenticated
@@ -64,11 +70,14 @@ export class AuthService {
     }
 
 
-    async verifyTwoFactorCode(token: string, userId:string, session: Record<string, any>) {
+    async verifyTwoFactorCode(token: string, userId: string, session: Record<string, any>) {
+
+        console.log("session: ", session);
+
 
         const user = await this.userModel.findById(userId)
 
-        if(user?.twoFactorSecret !== session.twoFactorSecret) {
+        if (user?.twoFactorSecret !== session.twoFactorSecret) {
             throw new UnauthorizedException("Unauthorized, please login again")
         }
 
@@ -91,7 +100,12 @@ export class AuthService {
 
         return {
             verified,
-            message: verified ? "Verified successfully" : "Invalid token"
+            message: verified ? "Verified successfully" : "Invalid token",
+            session: {
+                twoFactorPending: session.twoFactorPending,
+                twoFactorVerified: session.twoFactorVerified,
+                authenticated: session.authenticated
+            }
         };
     }
 
@@ -101,7 +115,7 @@ export class AuthService {
             throw new NotFoundException('Session not found or has expired');
         }
 
-        if(session.twoFactorPending){
+        if (session.twoFactorPending) {
             throw new UnauthorizedException("Please verify first by 2FA")
         }
 
@@ -117,10 +131,15 @@ export class AuthService {
 
 
     clearSession(session: Record<string, any>) {
-        session.destroy((err) => {
-            if (err) {
-                console.error('Error destroying session:', err);
-            }
+        return new Promise((resolve, reject) => {
+            session.destroy((err) => {
+                if (err) {
+                    console.error('Error destroying session:', err);
+                    reject(err);
+                } else {
+                    resolve(true);
+                }
+            });
         });
     }
 }

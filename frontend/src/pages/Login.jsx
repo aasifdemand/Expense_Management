@@ -51,7 +51,7 @@ const itemVariants = {
 };
 
 const Login = () => {
-    const { authState, setAuthState, setCsrf } = useAuth();
+    const { setAuthState, setCsrf } = useAuth();
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));

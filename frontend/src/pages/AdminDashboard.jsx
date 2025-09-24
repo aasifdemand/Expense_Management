@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -152,7 +152,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  // const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -236,10 +236,12 @@ const AdminDashboard = () => {
 
 
   const [isLoading, setIsLoading] = useState(false)
-
+  console.log("csrf: ",csrf);
   const handleLogout = async () => {
     setIsLoading(true); // optional: show spinner
 
+  
+    
     if (!csrf) return
 
     try {

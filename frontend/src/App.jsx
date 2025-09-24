@@ -6,97 +6,75 @@ import AdminDashboard from "./pages/AdminDashboard"
 import Expenses from "./pages/Expenses"
 import { useAuth } from "./contexts/AuthContext"
 
+const ProtectedRoute = ({ children, allowedRole }) => {
+  const { authState } = useAuth();
+
+  if (!authState?.isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (authState.isTwoFactorPending) {
+    return <Navigate to="/qr" />;
+  }
+
+  if (allowedRole && authState.role !== allowedRole) {
+    return <Navigate to="/" />;
+  }
+
+  return children;
+};
+
 const App = () => {
   const { authState } = useAuth();
 
-  const isRedirectToUserDashboard =
-    authState?.isAuthenticated &&
-    authState?.isTwoFactorVerified &&
-    !authState?.isTwoFactorPending &&
-    authState?.role === "user"
-
-  const isRedirectToAdminDashboard =
-    authState?.isAuthenticated &&
-    authState?.isTwoFactorVerified &&
-    !authState?.isTwoFactorPending &&
-    authState?.role === "superadmin"
-
-  const isRedirectToExpenses =
-    authState?.isAuthenticated &&
-    authState?.isTwoFactorVerified &&
-    !authState?.isTwoFactorPending &&
-    authState?.role === "superadmin"
-
-  const isTwoFactorPending = authState?.isTwoFactorPending
+  if (!authState) return <div>Loading...</div>;
 
   return (
     <Routes>
-      {/* User Dashboard Route */}
+      {/* User Dashboard */}
       <Route
         path="/"
         element={
-          isRedirectToUserDashboard ? <Dashboard /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRole="user">
+            <Dashboard />
+          </ProtectedRoute>
         }
       />
 
-      {/* Admin Dashboard Route */}
+      {/* Admin Dashboard */}
       <Route
         path="/admin-dashboard"
         element={
-          isRedirectToAdminDashboard ? <AdminDashboard /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRole="superadmin">
+            <AdminDashboard />
+          </ProtectedRoute>
         }
       />
 
-      {/* Expenses Management Route */}
+      {/* Expenses */}
       <Route
         path="/expenses"
         element={
-          isRedirectToExpenses ? <Expenses /> : <Navigate to="/login" />
+          <ProtectedRoute allowedRole="superadmin">
+            <Expenses />
+          </ProtectedRoute>
         }
       />
 
-      {/* Two-Factor Authentication Route */}
-      <Route
-        path="/qr"
-        element={
-          isTwoFactorPending ? (
-            <Qr />
-          ) : authState.isAuthenticated ? (
-            authState.role === "superadmin" ? <Navigate to="/admin-dashboard" /> : <Navigate to="/" />
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
+      {/* Two-Factor */}
+      <Route path="/qr" element={<Qr />} />
 
-      {/* Login Route */}
-      <Route
-        path="/login"
-        element={
-          authState?.isAuthenticated && !authState?.isTwoFactorPending ? (
-            authState.role === "superadmin" ? (
-              <Navigate to="/admin-dashboard" />
-            ) : (
-              <Navigate to="/" />
-            )
-          ) : (
-            <Login />
-          )
-        }
-      />
+      {/* Login */}
+      <Route path="/login" element={<Login />} />
 
-      {/* Catch-all route - redirect to appropriate dashboard based on role */}
+      {/* Catch-all */}
       <Route
         path="*"
         element={
-          authState?.isAuthenticated ? (
-            authState.role === "superadmin" ? (
-              <Navigate to="/admin-dashboard" />
-            ) : (
-              <Navigate to="/" />
-            )
+          authState.role === "superadmin" ? (
+            <Navigate to="/admin-dashboard" />
           ) : (
-            <Navigate to="/login" />
+            <Navigate to="/" />
           )
         }
       />

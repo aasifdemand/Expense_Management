@@ -11,30 +11,34 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { MuiOtpInput } from "mui-one-time-password-input";
+import { VerifiedUser } from "@mui/icons-material";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { VerifiedUser, QrCodeScanner } from "@mui/icons-material";
 
 const QRVerification = () => {
-    const qr = JSON?.parse(localStorage?.getItem("qr") || '""');
-    const user = JSON?.parse(localStorage?.getItem("user"));
+    const { authState, setAuthState } = useAuth();
+    const navigate = useNavigate()
+
+    // const user = JSON?.parse(localStorage?.getItem("user"));
     const [otp, setOtp] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    console.log(user);
+    // console.log(user);
 
 
-    const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
 
     const handleChange = (value) => {
         setOtp(value);
         if (error) setError("");
     };
 
+
+
     const handleVerify = async () => {
-        if (!user) return;
         if (otp.length !== 6) {
             setError("Please enter a 6-digit code.");
             return;
@@ -44,23 +48,29 @@ const QRVerification = () => {
         try {
             const response = await fetch(`http://localhost:5000/api/v1/auth/2fa/verify`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     token: otp,
-                    userId: user._id
-                })
+                    userId: authState?.userId,
+                }),
             });
 
+            const data = await response.json();
+
             if (response.ok) {
-                if (user?.role === "user") {
-                    navigate("/");
-                } else {
-                    navigate("/admin-dashboard");
-                }
+                console.log("Verify response:", data);
+
+                setAuthState((prev) => ({
+                    ...prev,
+                    isTwoFactorPending: false,
+                    isTwoFactorVerified: true,
+                    isAuthenticated: true,
+                }));
+
+                if (authState?.role === "user") navigate("/");
+                else navigate("/admin-dashboard");
             } else {
-                const data = await response.json();
                 setError(data.message || "Verification failed. Please try again.");
             }
         } catch (error) {
@@ -140,33 +150,35 @@ const QRVerification = () => {
                     </Fade>
                 )}
 
-                {/* QR Code */}
-                <Paper
-                    elevation={2}
-                    sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        mb: 3,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        bgcolor: "white",
-                        border: "1px solid #e0e0e0",
-                        width: "100%",
-                        maxWidth: 280
-                    }}
-                >
-                    <img
-                        src={qr}
-                        alt="QR Code"
-                        style={{
-                            height: "auto",
+                {
+                    authState?.qr &&
+                    <Paper
+                        elevation={2}
+                        sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            mb: 3,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            bgcolor: "white",
+                            border: "1px solid #e0e0e0",
                             width: "100%",
-                            maxWidth: 220,
-                            aspectRatio: "1/1"
+                            maxWidth: 280
                         }}
-                    />
-                </Paper>
+                    >
+                        <img
+                            src={authState?.qr}
+                            alt="QR Code"
+                            style={{
+                                height: "auto",
+                                width: "100%",
+                                maxWidth: 220,
+                                aspectRatio: "1/1"
+                            }}
+                        />
+                    </Paper>
+                }
 
                 {/* OTP Input */}
                 <Typography
@@ -257,6 +269,7 @@ const QRVerification = () => {
                 >
                     Having trouble?{" "}
                     <Button
+                        // onClick={handleRegenerateQr}
                         variant="text"
                         size="small"
                         sx={{
@@ -265,7 +278,7 @@ const QRVerification = () => {
                             color: "primary.main",
                         }}
                     >
-                        Get help
+                        Regenerate QR
                     </Button>
                 </Typography>
             </Paper>
