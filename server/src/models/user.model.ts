@@ -26,6 +26,10 @@ export class User extends Document {
   @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
   expenses: Types.ObjectId[];
 
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: "Budget" }] })
+  allocatedBudgets: Types.ObjectId[];
+
 }
 
 

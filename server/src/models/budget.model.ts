@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
-import { Department } from "src/enums/department.enum";
+import { Document, Types } from "mongoose";
+
 
 @Schema({ timestamps: true })
-export class BudgetAllocation extends Document {
-  @Prop({ required: true, enum: Department })
-  department: Department;
+export class Budget extends Document {
+  @Prop({ type: Types.ObjectId, ref: "User", required: true })
+  user: Types.ObjectId;
 
   @Prop({ required: true })
   allocatedAmount: number;
@@ -14,14 +14,12 @@ export class BudgetAllocation extends Document {
   spentAmount: number;
 
   @Prop({ required: true })
-  startDate: string;
+  month: number
 
   @Prop({ required: true })
-  endDate: string;
+  year: number
 
-  @Prop({ default: "" })
-  notes?: string;
 }
 
-export const BudgetAllocationSchema =
-  SchemaFactory.createForClass(BudgetAllocation);
+export const BudgetSchema =
+  SchemaFactory.createForClass(Budget);

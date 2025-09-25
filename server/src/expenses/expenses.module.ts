@@ -8,6 +8,10 @@ import { ImagekitService } from 'src/services/media.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-ioredis-yet';
+import { Budget, BudgetSchema } from 'src/models/budget.model';
+import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
+import { Notification, NotificationSchema } from 'src/models/notifications.model';
+import { NotificationsService } from 'src/services/notifications.service';
 
 @Module({
   imports: [
@@ -23,6 +27,14 @@ import { redisStore } from 'cache-manager-ioredis-yet';
         name: User.name,
         schema: userSchema
       },
+      {
+        name: Budget.name,
+        schema: BudgetSchema
+      },
+      {
+        name: Notification.name,
+        schema: NotificationSchema
+      }
     ]),
     CacheModule.registerAsync({
       isGlobal: true,
@@ -40,6 +52,6 @@ import { redisStore } from 'cache-manager-ioredis-yet';
 
   ],
   controllers: [ExpensesController],
-  providers: [ExpensesService, ImagekitService],
+  providers: [ExpensesService, ImagekitService, NotificationsGateway, NotificationsService],
 })
 export class ExpensesModule { }

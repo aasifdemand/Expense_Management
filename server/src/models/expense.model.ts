@@ -4,14 +4,21 @@ import { Department } from "src/enums/department.enum";
 
 @Schema({ timestamps: true })
 export class Expense extends Document {
-  @Prop({ type: Types.ObjectId, ref: "User" })
-  paidTo: Types.ObjectId
+
+  @Prop({ required: true })
+  paidTo: string
 
   @Prop({ required: true })
   amount: number;
 
   @Prop({ default: Date.now() })
   date: Date
+
+  @Prop({ required: true })
+  year: number;
+
+  @Prop({ required: true })
+  month: number;
 
   @Prop({ required: true, enum: Department, default: Department.OTHER })
   department?: Department;
@@ -25,6 +32,9 @@ export class Expense extends Document {
 
   @Prop({ default: "" })
   proof?: string;
+
+  @Prop({ type: Types.ObjectId, ref: "User" })
+  user: Types.ObjectId
 
 }
 
