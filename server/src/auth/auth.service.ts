@@ -59,7 +59,6 @@ export class AuthService {
         return {
             status: HttpStatus.OK,
             session: {
-                userId: session?.user.id,
                 role: session?.user?.role,
                 twoFactorPending: session?.twoFactorPending,
                 twoFactorVerified: session?.twoFactorVerified,
@@ -70,12 +69,12 @@ export class AuthService {
     }
 
 
-    async verifyTwoFactorCode(token: string, userId: string, session: Record<string, any>) {
+    async verifyTwoFactorCode(token: string, session: Record<string, any>) {
 
         console.log("session: ", session);
 
 
-        const user = await this.userModel.findById(userId)
+        const user = await this.userModel.findById(session?.userId)
 
         if (user?.twoFactorSecret !== session.twoFactorSecret) {
             throw new UnauthorizedException("Unauthorized, please login again")

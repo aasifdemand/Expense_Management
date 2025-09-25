@@ -32,7 +32,7 @@ export class AuthController {
     @Session() session: Record<string, any>,
 
   ) {
-    const result = await this.authService.verifyTwoFactorCode(body.token, body.userId, session);
+    const result = await this.authService.verifyTwoFactorCode(body.token, session);
     return result;
   }
 

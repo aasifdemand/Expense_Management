@@ -3,24 +3,29 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ExpensesModule } from './expenses/expenses.module';
+import { BudgetModule } from './budget/budget.module';
+import { NotificationsGateway } from './gateways/notifications/notifications.gateway';
+
+
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal:true,
-      envFilePath : ".env"
+      isGlobal: true,
+      envFilePath: ".env"
     }),
     MongooseModule.forRootAsync({
-      imports:[ConfigModule],
-      inject:[ConfigService],
-      useFactory: (configService:ConfigService)=> ({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
         uri: configService.get("MONGO_URI")
       })
     }),
     AuthModule,
-    ExpensesModule
+    ExpensesModule,
+    BudgetModule
   ],
   controllers: [],
-  providers: [],
+  providers: [NotificationsGateway],
 })
-export class AppModule {}
+export class AppModule { }
