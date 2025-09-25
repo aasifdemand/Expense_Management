@@ -1,154 +1,278 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import Navbar from "./Navbar";
-import Sidebar from "./Sidebar";
-import { useAuth } from "../contexts/AuthContext";
+// import { useAuth } from "../contexts/AuthContext";
+// import Sidebar from './sidebar';
+// import Navbar from './navbar';
 
 // Styled Components
 const DashboardContainer = styled.div`
-  padding: 20px;
-  background-color: #f5f7fa;
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+`;
+
+const MainContentWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: ${props => props.sidebarOpen ? '300px' : '0'};
+  transition: margin-left 0.3s ease;
+  width: ${props => props.sidebarOpen ? 'calc(100% - 300px)' : '100%'};
+  
+  @media (max-width: 768px) {
+    margin-left: 0;
+    width: 100%;
+  }
+`;
+
+const MainContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 `;
 
-const Header = styled.div`
+const ContentArea = styled.div`
+  padding: 15px;
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc;
+  margin-top: 64px; /* Account for navbar height */
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+    margin-top: 56px;
+  }
+`;
+
+const WelcomeHeader = styled.div`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 30px;
-  border-radius: 15px;
-  margin-bottom: 30px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 32px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  }
 `;
 
 const HeaderTitle = styled.h1`
   margin: 0;
   font-size: 2.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  position: relative;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
 
 const HeaderSubtitle = styled.p`
-  margin: 10px 0 0 0;
+  margin: 12px 0 0 0;
   opacity: 0.9;
   font-size: 1.1rem;
+  font-weight: 400;
+  position: relative;
 `;
 
-const StatsContainer = styled.div`
+const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin: 30px 0;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin: 32px 0;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
 const StatCard = styled.div`
   background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
-  border-left: 4px solid ${props => props.color || '#667eea'};
+  border-left: 6px solid ${props => props.color || '#667eea'};
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  }
 `;
 
 const StatNumber = styled.div`
-  font-size: 2rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 5px;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin-bottom: 8px;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
 `;
 
 const StatLabel = styled.div`
   color: #718096;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
+  font-weight: 600;
 `;
 
 const TabsContainer = styled.div`
   display: flex;
   background: white;
-  border-radius: 12px;
-  padding: 5px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-radius: 16px;
+  padding: 8px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+  
+  @media (max-width: 768px) {
+    border-radius: 12px;
+  }
 `;
 
 const Tab = styled.button`
   flex: 1;
-  padding: 15px 20px;
+  padding: 16px 24px;
   border: none;
   background: ${props => props.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent'};
   color: ${props => props.active ? 'white' : '#718096'};
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: 140px;
   
   &:hover {
     background: ${props => props.active ? '' : 'rgba(102, 126, 234, 0.1)'};
+  }
+  
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    min-width: 120px;
   }
 `;
 
 const ContentContainer = styled.div`
   background: white;
-  border-radius: 15px;
-  padding: 30px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  margin-bottom: 30px;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 32px;
+  
+  @media (max-width: 768px) {
+    padding: 24px 16px;
+    border-radius: 12px;
+  }
 `;
 
 const SectionTitle = styled.h2`
-  color: #2d3748;
-  margin-bottom: 25px;
-  font-size: 1.5rem;
+  color: #1a202c;
+  margin-bottom: 28px;
+  font-size: 1.75rem;
+  font-weight: 700;
   border-bottom: 2px solid #f1f3f9;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+  }
 `;
 
 const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 `;
 
 const Label = styled.label`
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #4a5568;
+  color: #2d3748;
+  font-size: 0.95rem;
 `;
 
 const Select = styled.select`
   width: 100%;
-  padding: 12px 15px;
+  padding: 14px 16px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background: white;
   
   &:focus {
     outline: none;
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 12px 15px;
+  padding: 14px 16px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background: white;
   
   &:focus {
     outline: none;
     border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  &::placeholder {
+    color: #a0aec0;
+  }
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  resize: vertical;
+  min-height: 120px;
+  background: white;
+  
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  &::placeholder {
+    color: #a0aec0;
   }
 `;
 
@@ -156,222 +280,206 @@ const Button = styled.button`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 12px 25px;
-  border-radius: 8px;
+  padding: 14px 32px;
+  border-radius: 10px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
   }
   
   &:active {
     transform: translateY(0);
   }
-`;
-
-const BudgetsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 25px;
-`;
-
-const BudgetCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-  border-left: 4px solid ${props => {
-        const percentage = props.percentage;
-        if (percentage >= 90) return '#f56565';
-        if (percentage >= 75) return '#ed8936';
-        return '#48bb78';
-    }};
-  transition: transform 0.3s ease;
   
-  &:hover {
-    transform: translateY(-5px);
+  &:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 `;
 
-const UserInfo = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px;
-`;
-
-const Avatar = styled.div`
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 1.2rem;
-  margin-right: 15px;
-`;
-
-const UserDetails = styled.div`
-  flex: 1;
-`;
-
-const UserName = styled.h3`
-  margin: 0;
-  color: #2d3748;
-`;
-
-const UserEmail = styled.p`
-  margin: 5px 0 0 0;
-  color: #718096;
-  font-size: 0.9rem;
-`;
-
-const ProgressBar = styled.div`
-  height: 8px;
-  background-color: #e2e8f0;
-  border-radius: 4px;
-  margin: 15px 0;
-  overflow: hidden;
-`;
-
-const ProgressFill = styled.div`
-  height: 100%;
-  background: ${props => {
-        const percentage = props.percentage;
-        if (percentage >= 90) return '#f56565';
-        if (percentage >= 75) return '#ed8936';
-        return '#48bb78';
-    }};
-  width: ${props => props.percentage}%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
-`;
-
-const BudgetInfo = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-`;
-
-const BudgetAmount = styled.div`
-  font-weight: 600;
-  color: #2d3748;
-`;
-
-const BudgetRemaining = styled.div`
-  color: #718096;
-  font-size: 0.9rem;
-`;
-
-const ExpensesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-  margin-top: 25px;
-`;
-
-const ExpenseCard = styled.div`
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-  border-left: 4px solid ${props => {
-        switch (props.status) {
-            case 'approved': return '#48bb78';
-            case 'pending': return '#ed8936';
-            case 'rejected': return '#f56565';
-            default: return '#a0aec0';
-        }
-    }};
-  transition: transform 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-  }
-`;
-
-const ExpenseHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 15px;
-`;
-
-const ExpenseUser = styled.div`
-  font-weight: 600;
-  color: #2d3748;
-`;
-
-const ExpenseAmount = styled.div`
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2d3748;
-`;
-
-const ExpenseCategory = styled.span`
-  background: #edf2f7;
-  color: #4a5568;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-`;
-
-const ExpenseDescription = styled.p`
-  color: #718096;
-  margin: 10px 0;
-`;
-
-const ExpenseDate = styled.div`
-  color: #a0aec0;
-  font-size: 0.8rem;
-  margin-bottom: 15px;
-`;
-
-const ExpenseStatus = styled.div`
-  display: inline-block;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: ${props => {
-        switch (props.status) {
-            case 'approved': return '#c6f6d5';
-            case 'pending': return '#feebc8';
-            case 'rejected': return '#fed7d7';
-            default: return '#e2e8f0';
-        }
-    }};
-  color: ${props => {
-        switch (props.status) {
-            case 'approved': return '#276749';
-            case 'pending': return '#9c4221';
-            case 'rejected': return '#9b2c2c';
-            default: return '#4a5568';
-        }
-    }};
-`;
-
-const ProofButton = styled.button`
-  background: #667eea;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+const FileUpload = styled.div`
+  border: 2px dashed #cbd5e0;
+  border-radius: 10px;
+  padding: 32px;
+  text-align: center;
   cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
+  background: #f7fafc;
   
   &:hover {
-    background: #5a6fd8;
+    border-color: #667eea;
+    background: #edf2f7;
+  }
+  
+  input[type="file"] {
+    display: none;
+  }
+`;
+
+const FileUploadLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 12px 24px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: #667eea;
+    color: white;
+  }
+`;
+
+const FileName = styled.div`
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #4a5568;
+  font-weight: 500;
+`;
+
+const TableContainer = styled.div`
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+`;
+
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  min-width: 800px;
+`;
+
+const TableHeader = styled.th`
+  background: #f7fafc;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const TableCell = styled.td`
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #4a5568;
+`;
+
+const TableRow = styled.tr`
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: #f7fafc;
+  }
+  
+  &:last-child td {
+    border-bottom: none;
+  }
+`;
+
+const StatusBadge = styled.span`
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  
+  background: ${props => {
+    switch (props.status) {
+      case 'submitted': return '#e9f7fe';
+      case 'approved': return '#e6f4ea';
+      case 'rejected': return '#fce8e6';
+      case 'reimbursed': return '#f0e8ff';
+      default: return '#f1f3f4';
+    }
+  }};
+  color: ${props => {
+    switch (props.status) {
+      case 'submitted': return '#0366d6';
+      case 'approved': return '#0d652d';
+      case 'rejected': return '#c5221f';
+      case 'reimbursed': return '#5e4db2';
+      default: return '#5f6368';
+    }
+  }};
+`;
+
+const ActionButton = styled.button`
+  background: ${props => props.variant === 'primary' ? '#667eea' :
+    props.variant === 'success' ? '#48bb78' :
+      props.variant === 'danger' ? '#f56565' : '#e2e8f0'};
+  color: ${props => props.variant ? 'white' : '#4a5568'};
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  &:last-child {
+    margin-right: 0;
+  }
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+`;
+
+const FilterButton = styled.button`
+  background: ${props => props.active ? '#667eea' : 'white'};
+  color: ${props => props.active ? 'white' : '#4a5568'};
+  border: 2px solid ${props => props.active ? '#667eea' : '#e2e8f0'};
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: #667eea;
+    transform: translateY(-1px);
   }
 `;
 
@@ -381,512 +489,520 @@ const ModalOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  backdrop-filter: blur(4px);
 `;
 
 const ModalContent = styled.div`
   background: white;
-  border-radius: 15px;
-  padding: 30px;
+  border-radius: 20px;
+  padding: 32px;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  
+  @media (max-width: 768px) {
+    padding: 24px;
+    margin: 20px;
+  }
 `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f3f9;
 `;
 
 const ModalTitle = styled.h2`
   margin: 0;
-  color: #2d3748;
+  color: #1a202c;
+  font-size: 1.5rem;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
   cursor: pointer;
   color: #718096;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s ease;
   
   &:hover {
+    background: #f7fafc;
     color: #2d3748;
   }
 `;
 
 const ProofImage = styled.img`
   width: 100%;
-  border-radius: 8px;
-  margin-bottom: 20px;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-`;
-
-const ApproveButton = styled.button`
-  background: #48bb78;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 1;
-  
-  &:hover {
-    background: #3ea76a;
-  }
-`;
-
-const RejectButton = styled.button`
-  background: #f56565;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 1;
-  
-  &:hover {
-    background: #e53e3e;
-  }
-`;
-
-const FilterContainer = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-`;
-
-const FilterButton = styled.button`
-  background: ${props => props.active ? '#667eea' : 'white'};
-  color: ${props => props.active ? 'white' : '#4a5568'};
-  border: 2px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    border-color: #667eea;
-  }
+  border-radius: 12px;
+  margin: 20px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 `;
 
 const Expenses = () => {
-    const [users, setUsers] = useState([]);
-    const [expenses, setExpenses] = useState([]);
-    const [selectedUser, setSelectedUser] = useState('');
-    const [monthlyLimit, setMonthlyLimit] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [selectedExpense, setSelectedExpense] = useState(null);
-    const [showProofModal, setShowProofModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('budgets');
+  // State for expense submission
+  const [expenseForm, setExpenseForm] = useState({
+    category: '',
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    proofFile: null
+  });
 
-    // Sample initial data
-    const initialUsers = [
-        {
-            id: 1,
-            name: 'John Doe',
-            email: 'john@example.com',
-            monthlyLimit: 1000,
-            currentSpent: 750,
-            department: 'Marketing'
-        },
-        {
-            id: 2,
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            monthlyLimit: 1500,
-            currentSpent: 1200,
-            department: 'Sales'
-        },
-        {
-            id: 3,
-            name: 'Mike Johnson',
-            email: 'mike@example.com',
-            monthlyLimit: 800,
-            currentSpent: 600,
-            department: 'IT'
-        },
-        {
-            id: 4,
-            name: 'Sarah Wilson',
-            email: 'sarah@example.com',
-            monthlyLimit: 2000,
-            currentSpent: 950,
-            department: 'HR'
-        },
-    ];
+  // State for expenses data
+  const [expenses, setExpenses] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [activeTab, setActiveTab] = useState('submitExpense');
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [showProofModal, setShowProofModal] = useState(false);
 
-    const initialExpenses = [
-        {
-            id: 1,
-            userId: 1,
-            userName: 'John Doe',
-            category: 'Food & Dining',
-            amount: 150,
-            date: '2024-01-15',
-            description: 'Client lunch meeting at restaurant',
-            status: 'approved',
-            proofImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-15'
-        },
-        {
-            id: 2,
-            userId: 2,
-            userName: 'Jane Smith',
-            category: 'Travel',
-            amount: 300,
-            date: '2024-01-16',
-            description: 'Flight ticket for conference',
-            status: 'pending',
-            proofImage: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-16'
-        },
-        {
-            id: 3,
-            userId: 1,
-            userName: 'John Doe',
-            category: 'Entertainment',
-            amount: 200,
-            date: '2024-01-17',
-            description: 'Team building activity',
-            status: 'pending',
-            proofImage: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-17'
-        },
-        {
-            id: 4,
-            userId: 3,
-            userName: 'Mike Johnson',
-            category: 'Utilities',
-            amount: 120,
-            date: '2024-01-18',
-            description: 'Office software subscription',
-            status: 'approved',
-            proofImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-18'
-        },
-        {
-            id: 5,
-            userId: 4,
-            userName: 'Sarah Wilson',
-            category: 'Office Supplies',
-            amount: 85,
-            date: '2024-01-19',
-            description: 'Purchase of stationery items',
-            status: 'rejected',
-            proofImage: 'https://images.unsplash.com/photo-1587334985603-7c303cb89477?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-19'
-        },
-        {
-            id: 6,
-            userId: 2,
-            userName: 'Jane Smith',
-            category: 'Transportation',
-            amount: 75,
-            date: '2024-01-20',
-            description: 'Taxi fares for client visits',
-            status: 'pending',
-            proofImage: 'https://images.unsplash.com/photo-1564419320461-6870880221ad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
-            proofUploadDate: '2024-01-20'
-        },
-    ];
+  // Sidebar state
 
-    useEffect(() => {
-        // In a real app, you would fetch this data from an API
-        setUsers(initialUsers);
-        setExpenses(initialExpenses);
-    }, []);
+  // const [darkMode, setDarkMode] = useState(false);
 
-    const handleSetBudget = (e) => {
-        e.preventDefault();
-        if (!selectedUser || !monthlyLimit) return;
 
-        const updatedUsers = users.map(user =>
-            user.id === parseInt(selectedUser)
-                ? { ...user, monthlyLimit: parseFloat(monthlyLimit) }
-                : user
-        );
+  // // Auth context
+  // const { currentUser, logout } = useAuth();
 
-        setUsers(updatedUsers);
-        setSelectedUser('');
-        setMonthlyLimit('');
-        alert('Budget allocated successfully!');
+  // Sample initial data
+  const initialExpenses = [
+    {
+      id: 1,
+      userId: 1,
+      userName: 'John Doe',
+      category: 'Food & Dining',
+      amount: 150,
+      date: '2024-01-15',
+      description: 'Client lunch meeting at restaurant',
+      status: 'approved',
+      proofImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
+      proofUploadDate: '2024-01-15',
+      submittedDate: '2024-01-15',
+      approvedDate: '2024-01-16',
+      reimbursed: false
+    },
+    {
+      id: 2,
+      userId: 2,
+      userName: 'Jane Smith',
+      category: 'Travel',
+      amount: 300,
+      date: '2024-01-16',
+      description: 'Flight ticket for conference',
+      status: 'approved',
+      proofImage: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
+      proofUploadDate: '2024-01-16',
+      submittedDate: '2024-01-16',
+      approvedDate: '2024-01-17',
+      reimbursed: true,
+      reimbursedDate: '2024-01-20'
+    },
+    {
+      id: 3,
+      userId: 1,
+      userName: 'John Doe',
+      category: 'Entertainment',
+      amount: 200,
+      date: '2024-01-17',
+      description: 'Team building activity',
+      status: 'submitted',
+      proofImage: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
+      proofUploadDate: '2024-01-17',
+      submittedDate: '2024-01-17',
+      reimbursed: false
+    },
+    {
+      id: 4,
+      userId: 3,
+      userName: 'Mike Johnson',
+      category: 'Utilities',
+      amount: 120,
+      date: '2024-01-18',
+      description: 'Office software subscription',
+      status: 'rejected',
+      proofImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80',
+      proofUploadDate: '2024-01-18',
+      submittedDate: '2024-01-18',
+      rejectedDate: '2024-01-19',
+      reimbursed: false
+    }
+  ];
+
+  useEffect(() => {
+    setExpenses(initialExpenses);
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setExpenseForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setExpenseForm(prev => ({
+        ...prev,
+        proofFile: file
+      }));
+    }
+  };
+
+  const handleSubmitExpense = (e) => {
+    e.preventDefault();
+
+    const newExpense = {
+      id: expenses.length + 1,
+      userId: 1,
+      userName: 'Super Admin',
+      category: expenseForm.category,
+      amount: parseFloat(expenseForm.amount),
+      date: expenseForm.date,
+      description: expenseForm.description,
+      status: 'submitted',
+      proofImage: expenseForm.proofFile ? URL.createObjectURL(expenseForm.proofFile) : '',
+      proofUploadDate: new Date().toISOString().split('T')[0],
+      submittedDate: new Date().toISOString().split('T')[0],
+      reimbursed: false
     };
 
-    const getRemainingBudget = (user) => {
-        return user.monthlyLimit - user.currentSpent;
-    };
+    setExpenses(prev => [newExpense, ...prev]);
+    setExpenseForm({
+      category: '',
+      amount: '',
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      proofFile: null
+    });
 
-    const getUsagePercentage = (user) => {
-        return (user.currentSpent / user.monthlyLimit) * 100;
-    };
+    alert('Expense submitted successfully!');
+  };
 
-    const viewProof = (expense) => {
-        setSelectedExpense(expense);
-        setShowProofModal(true);
-    };
+  const updateExpenseStatus = (expenseId, status) => {
+    const updatedExpenses = expenses.map(expense =>
+      expense.id === expenseId
+        ? {
+          ...expense,
+          status,
+          ...(status === 'approved' && { approvedDate: new Date().toISOString().split('T')[0] }),
+          ...(status === 'rejected' && { rejectedDate: new Date().toISOString().split('T')[0] })
+        }
+        : expense
+    );
+    setExpenses(updatedExpenses);
+    setShowProofModal(false);
+  };
 
-    const closeProofModal = () => {
-        setShowProofModal(false);
-        setSelectedExpense(null);
-    };
+  const markAsReimbursed = (expenseId) => {
+    const updatedExpenses = expenses.map(expense =>
+      expense.id === expenseId
+        ? {
+          ...expense,
+          reimbursed: true,
+          reimbursedDate: new Date().toISOString().split('T')[0]
+        }
+        : expense
+    );
+    setExpenses(updatedExpenses);
+  };
 
-    const updateExpenseStatus = (expenseId, status) => {
-        const updatedExpenses = expenses.map(expense =>
-            expense.id === expenseId
-                ? { ...expense, status }
-                : expense
-        );
-        setExpenses(updatedExpenses);
-        closeProofModal();
-    };
+  const viewProof = (expense) => {
+    setSelectedExpense(expense);
+    setShowProofModal(true);
+  };
 
-    const filteredExpenses = filterStatus === 'all'
-        ? expenses
-        : expenses.filter(expense => expense.status === filterStatus);
+  const closeProofModal = () => {
+    setShowProofModal(false);
+    setSelectedExpense(null);
+  };
 
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const pendingExpenses = expenses.filter(expense => expense.status === 'pending').length;
-    const approvedExpenses = expenses.filter(expense => expense.status === 'approved').reduce((sum, expense) => sum + expense.amount, 0);
 
-    const getInitials = (name) => {
-        return name.split(' ').map(word => word[0]).join('').toUpperCase();
-    };
 
-    return (
-        <DashboardContainer>
-            <Header>
-                <HeaderTitle>Expense Management Dashboard</HeaderTitle>
-                <HeaderSubtitle>Manage user budgets and review expense claims</HeaderSubtitle>
-            </Header>
+  const filteredExpenses = filterStatus === 'all'
+    ? expenses
+    : expenses.filter(expense => expense.status === filterStatus);
 
-            <StatsContainer>
-                <StatCard color="#667eea">
-                    <StatNumber>{users.length}</StatNumber>
-                    <StatLabel>Total Users</StatLabel>
-                </StatCard>
-                <StatCard color="#48bb78">
-                    <StatNumber>${totalExpenses.toLocaleString()}</StatNumber>
-                    <StatLabel>Total Expenses</StatLabel>
-                </StatCard>
-                <StatCard color="#ed8936">
-                    <StatNumber>{pendingExpenses}</StatNumber>
-                    <StatLabel>Pending Approvals</StatLabel>
-                </StatCard>
-                <StatCard color="#9f7aea">
-                    <StatNumber>${approvedExpenses.toLocaleString()}</StatNumber>
-                    <StatLabel>Approved Expenses</StatLabel>
-                </StatCard>
-            </StatsContainer>
+  // Statistics
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const pendingExpenses = expenses.filter(expense => expense.status === 'submitted').length;
+  const approvedExpenses = expenses.filter(expense => expense.status === 'approved').reduce((sum, expense) => sum + expense.amount, 0);
+  const reimbursedExpenses = expenses.filter(expense => expense.reimbursed).reduce((sum, expense) => sum + expense.amount, 0);
+
+  const isFormValid = expenseForm.category && expenseForm.amount && expenseForm.date && expenseForm.description && expenseForm.proofFile;
+
+  return (
+    <DashboardContainer>
+      {/* <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        handleLogout={handleLogout}
+        loading={loading}
+        setLoading={setLoading}
+        userName={currentUser?.displayName || 'Super Admin'}
+        userAvatar={currentUser?.displayName?.charAt(0) || 'A'}
+      /> */}
+
+      <MainContentWrapper >
+        <MainContent>
+          {/* <Navbar
+            onMenuClick={handleMenuClick}
+            darkMode={darkMode}
+            onDarkModeToggle={handleDarkModeToggle}
+          /> */}
+
+          <ContentArea>
+            <StatsGrid>
+              <StatCard color="#ed8936" onClick={() => setActiveTab('myExpenses')}>
+                <StatNumber>{pendingExpenses}</StatNumber>
+                <StatLabel>PENDING APPROVAL</StatLabel>
+              </StatCard>
+              <StatCard color="#48bb78" onClick={() => setActiveTab('myExpenses')}>
+                <StatNumber>₹{approvedExpenses.toFixed(2)}</StatNumber>
+                <StatLabel>APPROVED AMOUNT</StatLabel>
+              </StatCard>
+              <StatCard color="#9f7aea" onClick={() => setActiveTab('myExpenses')}>
+                <StatNumber>₹{reimbursedExpenses.toFixed(2)}</StatNumber>
+                <StatLabel>REIMBURSED AMOUNT</StatLabel>
+              </StatCard>
+              <StatCard color="#667eea">
+                <StatNumber>₹{totalExpenses.toFixed(2)}</StatNumber>
+                <StatLabel>TOTAL EXPENSES</StatLabel>
+              </StatCard>
+            </StatsGrid>
 
             <TabsContainer>
-                <Tab
-                    active={activeTab === 'budgets'}
-                    onClick={() => setActiveTab('budgets')}
-                >
-                    Budget Allocation
-                </Tab>
-                <Tab
-                    active={activeTab === 'expenses'}
-                    onClick={() => setActiveTab('expenses')}
-                >
-                    Expense Review
-                </Tab>
+              <Tab active={activeTab === 'submitExpense'} onClick={() => setActiveTab('submitExpense')}>
+                Submit Expense
+              </Tab>
+              <Tab active={activeTab === 'myExpenses'} onClick={() => setActiveTab('myExpenses')}>
+                My Expenses
+              </Tab>
+              <Tab active={activeTab === 'reimbursement'} onClick={() => setActiveTab('reimbursement')}>
+                Reimbursement Management
+              </Tab>
             </TabsContainer>
 
-            {activeTab === 'budgets' && (
-                <ContentContainer>
-                    <SectionTitle>Allocate Monthly Budgets</SectionTitle>
-                    <FormGrid>
-                        <FormGroup>
-                            <Label htmlFor="userSelect">Select User</Label>
-                            <Select
-                                id="userSelect"
-                                value={selectedUser}
-                                onChange={(e) => setSelectedUser(e.target.value)}
-                            >
-                                <option value="">Choose a user</option>
-                                {users.map(user => (
-                                    <option key={user.id} value={user.id}>
-                                        {user.name} ({user.department})
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormGroup>
+            {activeTab === 'submitExpense' && (
+              <ContentContainer>
+                <SectionTitle>Submit New Expense</SectionTitle>
+                <form onSubmit={handleSubmitExpense}>
+                  <FormGrid>
+                    <FormGroup>
+                      <Label htmlFor="category">Expense Category *</Label>
+                      <Select
+                        id="category"
+                        name="category"
+                        value={expenseForm.category}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select Category</option>
+                        <option value="Food & Dining">Sales</option>
+                        <option value="Travel">Data</option>
+                        <option value="Entertainment">Office Expenses</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Office Supplies">Office Supplies</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Other">Other</option>
+                      </Select>
+                    </FormGroup>
 
-                        <FormGroup>
-                            <Label htmlFor="monthlyLimit">Monthly Budget ($)</Label>
-                            <Input
-                                type="number"
-                                id="monthlyLimit"
-                                value={monthlyLimit}
-                                onChange={(e) => setMonthlyLimit(e.target.value)}
-                                min="1"
-                                step="0.01"
-                                placeholder="Enter budget amount"
-                            />
-                        </FormGroup>
-                    </FormGrid>
+                    <FormGroup>
+                      <Label htmlFor="amount">Amount (₹) *</Label>
+                      <Input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        value={expenseForm.amount}
+                        onChange={handleInputChange}
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        required
+                      />
+                    </FormGroup>
 
-                    <Button onClick={handleSetBudget} disabled={!selectedUser || !monthlyLimit}>
-                        Set Budget
-                    </Button>
+                    <FormGroup>
+                      <Label htmlFor="date">Expense Date *</Label>
+                      <Input
+                        type="date"
+                        id="date"
+                        name="date"
+                        value={expenseForm.date}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </FormGroup>
+                  </FormGrid>
 
-                    <SectionTitle>Current Budgets Overview</SectionTitle>
-                    <BudgetsGrid>
-                        {users.map(user => {
-                            const usagePercentage = getUsagePercentage(user);
-                            return (
-                                <BudgetCard key={user.id} percentage={usagePercentage}>
-                                    <UserInfo>
-                                        <Avatar>{getInitials(user.name)}</Avatar>
-                                        <UserDetails>
-                                            <UserName>{user.name}</UserName>
-                                            <UserEmail>{user.email}</UserEmail>
-                                            <div style={{ fontSize: '0.8rem', color: '#718096' }}>{user.department}</div>
-                                        </UserDetails>
-                                    </UserInfo>
+                  <FormGroup>
+                    <Label htmlFor="description">Description *</Label>
+                    <TextArea
+                      id="description"
+                      name="description"
+                      value={expenseForm.description}
+                      onChange={handleInputChange}
+                      placeholder="Provide a detailed description of the expense..."
+                      required
+                    />
+                  </FormGroup>
 
-                                    <ProgressBar>
-                                        <ProgressFill percentage={usagePercentage} />
-                                    </ProgressBar>
+                  <FormGroup>
+                    <Label>Proof of Payment *</Label>
+                    <FileUpload>
+                      <FileUploadLabel htmlFor="proofFile">
+                        📎 {expenseForm.proofFile ? 'Change File' : 'Choose File'}
+                      </FileUploadLabel>
+                      <input
+                        type="file"
+                        id="proofFile"
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                        required
+                      />
+                      {expenseForm.proofFile && (
+                        <FileName>📄 {expenseForm.proofFile.name}</FileName>
+                      )}
+                      {!expenseForm.proofFile && (
+                        <div style={{ color: '#295cc2ff', marginTop: '12px' }}>
+                          Upload receipt or proof of payment (Image or PDF)
+                        </div>
+                      )}
+                    </FileUpload>
+                  </FormGroup>
 
-                                    <BudgetInfo>
-                                        <div>
-                                            <BudgetAmount>${user.currentSpent} / ${user.monthlyLimit}</BudgetAmount>
-                                            <BudgetRemaining>${getRemainingBudget(user)} remaining</BudgetRemaining>
-                                        </div>
-                                        <div style={{ fontWeight: '600', color: usagePercentage >= 90 ? '#f56565' : usagePercentage >= 75 ? '#ed8936' : '#48bb78' }}>
-                                            {usagePercentage.toFixed(1)}%
-                                        </div>
-                                    </BudgetInfo>
-                                </BudgetCard>
-                            );
-                        })}
-                    </BudgetsGrid>
-                </ContentContainer>
+                  <Button type="submit" disabled={!isFormValid}>
+                    📤 Submit Expense
+                  </Button>
+                </form>
+              </ContentContainer>
             )}
 
-            {activeTab === 'expenses' && (
-                <ContentContainer>
-                    <SectionTitle>Expense Claims Review</SectionTitle>
+            {activeTab === 'myExpenses' && (
+              <ContentContainer>
+                <SectionTitle>My Expense History</SectionTitle>
+                <FilterContainer>
+                  {['all', 'submitted', 'approved', 'rejected'].map(status => (
+                    <FilterButton
+                      key={status}
+                      active={filterStatus === status}
+                      onClick={() => setFilterStatus(status)}
+                    >
+                      {status === 'all' ? 'All Expenses' : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </FilterButton>
+                  ))}
+                </FilterContainer>
+                <TableContainer>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <TableHeader>Date</TableHeader>
+                        <TableHeader>Category</TableHeader>
+                        <TableHeader>Description</TableHeader>
+                        <TableHeader>Amount</TableHeader>
+                        <TableHeader>Status</TableHeader>
+                        <TableHeader>Actions</TableHeader>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredExpenses.map(expense => (
+                        <TableRow key={expense.id}>
+                          <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{expense.category}</TableCell>
+                          <TableCell>{expense.description}</TableCell>
+                          <TableCell>₹{expense.amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={expense.status}>
+                              {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+                              {expense.reimbursed && ' • Reimbursed'}
+                            </StatusBadge>
+                          </TableCell>
+                          <TableCell>
+                            <ActionButton onClick={() => viewProof(expense)}>
+                              👁️ View
+                            </ActionButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </tbody>
+                  </Table>
+                </TableContainer>
+              </ContentContainer>
+            )}
 
-                    <FilterContainer>
-                        <FilterButton
-                            active={filterStatus === 'all'}
-                            onClick={() => setFilterStatus('all')}
-                        >
-                            All Expenses ({expenses.length})
-                        </FilterButton>
-                        <FilterButton
-                            active={filterStatus === 'pending'}
-                            onClick={() => setFilterStatus('pending')}
-                        >
-                            Pending ({expenses.filter(e => e.status === 'pending').length})
-                        </FilterButton>
-                        <FilterButton
-                            active={filterStatus === 'approved'}
-                            onClick={() => setFilterStatus('approved')}
-                        >
-                            Approved ({expenses.filter(e => e.status === 'approved').length})
-                        </FilterButton>
-                        <FilterButton
-                            active={filterStatus === 'rejected'}
-                            onClick={() => setFilterStatus('rejected')}
-                        >
-                            Rejected ({expenses.filter(e => e.status === 'rejected').length})
-                        </FilterButton>
-                    </FilterContainer>
-
-                    <ExpensesGrid>
-                        {filteredExpenses.map(expense => (
-                            <ExpenseCard key={expense.id} status={expense.status}>
-                                <ExpenseHeader>
-                                    <ExpenseUser>{expense.userName}</ExpenseUser>
-                                    <ExpenseAmount>${expense.amount}</ExpenseAmount>
-                                </ExpenseHeader>
-
-                                <ExpenseCategory>{expense.category}</ExpenseCategory>
-
-                                <ExpenseDescription>{expense.description}</ExpenseDescription>
-
-                                <ExpenseDate>
-                                    Submitted: {new Date(expense.date).toLocaleDateString()}
-                                </ExpenseDate>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <ExpenseStatus status={expense.status}>
-                                        {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-                                    </ExpenseStatus>
-
-                                    <ProofButton onClick={() => viewProof(expense)}>
-                                        View Proof
-                                    </ProofButton>
-                                </div>
-                            </ExpenseCard>
-                        ))}
-                    </ExpensesGrid>
-                </ContentContainer>
+            {activeTab === 'reimbursement' && (
+              <ContentContainer>
+                <SectionTitle>Reimbursement Management</SectionTitle>
+                <p>Reimbursement features coming soon...</p>
+              </ContentContainer>
             )}
 
             {showProofModal && selectedExpense && (
-                <ModalOverlay onClick={closeProofModal}>
-                    <ModalContent onClick={(e) => e.stopPropagation()}>
-                        <ModalHeader>
-                            <ModalTitle>Expense Proof</ModalTitle>
-                            <CloseButton onClick={closeProofModal}>×</CloseButton>
-                        </ModalHeader>
-
-                        <div>
-                            <strong>User:</strong> {selectedExpense.userName}<br />
-                            <strong>Amount:</strong> ${selectedExpense.amount}<br />
-                            <strong>Category:</strong> {selectedExpense.category}<br />
-                            <strong>Description:</strong> {selectedExpense.description}<br />
-                            <strong>Date:</strong> {new Date(selectedExpense.date).toLocaleDateString()}<br />
-                            <strong>Status:</strong> {selectedExpense.status}
-                        </div>
-
-                        <ProofImage
-                            src={selectedExpense.proofImage}
-                            alt="Expense proof"
-                        />
-
-                        <div>
-                            <strong>Proof uploaded:</strong> {new Date(selectedExpense.proofUploadDate).toLocaleDateString()}
-                        </div>
-
-                        {selectedExpense.status === 'pending' && (
-                            <ActionButtons>
-                                <ApproveButton onClick={() => updateExpenseStatus(selectedExpense.id, 'approved')}>
-                                    Approve Expense
-                                </ApproveButton>
-                                <RejectButton onClick={() => updateExpenseStatus(selectedExpense.id, 'rejected')}>
-                                    Reject Expense
-                                </RejectButton>
-                            </ActionButtons>
-                        )}
-                    </ModalContent>
-                </ModalOverlay>
+              <ModalOverlay onClick={closeProofModal}>
+                <ModalContent onClick={(e) => e.stopPropagation()}>
+                  <ModalHeader>
+                    <ModalTitle>Expense Details</ModalTitle>
+                    <CloseButton onClick={closeProofModal}>×</CloseButton>
+                  </ModalHeader>
+                  <div>
+                    <strong>User:</strong> {selectedExpense.userName}<br />
+                    <strong>Amount:</strong> ₹{selectedExpense.amount.toFixed(2)}<br />
+                    <strong>Category:</strong> {selectedExpense.category}<br />
+                    <strong>Description:</strong> {selectedExpense.description}<br />
+                    <strong>Expense Date:</strong> {new Date(selectedExpense.date).toLocaleDateString()}<br />
+                    <strong>Status:</strong> <StatusBadge status={selectedExpense.status}>
+                      {selectedExpense.status.charAt(0).toUpperCase() + selectedExpense.status.slice(1)}
+                      {selectedExpense.reimbursed && ' • Reimbursed'}
+                    </StatusBadge>
+                  </div>
+                  {selectedExpense.proofImage && (
+                    <ProofImage src={selectedExpense.proofImage} alt="Expense proof" />
+                  )}
+                  <div style={{ marginTop: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {selectedExpense.status === 'submitted' && (
+                      <>
+                        <ActionButton variant="success" onClick={() => updateExpenseStatus(selectedExpense.id, 'approved')}>
+                          ✓ Approve
+                        </ActionButton>
+                        <ActionButton variant="danger" onClick={() => updateExpenseStatus(selectedExpense.id, 'rejected')}>
+                          ✗ Reject
+                        </ActionButton>
+                      </>
+                    )}
+                    {selectedExpense.status === 'approved' && !selectedExpense.reimbursed && (
+                      <ActionButton variant="success" onClick={() => markAsReimbursed(selectedExpense.id)}>
+                        💳 Mark as Reimbursed
+                      </ActionButton>
+                    )}
+                  </div>
+                </ModalContent>
+              </ModalOverlay>
             )}
-        </DashboardContainer>
-    );
+          </ContentArea>
+        </MainContent>
+      </MainContentWrapper>
+    </DashboardContainer>
+  );
 };
 
 export default Expenses;
