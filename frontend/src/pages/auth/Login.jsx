@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Box,
     Button,
@@ -24,10 +24,11 @@ import {
     Visibility,
     VisibilityOff,
     LockOutlined,
-    TrendingUp
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useDispatch } from "react-redux";
+import { setAuthState } from "../../store/authSlice";
+
 
 // Animation variants
 const containerVariants = {
@@ -51,7 +52,8 @@ const itemVariants = {
 };
 
 const Login = () => {
-    const { setAuthState, setCsrf } = useAuth();
+    const dispatch = useDispatch()
+
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -96,7 +98,7 @@ const Login = () => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/v1/auth/login`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/login`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
@@ -110,18 +112,16 @@ const Login = () => {
 
             if (response.ok) {
                 console.log("Login response:", data);
-
-                setAuthState({
+                dispatch(setAuthState({
                     isAuthenticated: data.session.authenticated,
                     isTwoFactorPending: data.session.twoFactorPending,
                     isTwoFactorVerified: data.session.twoFactorVerified,
                     role: data.session.role,
-                    userId: data.session.userId,
                     qr: data.qr,
-                });
+                }))
 
 
-                const csrfRes = await fetch("http://localhost:5000/api/v1/auth/csrf-token", {
+                const csrfRes = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/csrf-token`, {
                     credentials: "include",
                 });
 
@@ -129,15 +129,16 @@ const Login = () => {
 
                 if (csrfRes.ok) {
                     localStorage.setItem("csrf", csrfData.csrfToken);
-                    setCsrf(csrfData.csrfToken);
+                    // setCsrf(csrfData.csrfToken);
+                    dispatch(setAuthState({ csrf: csrfData?.csrfToken }))
                 }
 
                 if (data?.session?.twoFactorPending) {
                     navigate("/qr");
                 } else if (data.session.role === "superadmin") {
-                    navigate("/admin-dashboard");
+                    navigate("/admin");
                 } else {
-                    navigate("/");
+                    navigate("/user");
                 }
 
                 //navigate("/qr"); // enable if you want auto redirect
