@@ -26,18 +26,21 @@ import {
 } from "@mui/icons-material";
 
 import { useColorScheme } from "@mui/material/styles"
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../store/authSlice";
 
 const Navbar = ({
     onMenuClick,
-    onLogout,
     onProfileClick,
     onSettingsClick
 }) => {
+    const { csrf } = useSelector((state) => state?.auth)
+    const dispatch = useDispatch()
     const [anchorEl, setAnchorEl] = useState(null);
     const [notificationAnchor, setNotificationAnchor] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -73,13 +76,8 @@ const Navbar = ({
         }
     };
 
-    const handleLogoutClick = () => {
-        handleMenuClose();
-        if (onLogout) {
-            onLogout();
-        } else {
-            console.log("Logout clicked");
-        }
+    const handleLogoutClick = async () => {
+        await dispatch(logout(csrf))
     };
 
     const { mode, setMode } = useColorScheme();

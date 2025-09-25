@@ -3,21 +3,17 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { BrowserRouter } from "react-router-dom"
-import { AuthProvider } from './contexts/AuthContext.jsx'
-import { ThemeProvider } from '@mui/material'
-import { CssVarsProvider } from "@mui/material/styles";
+import { Provider } from "react-redux"
+import { store } from './store/store.jsx'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <CssVarsProvider defaultMode="light">
-      <AuthProvider>
-
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-
-      </AuthProvider>
-    </CssVarsProvider>
+    <Provider store={store}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </Provider>
   </StrictMode>,
 )
 

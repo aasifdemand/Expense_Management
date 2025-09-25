@@ -1,64 +1,64 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Qr from "./pages/qr";
-import AdminDashboard from "./pages/AdminDashboard";
-import Expenses from "./pages/Expenses";
-import User from "./pages/User";
-import Report from "./pages/Report";
-import { useAuth } from "./contexts/AuthContext";
+import Login from "./pages/auth/Login";
+import Dashboard from "./pages/user/UserDashboard";
+import Qr from "./pages/auth/qr";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import Expenses from "./pages/admin/Expenses";
+import User from "./pages/admin/User";
+import Report from "./pages/admin/Report";
 import AdminLayout from "./layouts/AdminLayout";
-import Settings from "./pages/Settings";
-
-
-// import { createTheme, ThemeProvider, useColorScheme } from "@mui/material/styles"
-// // import CssBaseline from "@mui/material/CssBaseline"
-// import { getDesignTokens } from "./utils/mui-theme";
-
-
-
+import Settings from "./pages/admin/Settings";
+import { useSelector } from "react-redux";
+import UserLayout from "./layouts/UserLayout";
+import UserDashboard from "./pages/user/UserDashboard"
+import MyExpenses from "./pages/user/MyExpenses";
+import UserSettings from "./pages/user/UserSettings";
 
 
 const App = () => {
 
-  const { authState } = useAuth()
+  const { isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role } = useSelector((state) => state?.auth)
+
+
+  // console.log("auth logs from redux: ", isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role);
 
 
 
-  // 🔑 Auth logic
   const canAccessAdminRoutes =
-    authState?.isAuthenticated &&
-    authState?.isTwoFactorVerified &&
-    !authState?.isTwoFactorPending &&
-    authState?.role === "superadmin";
+    isAuthenticated &&
+    isTwoFactorVerified &&
+    !isTwoFactorPending &&
+    role === "superadmin";
 
-  // const isRedirectToUserDashboard =
-  //   authState?.isAuthenticated &&
-  //   authState?.isTwoFactorVerified &&
-  //   !authState?.isTwoFactorPending &&
-  //   authState?.role === "user";
-
-  const isTwoFactorPending = authState?.isTwoFactorPending;
-
-  // const { mode } = useColorScheme()
-
-
-
-  // const modeTheme = createTheme(getDesignTokens(mode));
+  const isRedirectToUserDashboard =
+    isAuthenticated &&
+    isTwoFactorVerified &&
+    !isTwoFactorPending &&
+    role === "user";
 
   return (
 
     <Routes>
       {/* User Dashboard */}
-      <Route
+      {/* <Route
         path="/"
-        element={
-          <ProtectedRoute allowedRole="user">
-            <Dashboard />
-          </ProtectedRoute>
+        element={isRedirectToUserDashboard ?
+          <Dashboard /> : <Navigate to={"/login"} />
         }
-      />
+      /> */}
+
+      <Route path="user" element={<UserLayout />}>
+        <Route path="dashboard" element={
+          isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
+        } />
+        <Route path="expenses" element={
+          isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
+        } />
+        <Route path="settings" element={
+          isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
+        } />
+      </Route>
 
 
       <Route path="admin" element={<AdminLayout />}>
@@ -101,9 +101,9 @@ const App = () => {
         element={
           isTwoFactorPending ? (
             <Qr />
-          ) : authState.isAuthenticated ? (
-            authState.role === "superadmin" ? (
-              <Navigate to="/admin-dashboard" />
+          ) : isAuthenticated ? (
+            role === "superadmin" ? (
+              <Navigate to="/admin/dashboard" />
             ) : (
               <Navigate to="/" />
             )
@@ -117,9 +117,9 @@ const App = () => {
       <Route
         path="/login"
         element={
-          authState?.isAuthenticated && !authState?.isTwoFactorPending ? (
-            authState.role === "superadmin" ? (
-              <Navigate to="/admin-dashboard" />
+          isAuthenticated && !isTwoFactorPending ? (
+            role === "superadmin" ? (
+              <Navigate to="/admin/dashboard" />
             ) : (
               <Navigate to="/" />
             )
@@ -133,7 +133,7 @@ const App = () => {
       <Route
         path="*"
         element={
-          authState.role === "superadmin" ? (
+          role === "superadmin" ? (
             <Navigate to="/admin-dashboard" />
           ) : (
             <Navigate to="/" />

@@ -12,20 +12,16 @@ import {
 import { motion } from "framer-motion";
 import { MuiOtpInput } from "mui-one-time-password-input";
 import { VerifiedUser } from "@mui/icons-material";
-import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { setAuthState } from "../../store/authSlice";
 
 const QRVerification = () => {
-    const { authState, setAuthState } = useAuth();
-    const navigate = useNavigate()
+    const dispatch = useDispatch()
+    const { qr } = useSelector((state) => state?.auth)
 
-    // const user = JSON?.parse(localStorage?.getItem("user"));
     const [otp, setOtp] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-
-    // console.log(user);
-
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -46,13 +42,12 @@ const QRVerification = () => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/v1/auth/2fa/verify`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/2fa/verify`, {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     token: otp,
-                    userId: authState?.userId,
                 }),
             });
 
@@ -60,16 +55,12 @@ const QRVerification = () => {
 
             if (response.ok) {
                 console.log("Verify response:", data);
-
-                setAuthState((prev) => ({
-                    ...prev,
+                dispatch(setAuthState(({
                     isTwoFactorPending: false,
                     isTwoFactorVerified: true,
                     isAuthenticated: true,
-                }));
+                })))
 
-                if (authState?.role === "user") navigate("/");
-                else navigate("/admin-dashboard");
             } else {
                 setError(data.message || "Verification failed. Please try again.");
             }
@@ -151,7 +142,7 @@ const QRVerification = () => {
                 )}
 
                 {
-                    authState?.qr &&
+                    qr &&
                     <Paper
                         elevation={2}
                         sx={{
@@ -168,7 +159,7 @@ const QRVerification = () => {
                         }}
                     >
                         <img
-                            src={authState?.qr}
+                            src={qr}
                             alt="QR Code"
                             style={{
                                 height: "auto",

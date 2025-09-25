@@ -25,68 +25,20 @@ import {
 
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../store/authSlice";
+import Logo from "./general/Logo";
 
-// Logo Component
-const Logo = ({ size = 44, logoUrl }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    return (
-        <Box
-            sx={{
-                width: isMobile ? 36 : size,
-                height: isMobile ? 36 : size,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '12px',
-                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
-                transition: 'all 0.3s ease',
-                overflow: 'hidden',
-                '&:hover': {
-                    transform: 'scale(1.1)',
-                    boxShadow: '0 6px 20px rgba(102, 126, 234, 0.4)'
-                }
-            }}
-        >
-            {logoUrl ? (
-                <img
-                    src={logoUrl}
-                    alt="Expense Tracker Logo"
-                    style={{
-                        width: '70%',
-                        height: '70%',
-                        objectFit: 'contain'
-                    }}
-                />
-            ) : (
-                <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    sx={{
-                        color: 'white',
-                        fontSize: isMobile ? '1rem' : '1.25rem'
-                    }}
-                >
-                    ET
-                </Typography>
-            )}
-        </Box>
-    );
-};
-
-const Sidebar = ({
+const AdminSidebar = ({
     open,
     onClose,
-    handleLogout,
-    loading,
-    setLoading,
     logoUrl = null,
     companyName = "ExpenseTracker",
-    userName = "Admin User",
-    userAvatar = "A",
+
 }) => {
+    const dispatch = useDispatch()
+    const { csrf, loading: logoutLoader } = useSelector((state) => state?.auth)
     const navigate = useNavigate();
     const location = useLocation();
     const theme = useTheme();
@@ -114,15 +66,7 @@ const Sidebar = ({
     };
 
     const handleLogoutClick = async () => {
-        if (!window.confirm("Are you sure you want to logout?")) return;
-        setLoading(true);
-        try {
-            await handleLogout();
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        await dispatch(logout(csrf))
     };
 
     const SidebarContent = () => (
@@ -197,64 +141,7 @@ const Sidebar = ({
                 </Box>
             </Box>
 
-            {/* User Profile Section */}
-            <Box sx={{
-                p: isSmallMobile ? 1.5 : 2.5,
-                mx: isSmallMobile ? 1 : 2,
-                borderRadius: 3,
-                background: theme.palette.mode === 'dark'
-                    ? 'linear-gradient(135deg, rgba(51, 65, 85, 0.6) 0%, rgba(30, 41, 59, 0.8) 100%)'
-                    : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.9) 100%)',
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '1px',
-                    background: 'linear-gradient(90deg, transparent, #667eea, transparent)'
-                }
-            }}>
-                <Box sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: isSmallMobile ? 1 : 2
-                }}>
-                    <Avatar sx={{
-                        width: isSmallMobile ? 40 : 50,
-                        height: isSmallMobile ? 40 : 50,
-                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        fontWeight: "bold",
-                        fontSize: isSmallMobile ? '1.1rem' : '1.3rem',
-                        boxShadow: '0 4px 15px rgba(245, 87, 108, 0.3)'
-                    }}>
-                        {userAvatar}
-                    </Avatar>
-                    <Box sx={{
-                        flex: 1,
-                        minWidth: 0,
-                        display: isMobile ? 'none' : 'block'
-                    }}>
-                        <Typography variant="body1" fontWeight="600" noWrap
-                            sx={{ fontSize: isSmallMobile ? '0.9rem' : '1rem' }}>
-                            {userName}
-                        </Typography>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                fontSize: isSmallMobile ? '0.65rem' : '0.75rem'
-                            }}
-                        >
-                            Administrator
-                        </Typography>
-                    </Box>
-                </Box>
-            </Box>
+
 
             <Divider sx={{
                 my: isSmallMobile ? 2 : 3,
@@ -383,7 +270,7 @@ const Sidebar = ({
                 <ListItem
                     button
                     onClick={handleLogoutClick}
-                    disabled={loading}
+                    disabled={logoutLoader}
                     onMouseEnter={() => setHoveredItem('logout')}
                     onMouseLeave={() => setHoveredItem(null)}
                     sx={{
@@ -417,7 +304,7 @@ const Sidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        {loading ? (
+                        {logoutLoader ? (
                             <Autorenew
                                 sx={{
                                     animation: 'spin 1s linear infinite',
@@ -428,7 +315,7 @@ const Sidebar = ({
                         )}
                     </ListItemIcon>
                     <ListItemText
-                        primary={loading ? "Logging out..." : "Logout"}
+                        primary={logoutLoader ? "Logging out..." : "Logout"}
                         primaryTypographyProps={{
                             fontWeight: 600,
                             fontSize: isSmallMobile ? '0.85rem' : '0.95rem'
@@ -511,4 +398,4 @@ const Sidebar = ({
     );
 };
 
-export default Sidebar;
+export default AdminSidebar;
