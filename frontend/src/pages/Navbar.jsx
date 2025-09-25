@@ -9,34 +9,35 @@ import {
     MenuItem,
     Box,
     Avatar,
+    Switch,
+    FormControlLabel,
     useMediaQuery,
     useTheme,
-    Switch,
-    FormControlLabel
 } from "@mui/material";
 import {
     Notifications as NotificationsIcon,
     MoreVert as MoreVertIcon,
     Menu as MenuIcon,
-    Logout as LogoutIcon,
     Settings as SettingsIcon,
     AccountCircle as AccountIcon,
     Brightness4 as DarkModeIcon,
-    Brightness7 as LightModeIcon
+    Brightness7 as LightModeIcon,
+    Logout as LogoutIcon
 } from "@mui/icons-material";
 
+import { useColorScheme } from "@mui/material/styles"
 
 const Navbar = ({
     onMenuClick,
-    sidebarOpen,
-    darkMode,
-    onDarkModeToggle,
-    handleLogout
+    onLogout,
+    onProfileClick,
+    onSettingsClick
 }) => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [anchorEl, setAnchorEl] = useState(null);
     const [notificationAnchor, setNotificationAnchor] = useState(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -56,14 +57,35 @@ const Navbar = ({
 
     const handleProfileClick = () => {
         handleMenuClose();
-        // Add profile navigation logic here
-        console.log("Profile clicked");
+        if (onProfileClick) {
+            onProfileClick();
+        } else {
+            console.log("Profile clicked");
+        }
     };
 
     const handleSettingsClick = () => {
         handleMenuClose();
-        // Add settings navigation logic here
-        console.log("Settings clicked");
+        if (onSettingsClick) {
+            onSettingsClick();
+        } else {
+            console.log("Settings clicked");
+        }
+    };
+
+    const handleLogoutClick = () => {
+        handleMenuClose();
+        if (onLogout) {
+            onLogout();
+        } else {
+            console.log("Logout clicked");
+        }
+    };
+
+    const { mode, setMode } = useColorScheme();
+
+    const handleDarkModeToggle = () => {
+        setMode(pre => pre === "dark" ? "light" : "dark")
     };
 
     const menuId = 'primary-search-account-menu';
@@ -78,75 +100,92 @@ const Navbar = ({
                 color: 'text.primary',
                 borderBottom: '1px solid',
                 borderColor: 'divider',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                zIndex: (theme) => theme.zIndex.drawer + 1
             }}
         >
-            <Toolbar>
+            <Toolbar sx={{
+                minHeight: { xs: 56, sm: 64 },
+                px: { xs: 1, sm: 2 }
+            }}>
                 {/* Hamburger Menu for mobile */}
                 <IconButton
                     color="inherit"
                     aria-label="open drawer"
                     edge="start"
                     onClick={onMenuClick}
-                    sx={{ mr: 2, display: { md: 'none' } }}
-                >
-                    <MenuIcon />
-                </IconButton>
-
-                {/* Logo for mobile */}
-                <Typography
-                    variant="h6"
-                    noWrap
-                    component="div"
                     sx={{
-                        display: { xs: 'block', md: 'none' },
-                        fontWeight: 'bold',
-                        background: "linear-gradient(135deg, #4361ee 0%, #3a56d4 100%)",
-                        backgroundClip: "text",
-                        textFillColor: "transparent",
-                        WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent"
+                        mr: 2,
+                        display: { md: 'none' },
+                        p: { xs: 0.5, sm: 1 }
                     }}
                 >
-                    Expense Tracker
-                </Typography>
+                    <MenuIcon fontSize={isMobile ? "small" : "medium"} />
+                </IconButton>
+
+                {/* App Title for mobile */}
+                {isMobile && (
+                    <Typography
+                        variant="h6"
+                        component="div"
+                        sx={{
+                            flexGrow: 1,
+                            fontSize: '1.1rem',
+                            fontWeight: 600
+                        }}
+                    >
+                        ExpenseTracker
+                    </Typography>
+                )}
 
                 {/* Right side icons */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: { xs: 0.5, sm: 1 },
+                    ml: 'auto'
+                }}>
                     {/* Dark Mode Toggle */}
                     <IconButton
                         color="inherit"
-                        onClick={onDarkModeToggle}
+                        onClick={handleDarkModeToggle}
                         sx={{
-                            mr: 1,
+                            mr: { xs: 0, sm: 1 },
+                            p: { xs: 0.5, sm: 1 }
                         }}
+                        aria-label="toggle dark mode"
                     >
-                        {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+                        {mode === "dark" ?
+                            <LightModeIcon fontSize={isMobile ? "small" : "medium"} /> :
+                            <DarkModeIcon fontSize={isMobile ? "small" : "medium"} />
+                        }
                     </IconButton>
 
                     {/* Notifications */}
                     <IconButton
-                        size="large"
+                        size={isMobile ? "small" : "medium"}
                         aria-label="show notifications"
                         color="inherit"
                         onClick={handleNotificationClick}
+                        sx={{ p: { xs: 0.5, sm: 1 } }}
                     >
-                        <Badge badgeContent={4} color="error">
-                            <NotificationsIcon />
+                        <Badge badgeContent={4} color="error" size={isMobile ? "small" : "medium"}>
+                            <NotificationsIcon fontSize={isMobile ? "small" : "medium"} />
                         </Badge>
                     </IconButton>
 
                     {/* Three dots menu */}
                     <IconButton
-                        size="large"
+                        size={isMobile ? "small" : "medium"}
                         edge="end"
                         aria-label="show more"
                         aria-controls={menuId}
                         aria-haspopup="true"
                         onClick={handleProfileMenuOpen}
                         color="inherit"
+                        sx={{ p: { xs: 0.5, sm: 1 } }}
                     >
-                        <MoreVertIcon />
+                        <MoreVertIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
                 </Box>
 
@@ -169,14 +208,20 @@ const Navbar = ({
                     PaperProps={{
                         sx: {
                             mt: 4.5,
-                            minWidth: 300,
+                            minWidth: isMobile ? 280 : 300,
+                            maxWidth: isMobile ? '90vw' : 400,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                         }
                     }}
                 >
                     <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            px: 1,
+                            py: 0.5
+                        }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
@@ -185,8 +230,8 @@ const Navbar = ({
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
-                            <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                            <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="medium" noWrap>
                                     New expense submitted
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -196,7 +241,12 @@ const Navbar = ({
                         </Box>
                     </MenuItem>
                     <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            px: 1,
+                            py: 0.5
+                        }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
@@ -205,8 +255,8 @@ const Navbar = ({
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
-                            <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                            <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="medium" noWrap>
                                     Payment approved
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -216,7 +266,12 @@ const Navbar = ({
                         </Box>
                     </MenuItem>
                     <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', px: 1 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            px: 1,
+                            py: 0.5
+                        }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
@@ -225,8 +280,8 @@ const Navbar = ({
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
-                            <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                            <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="body2" fontWeight="medium" noWrap>
                                     Budget limit warning
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -256,40 +311,55 @@ const Navbar = ({
                     PaperProps={{
                         sx: {
                             mt: 4.5,
-                            minWidth: 180,
+                            minWidth: isMobile ? 160 : 180,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                         }
                     }}
                 >
                     <MenuItem onClick={handleProfileClick}>
-                        <AccountIcon sx={{ mr: 2, fontSize: 20 }} />
+                        <AccountIcon sx={{
+                            mr: 2,
+                            fontSize: isMobile ? 18 : 20
+                        }} />
                         <Typography variant="body2">Profile</Typography>
                     </MenuItem>
                     <MenuItem onClick={handleSettingsClick}>
-                        <SettingsIcon sx={{ mr: 2, fontSize: 20 }} />
+                        <SettingsIcon sx={{
+                            mr: 2,
+                            fontSize: isMobile ? 18 : 20
+                        }} />
                         <Typography variant="body2">Settings</Typography>
                     </MenuItem>
-                    <Box sx={{ px: 2, py: 1 }}>
+                    <Box sx={{
+                        px: 2,
+                        py: 1,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderColor: 'divider'
+                    }}>
                         <FormControlLabel
                             control={
                                 <Switch
-                                    checked={darkMode}
-                                    onChange={onDarkModeToggle}
+                                    checked={mode === "dark"}
+                                    onChange={handleDarkModeToggle}
                                     size="small"
                                 />
                             }
                             label={
                                 <Typography variant="body2">
-                                    {darkMode ? 'Light Mode' : 'Dark Mode'}
+                                    {mode === "dark" ? 'Light Mode' : 'Dark Mode'}
                                 </Typography>
                             }
                         />
                     </Box>
-                    {/* <MenuItem onClick={handleLogout}>
-                        <LogoutIcon sx={{ mr: 2, fontSize: 20 }} />
+                    <MenuItem onClick={handleLogoutClick}>
+                        <LogoutIcon sx={{
+                            mr: 2,
+                            fontSize: isMobile ? 18 : 20
+                        }} />
                         <Typography variant="body2">Logout</Typography>
-                    </MenuItem> */}
+                    </MenuItem>
                 </Menu>
             </Toolbar>
         </AppBar>

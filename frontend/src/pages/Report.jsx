@@ -1,0 +1,866 @@
+import React, { useState, useEffect } from 'react';
+
+const Reports = () => {
+    // State for reports data and filters
+    const [reports, setReports] = useState([]);
+    const [filter, setFilter] = useState({
+        type: 'monthly',
+        department: 'all',
+        dateRange: {
+            start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+            end: new Date().toISOString().split('T')[0]
+        },
+        status: 'all'
+    });
+    const [loading, setLoading] = useState(false);
+    const [generatedReport, setGeneratedReport] = useState(null);
+    const [animationClass, setAnimationClass] = useState('');
+
+    // Sample data - in a real app, this would come from an API
+    const sampleReports = [
+        {
+            id: 1,
+            title: 'Monthly Expense Report - January 2023',
+            type: 'monthly',
+            department: 'Engineering',
+            date: '2023-01-31',
+            totalAmount: 12500,
+            status: 'approved',
+            trend: 'up',
+            change: 15
+        },
+        {
+            id: 2,
+            title: 'Department-wise Report - Sales Q1 2023',
+            type: 'department',
+            department: 'Sales',
+            date: '2023-03-31',
+            totalAmount: 8900,
+            status: 'reimbursed',
+            trend: 'down',
+            change: 8
+        },
+        {
+            id: 3,
+            title: 'Reimbursement Summary - February 2023',
+            type: 'reimbursement',
+            department: 'All',
+            date: '2023-02-28',
+            totalAmount: 21000,
+            status: 'pending',
+            trend: 'up',
+            change: 22
+        },
+        {
+            id: 4,
+            title: 'Monthly Expense Report - March 2023',
+            type: 'monthly',
+            department: 'Marketing',
+            date: '2023-03-31',
+            totalAmount: 7500,
+            status: 'approved',
+            trend: 'up',
+            change: 5
+        }
+    ];
+
+    // Departments for filter dropdown
+    const departments = ['All', 'Engineering', 'Sales', 'Marketing', 'HR', 'Finance'];
+
+    // Initialize with sample data
+    useEffect(() => {
+        setReports(sampleReports);
+        // Trigger initial animation
+        setAnimationClass('fade-in');
+        setTimeout(() => setAnimationClass(''), 1000);
+    }, []);
+
+    // Function to generate a report based on filters
+    const generateReport = () => {
+        setLoading(true);
+        setAnimationClass('pulse');
+
+        // Simulate API call delay
+        setTimeout(() => {
+            let filteredReports = [...sampleReports];
+
+            // Filter by type
+            if (filter.type !== 'all') {
+                filteredReports = filteredReports.filter(report => report.type === filter.type);
+            }
+
+            // Filter by department
+            if (filter.department !== 'all') {
+                filteredReports = filteredReports.filter(report =>
+                    filter.department === 'All' ? true : report.department === filter.department
+                );
+            }
+
+            // Filter by status
+            if (filter.status !== 'all') {
+                filteredReports = filteredReports.filter(report => report.status === filter.status);
+            }
+
+            const newReport = {
+                id: Date.now(),
+                title: `${filter.type.charAt(0).toUpperCase() + filter.type.slice(1)} Report - ${new Date().toLocaleDateString()}`,
+                type: filter.type,
+                department: filter.department,
+                date: new Date().toISOString().split('T')[0],
+                totalAmount: filteredReports.reduce((sum, report) => sum + report.totalAmount, 0),
+                items: filteredReports,
+                status: 'generated'
+            };
+
+            setGeneratedReport(newReport);
+            setLoading(false);
+            setAnimationClass('slide-in');
+            setTimeout(() => setAnimationClass(''), 1500);
+        }, 1000);
+    };
+
+    // Function to download report as CSV
+    const downloadCSV = () => {
+        if (!generatedReport) return;
+
+        setAnimationClass('bounce');
+        setTimeout(() => setAnimationClass(''), 800);
+
+        const headers = ['ID', 'Title', 'Type', 'Department', 'Date', 'Total Amount', 'Status'];
+        const csvContent = [
+            headers.join(','),
+            ...generatedReport.items.map(item => [
+                item.id,
+                `"${item.title}"`,
+                item.type,
+                item.department,
+                item.date,
+                item.totalAmount,
+                item.status
+            ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${generatedReport.title.replace(/\s+/g, '_')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // Function to reset filters
+    const resetFilters = () => {
+        setFilter({
+            type: 'monthly',
+            department: 'all',
+            dateRange: {
+                start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+                end: new Date().toISOString().split('T')[0]
+            },
+            status: 'all'
+        });
+        setGeneratedReport(null);
+        setAnimationClass('fade-out');
+        setTimeout(() => setAnimationClass(''), 800);
+    };
+
+    // Function to print report
+    const printReport = () => {
+        setAnimationClass('pulse');
+        setTimeout(() => setAnimationClass(''), 500);
+        window.print();
+    };
+
+    // CSS Styles with enhanced design
+    const styles = {
+        container: {
+            padding: '20px',
+            backgroundColor: '#f8fafc',
+            minHeight: '100vh',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        },
+        header: {
+            marginBottom: '30px',
+            textAlign: 'center'
+        },
+        headerTitle: {
+            color: '#1e293b',
+            marginBottom: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '15px',
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+        },
+        headerDescription: {
+            color: '#64748b',
+            fontSize: '1.1rem',
+            maxWidth: '600px',
+            margin: '0 auto',
+            lineHeight: '1.6'
+        },
+        content: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '30px',
+            maxWidth: '1200px',
+            margin: '0 auto'
+        },
+        card: {
+            background: 'white',
+            borderRadius: '16px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+            padding: '30px',
+            border: '1px solid #f1f5f9',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+        },
+        cardHover: {
+            transform: 'translateY(-5px)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)'
+        },
+        cardTitle: {
+            marginBottom: '25px',
+            color: '#1e293b',
+            borderBottom: '2px solid #f1f5f9',
+            paddingBottom: '15px',
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+        },
+        filterOptions: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '25px',
+            marginBottom: '30px'
+        },
+        filterGroup: {
+            display: 'flex',
+            flexDirection: 'column'
+        },
+        filterLabel: {
+            fontWeight: '600',
+            marginBottom: '10px',
+            color: '#374151',
+            fontSize: '0.95rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+        },
+        filterSelect: {
+            padding: '12px 15px',
+            border: '2px solid #e2e8f0',
+            borderRadius: '10px',
+            fontSize: '15px',
+            transition: 'all 0.3s ease',
+            backgroundColor: '#f8fafc'
+        },
+        filterSelectFocus: {
+            borderColor: '#3b82f6',
+            boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
+            backgroundColor: 'white'
+        },
+        dateRange: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+        },
+        dateRangeSpan: {
+            color: '#64748b',
+            fontWeight: '500'
+        },
+        actionButtons: {
+            display: 'flex',
+            gap: '15px',
+            flexWrap: 'wrap'
+        },
+        button: {
+            padding: '12px 24px',
+            border: 'none',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            fontSize: '15px',
+            position: 'relative',
+            overflow: 'hidden'
+        },
+        buttonPrimary: {
+            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            color: 'white',
+            boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
+        },
+        buttonPrimaryHover: {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)'
+        },
+        buttonSecondary: {
+            backgroundColor: '#f1f5f9',
+            color: '#475569',
+            border: '2px solid #e2e8f0'
+        },
+        buttonSecondaryHover: {
+            backgroundColor: '#e2e8f0',
+            transform: 'translateY(-2px)'
+        },
+        buttonDownload: {
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+        },
+        buttonDownloadHover: {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)'
+        },
+        buttonPrint: {
+            background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+            color: 'white',
+            boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
+        },
+        buttonPrintHover: {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 6px 20px rgba(107, 114, 128, 0.4)'
+        },
+        reportHeader: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '25px',
+            borderBottom: '2px solid #f1f5f9',
+            paddingBottom: '20px',
+            flexWrap: 'wrap',
+            gap: '15px'
+        },
+        reportActions: {
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap'
+        },
+        reportSummary: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '20px',
+            marginBottom: '30px',
+            padding: '20px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
+        },
+        summaryItem: {
+            display: 'flex',
+            flexDirection: 'column',
+            textAlign: 'center',
+            padding: '15px',
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)'
+        },
+        summaryLabel: {
+            fontWeight: '600',
+            color: '#64748b',
+            fontSize: '0.9rem',
+            marginBottom: '8px'
+        },
+        summaryValue: {
+            fontSize: '1.3rem',
+            color: '#1e293b',
+            fontWeight: '700'
+        },
+        reportTable: {
+            overflowX: 'auto',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0'
+        },
+        table: {
+            width: '100%',
+            borderCollapse: 'collapse'
+        },
+        tableHeader: {
+            padding: '16px 20px',
+            textAlign: 'left',
+            borderBottom: '2px solid #e2e8f0',
+            backgroundColor: '#f8fafc',
+            fontWeight: '600',
+            color: '#374151',
+            fontSize: '0.95rem'
+        },
+        tableCell: {
+            padding: '14px 20px',
+            textAlign: 'left',
+            borderBottom: '1px solid #f1f5f9',
+            transition: 'background-color 0.2s ease'
+        },
+        tableRow: {
+            '&:hover': {
+                backgroundColor: '#f8fafc'
+            }
+        },
+        statusBadge: {
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            textTransform: 'capitalize',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px'
+        },
+        statusPending: {
+            backgroundColor: '#fef3c7',
+            color: '#92400e'
+        },
+        statusApproved: {
+            backgroundColor: '#d1fae5',
+            color: '#065f46'
+        },
+        statusReimbursed: {
+            backgroundColor: '#dbeafe',
+            color: '#1e40af'
+        },
+        statusGenerated: {
+            backgroundColor: '#e0e7ff',
+            color: '#3730a3'
+        },
+        reportsList: {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px'
+        },
+        reportItem: {
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '20px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            transition: 'all 0.3s ease',
+            backgroundColor: 'white',
+            cursor: 'pointer'
+        },
+        reportItemHover: {
+            transform: 'translateY(-5px)',
+            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+            borderColor: '#3b82f6'
+        },
+        reportInfo: {
+            flex: 1
+        },
+        reportInfoTitle: {
+            marginBottom: '12px',
+            color: '#1e293b',
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            lineHeight: '1.4'
+        },
+        reportMeta: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginBottom: '15px'
+        },
+        reportMetaItem: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '0.9rem',
+            color: '#64748b'
+        },
+        reportFooter: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: 'auto'
+        },
+        amount: {
+            fontSize: '1.2rem',
+            fontWeight: '700',
+            color: '#1e293b'
+        },
+        loadingSpinner: {
+            display: 'inline-block',
+            width: '20px',
+            height: '20px',
+            border: '3px solid rgba(255,255,255,.3)',
+            borderRadius: '50%',
+            borderTopColor: '#fff',
+            animation: 'spin 1s ease-in-out infinite'
+        },
+        trendIndicator: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            padding: '2px 8px',
+            borderRadius: '10px',
+            marginLeft: '8px'
+        },
+        trendUp: {
+            backgroundColor: '#d1fae5',
+            color: '#065f46'
+        },
+        trendDown: {
+            backgroundColor: '#fee2e2',
+            color: '#991b1b'
+        }
+    };
+
+    // Helper function to combine styles
+    const combineStyles = (baseStyle, additionalStyle) => {
+        return additionalStyle ? { ...baseStyle, ...additionalStyle } : baseStyle;
+    };
+
+    // Animation keyframes
+    const animationStyles = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-10px,0); }
+            70% { transform: translate3d(0,-5px,0); }
+            90% { transform: translate3d(0,-2px,0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        .slide-in { animation: slideIn 0.5s ease-out; }
+        .pulse { animation: pulse 0.5s ease-in-out; }
+        .bounce { animation: bounce 0.8s ease-in-out; }
+        .fade-out { animation: fadeOut 0.5s ease-out; }
+        
+        /* Hover effects */
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .hover-glow:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+    `;
+
+    // Add animation styles to document
+    useEffect(() => {
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = animationStyles;
+        document.head.appendChild(styleSheet);
+
+        return () => {
+            document.head.removeChild(styleSheet);
+        };
+    }, []);
+
+    return (
+        <div style={styles.container} className={animationClass}>
+            <div style={styles.header}>
+                <h1 style={styles.headerTitle}>
+                    <i className="fas fa-chart-bar"></i> Reports & Analytics
+                </h1>
+                <p style={styles.headerDescription}>
+                    Generate and analyze expense reports with advanced filtering options.
+                    Track spending trends and reimbursement status across departments.
+                </p>
+            </div>
+
+            <div style={styles.content}>
+                {/* Report Generator Section */}
+                <div style={styles.card} className="hover-lift">
+                    <h2 style={styles.cardTitle}>
+                        <i className="fas fa-cogs"></i> Report Generator
+                    </h2>
+                    <div style={styles.filterOptions}>
+                        <div style={styles.filterGroup}>
+                            <label style={styles.filterLabel}>
+                                <i className="fas fa-chart-pie"></i> Report Type
+                            </label>
+                            <select
+                                style={combineStyles(styles.filterSelect, styles.filterSelectFocus)}
+                                value={filter.type}
+                                onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+                                className="hover-glow"
+                            >
+                                <option value="monthly">Monthly Expense Report</option>
+                                <option value="department">Department-wise Report</option>
+                                <option value="reimbursement">Reimbursement Summary</option>
+                            </select>
+                        </div>
+
+                        <div style={styles.filterGroup}>
+                            <label style={styles.filterLabel}>
+                                <i className="fas fa-building"></i> Department
+                            </label>
+                            <select
+                                style={combineStyles(styles.filterSelect, styles.filterSelectFocus)}
+                                value={filter.department}
+                                onChange={(e) => setFilter({ ...filter, department: e.target.value })}
+                                className="hover-glow"
+                            >
+                                <option value="all">All Departments</option>
+                                {departments.map(dept => (
+                                    <option key={dept} value={dept}>{dept}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div style={styles.filterGroup}>
+                            <label style={styles.filterLabel}>
+                                <i className="fas fa-calendar-alt"></i> Date Range
+                            </label>
+                            <div style={styles.dateRange}>
+                                <input
+                                    type="date"
+                                    style={combineStyles(styles.filterSelect, styles.filterSelectFocus)}
+                                    value={filter.dateRange.start}
+                                    onChange={(e) => setFilter({
+                                        ...filter,
+                                        dateRange: { ...filter.dateRange, start: e.target.value }
+                                    })}
+                                    className="hover-glow"
+                                />
+                                <span style={styles.dateRangeSpan}>to</span>
+                                <input
+                                    type="date"
+                                    style={combineStyles(styles.filterSelect, styles.filterSelectFocus)}
+                                    value={filter.dateRange.end}
+                                    onChange={(e) => setFilter({
+                                        ...filter,
+                                        dateRange: { ...filter.dateRange, end: e.target.value }
+                                    })}
+                                    className="hover-glow"
+                                />
+                            </div>
+                        </div>
+
+                        <div style={styles.filterGroup}>
+                            <label style={styles.filterLabel}>
+                                <i className="fas fa-tag"></i> Status
+                            </label>
+                            <select
+                                style={combineStyles(styles.filterSelect, styles.filterSelectFocus)}
+                                value={filter.status}
+                                onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+                                className="hover-glow"
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="reimbursed">Reimbursed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style={styles.actionButtons}>
+                        <button
+                            style={combineStyles(styles.button, styles.buttonPrimary)}
+                            onClick={generateReport}
+                            disabled={loading}
+                            className="hover-lift"
+                        >
+                            {loading ? (
+                                <>
+                                    <span style={styles.loadingSpinner}></span>
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-magic"></i> Generate Report
+                                </>
+                            )}
+                        </button>
+                        <button
+                            style={combineStyles(styles.button, styles.buttonSecondary)}
+                            onClick={resetFilters}
+                            className="hover-lift"
+                        >
+                            <i className="fas fa-redo"></i> Reset Filters
+                        </button>
+                    </div>
+                </div>
+
+                {/* Generated Report Section */}
+                {generatedReport && (
+                    <div style={styles.card} className={`hover-lift ${animationClass}`}>
+                        <div style={styles.reportHeader}>
+                            <h3>{generatedReport.title}</h3>
+                            <div style={styles.reportActions}>
+                                <button
+                                    style={combineStyles(styles.button, styles.buttonDownload)}
+                                    onClick={downloadCSV}
+                                    className="hover-lift"
+                                >
+                                    <i className="fas fa-download"></i> Download CSV
+                                </button>
+                                <button
+                                    style={combineStyles(styles.button, styles.buttonPrint)}
+                                    onClick={printReport}
+                                    className="hover-lift"
+                                >
+                                    <i className="fas fa-print"></i> Print
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style={styles.reportSummary}>
+                            <div style={styles.summaryItem}>
+                                <span style={styles.summaryLabel}>Report Type</span>
+                                <span style={styles.summaryValue}>
+                                    {generatedReport.type.charAt(0).toUpperCase() + generatedReport.type.slice(1)}
+                                </span>
+                            </div>
+                            <div style={styles.summaryItem}>
+                                <span style={styles.summaryLabel}>Department</span>
+                                <span style={styles.summaryValue}>{generatedReport.department}</span>
+                            </div>
+                            <div style={styles.summaryItem}>
+                                <span style={styles.summaryLabel}>Total Amount</span>
+                                <span style={styles.summaryValue}>₹{generatedReport.totalAmount.toLocaleString()}</span>
+                            </div>
+                            <div style={styles.summaryItem}>
+                                <span style={styles.summaryLabel}>Generated On</span>
+                                <span style={styles.summaryValue}>{generatedReport.date}</span>
+                            </div>
+                        </div>
+
+                        <div style={styles.reportTable}>
+                            <table style={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th style={styles.tableHeader}>ID</th>
+                                        <th style={styles.tableHeader}>Title</th>
+                                        <th style={styles.tableHeader}>Department</th>
+                                        <th style={styles.tableHeader}>Date</th>
+                                        <th style={styles.tableHeader}>Amount</th>
+                                        <th style={styles.tableHeader}>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {generatedReport.items.map((item, index) => (
+                                        <tr key={item.id} style={combineStyles(styles.tableRow, { animationDelay: `${index * 0.1}s` })} className="fade-in">
+                                            <td style={styles.tableCell}>{item.id}</td>
+                                            <td style={styles.tableCell}>{item.title}</td>
+                                            <td style={styles.tableCell}>{item.department}</td>
+                                            <td style={styles.tableCell}>{item.date}</td>
+                                            <td style={styles.tableCell}>
+                                                ₹{item.totalAmount.toLocaleString()}
+                                                {item.trend && (
+                                                    <span style={combineStyles(
+                                                        styles.trendIndicator,
+                                                        item.trend === 'up' ? styles.trendUp : styles.trendDown
+                                                    )}>
+                                                        <i className={`fas fa-arrow-${item.trend}`}></i>
+                                                        {item.change}%
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td style={styles.tableCell}>
+                                                <span style={combineStyles(
+                                                    styles.statusBadge,
+                                                    item.status === 'pending' ? styles.statusPending :
+                                                        item.status === 'approved' ? styles.statusApproved :
+                                                            item.status === 'reimbursed' ? styles.statusReimbursed :
+                                                                styles.statusGenerated
+                                                )}>
+                                                    <i className={`fas fa-${item.status === 'pending' ? 'clock' :
+                                                        item.status === 'approved' ? 'check-circle' :
+                                                            item.status === 'reimbursed' ? 'money-bill-wave' : 'file'
+                                                        }`}></i>
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* Recent Reports Section */}
+                <div style={styles.card} className="hover-lift">
+                    <h2 style={styles.cardTitle}>
+                        <i className="fas fa-history"></i> Recent Reports
+                    </h2>
+                    <div style={styles.reportsList}>
+                        {reports.map(report => (
+                            <div key={report.id} style={styles.reportItem} className="hover-lift">
+                                <div style={styles.reportInfo}>
+                                    <h4 style={styles.reportInfoTitle}>{report.title}</h4>
+                                    <div style={styles.reportMeta}>
+                                        <span style={styles.reportMetaItem}>
+                                            <i className="fas fa-building"></i> {report.department}
+                                        </span>
+                                        <span style={styles.reportMetaItem}>
+                                            <i className="fas fa-calendar"></i> {report.date}
+                                        </span>
+                                        <span style={styles.reportMetaItem}>
+                                            <i className="fas fa-chart-line"></i>
+                                            <span style={combineStyles(
+                                                styles.trendIndicator,
+                                                report.trend === 'up' ? styles.trendUp : styles.trendDown
+                                            )}>
+                                                <i className={`fas fa-arrow-${report.trend}`}></i>
+                                                {report.change}% {report.trend === 'up' ? 'Increase' : 'Decrease'}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style={styles.reportFooter}>
+                                    <div style={styles.amount}>₹{report.totalAmount.toLocaleString()}</div>
+                                    <span style={combineStyles(
+                                        styles.statusBadge,
+                                        report.status === 'pending' ? styles.statusPending :
+                                            report.status === 'approved' ? styles.statusApproved :
+                                                report.status === 'reimbursed' ? styles.statusReimbursed :
+                                                    styles.statusGenerated
+                                    )}>
+                                        <i className={`fas fa-${report.status === 'pending' ? 'clock' :
+                                            report.status === 'approved' ? 'check-circle' :
+                                                report.status === 'reimbursed' ? 'money-bill-wave' : 'file'
+                                            }`}></i>
+                                        {report.status}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Reports;
