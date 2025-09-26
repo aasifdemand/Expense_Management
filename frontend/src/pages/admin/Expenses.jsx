@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-// import { useAuth } from "../contexts/AuthContext";
-// import Sidebar from './sidebar';
-// import Navbar from './navbar';
 
 // Styled Components
 const DashboardContainer = styled.div`
@@ -10,13 +7,14 @@ const DashboardContainer = styled.div`
   min-height: 100vh;
   background-color: #f8fafc;
   font-family: 'Inter', sans-serif;
+  margin-top: 0;
 `;
 
 const MainContentWrapper = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-left: ${props => props.sidebarOpen ? '300px' : '0'};
+  margin-left: ${props => props.sidebarOpen ? '300px' : ''};
   transition: margin-left 0.3s ease;
   width: ${props => props.sidebarOpen ? 'calc(100% - 300px)' : '100%'};
   
@@ -34,103 +32,103 @@ const MainContent = styled.div`
 `;
 
 const ContentArea = styled.div`
-  padding: 15px;
+  padding: 10px;
   flex: 1;
   overflow-y: auto;
   background: #f8fafc;
-  margin-top: 64px; /* Account for navbar height */
-  
+  margin-top: 1px;
+
   @media (max-width: 768px) {
     padding: 16px;
-    margin-top: 56px;
+    margin-top: 16px;
   }
 `;
 
-const WelcomeHeader = styled.div`
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 32px;
-  border-radius: 16px;
-  margin-bottom: 32px;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
-  position: relative;
-  overflow: hidden;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  }
-`;
 
-const HeaderTitle = styled.h1`
-  margin: 0;
-  font-size: 2.5rem;
-  font-weight: 700;
-  position: relative;
-  
-  @media (max-width: 768px) {
-    font-size: 2rem;
-  }
-`;
-
-const HeaderSubtitle = styled.p`
-  margin: 12px 0 0 0;
-  opacity: 0.9;
-  font-size: 1.1rem;
-  font-weight: 400;
-  position: relative;
-`;
 
 const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-direction: row;
   gap: 24px;
   margin: 32px 0;
+  width: 100%;
   
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 16px;
   }
 `;
 
+// Updated StatCard with exact AdminDashboard sizing
 const StatCard = styled.div`
-  background: white;
-  padding: 28px;
-  border-radius: 16px;
+  background: ${props => `linear-gradient(135deg, ${props.color} 0%, ${props.color}dd 100%)`};
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  text-align: center;
-  border-left: 6px solid ${props => props.color || '#667eea'};
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
-  
+  display: flex;
+  align-items: center;
+  gap: 5;
+  flex: 1;
+  min-height: 140px;
+  width: 100%;
+  mt:3
+
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
   }
 `;
 
+const StatIcon = styled.div`
+  background: rgba(9, 63, 158, 0.2);
+  border-radius: 50%;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+const StatContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
 const StatNumber = styled.div`
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 800;
-  color: #1a202c;
-  margin-bottom: 8px;
+  color: white;
+  margin-bottom: 4px;
+  line-height: 1.2;
   
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.6rem;
   }
 `;
 
 const StatLabel = styled.div`
-  color: #718096;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.9rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+`;
+
+const StatSubtitle = styled.div`
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  font-weight: 500;
 `;
 
 const TabsContainer = styled.div`
@@ -141,6 +139,7 @@ const TabsContainer = styled.div`
   margin-bottom: 32px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow-x: auto;
+  color:blue;
   
   @media (max-width: 768px) {
     border-radius: 12px;
@@ -151,8 +150,8 @@ const Tab = styled.button`
   flex: 1;
   padding: 16px 24px;
   border: none;
-  background: ${props => props.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#718096'};
+  background: ${props => props.$active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent'};
+  color: ${props => props.$active ? 'white' : '#383737ff'};
   border-radius: 12px;
   cursor: pointer;
   font-weight: 600;
@@ -162,7 +161,8 @@ const Tab = styled.button`
   min-width: 140px;
   
   &:hover {
-    background: ${props => props.active ? '' : 'rgba(102, 126, 234, 0.1)'};
+    background: ${props => props.$active ? 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)' : 'rgba(102, 126, 234, 0.1)'};
+    color: ${props => props.$active ? 'white' : '#667eea'};
   }
   
   @media (max-width: 768px) {
@@ -208,6 +208,7 @@ const FormGrid = styled.div`
 
 const FormGroup = styled.div`
   margin-bottom: 24px;
+  position: relative;
 `;
 
 const Label = styled.label`
@@ -218,6 +219,7 @@ const Label = styled.label`
   font-size: 0.95rem;
 `;
 
+// Enhanced Select with custom styling
 const Select = styled.select`
   width: 100%;
   padding: 14px 16px;
@@ -226,14 +228,25 @@ const Select = styled.select`
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'><path fill='%23666' d='m2 0 2 4H0z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 12px;
   
   &:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
+  
+  option {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
 `;
 
+// Enhanced Input with better styling
 const Input = styled.input`
   width: 100%;
   padding: 14px 16px;
@@ -557,10 +570,123 @@ const ProofImage = styled.img`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 `;
 
+// New Category Dropdown Container
+const CategoryDropdownContainer = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
+const CategorySelectButton = styled.button`
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  text-align: left;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  &::after {
+    content: '▼';
+    font-size: 0.8rem;
+    color: #718096;
+    transition: transform 0.3s ease;
+    transform: ${props => props.open ? 'rotate(180deg)' : 'rotate(0)'};
+  }
+`;
+
+const CategoryDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  margin-top: 4px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 300px;
+  overflow-y: auto;
+  display: ${props => props.open ? 'block' : 'none'};
+`;
+
+const CategoryOption = styled.div`
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3f9;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: #f7fafc;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &.selected {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+`;
+
+const SubCategoryOption = styled(CategoryOption)`
+  padding-left: 32px;
+  font-size: 0.9rem;
+  color: #4a5568;
+  
+  &:hover {
+    background: #edf2f7;
+  }
+  
+  &.selected {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    font-weight: 600;
+  }
+`;
+
+// SVG Icons matching AdminDashboard
+const WalletIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+  </svg>
+);
+
+const PaymentIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
+  </svg>
+);
+
+const TrendingUpIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
+  </svg>
+);
+
+const PendingIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+  </svg>
+);
+
 const Expenses = () => {
   // State for expense submission
   const [expenseForm, setExpenseForm] = useState({
     category: '',
+    subCategory: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -573,14 +699,19 @@ const Expenses = () => {
   const [activeTab, setActiveTab] = useState('submitExpense');
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [showProofModal, setShowProofModal] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
-  // Sidebar state
-
-  // const [darkMode, setDarkMode] = useState(false);
-
-
-  // // Auth context
-  // const { currentUser, logout } = useAuth();
+  // Enhanced category structure with subcategories
+  const expenseCategories = {
+    'Sales': ['Google work space', 'Go-Daddy', 'Contabo', 'Instantly', 'Domain Renewal', 'Client Meetings'],
+    'Data': ['VPN', 'Zoom info', 'E-mail verifier', 'Appolo', 'linkedin', 'Ai Ark'],
+    'IT': ['Hardware', 'Software', 'Cloud Services', 'IT Support', 'Cybersecurity', 'Laptop services'],
+    'Office Expenses': ['Rent', 'Apna Subscription', 'Naukri Subscription ', 'Milk Bill ', 'Electricity Bill', 'Swiggy', 'Maintenance', 'Stationery', 'Laptop repair charges', 'Courier Charges', 'Salary', 'Remaining salary arrears', 'Incentives', 'Remaining Incentives arrears', 'Internet Bill', 'Invoice Payments', 'Cake'],
+    'Marketing': ['Advertising', 'Social Media', 'Events', 'Print Materials', 'Digital Marketing'],
+    'Travel': ['Flights', 'Hotels', 'Transportation', 'Meals - Travel', 'Conference Fees'],
+    'Training': ['Courses', 'Certifications', 'Workshops', 'Books & Materials'],
+    'Others': ['Miscellaneous', 'Professional Fees', 'Consulting', 'Legal Fees']
+  };
 
   // Sample initial data
   const initialExpenses = [
@@ -588,7 +719,7 @@ const Expenses = () => {
       id: 1,
       userId: 1,
       userName: 'John Doe',
-      category: 'Food & Dining',
+      category: 'Sales - Client Meetings',
       amount: 150,
       date: '2024-01-15',
       description: 'Client lunch meeting at restaurant',
@@ -603,7 +734,7 @@ const Expenses = () => {
       id: 2,
       userId: 2,
       userName: 'Jane Smith',
-      category: 'Travel',
+      category: 'Travel - Flights',
       amount: 300,
       date: '2024-01-16',
       description: 'Flight ticket for conference',
@@ -619,7 +750,7 @@ const Expenses = () => {
       id: 3,
       userId: 1,
       userName: 'John Doe',
-      category: 'Entertainment',
+      category: 'Marketing - Events',
       amount: 200,
       date: '2024-01-17',
       description: 'Team building activity',
@@ -633,7 +764,7 @@ const Expenses = () => {
       id: 4,
       userId: 3,
       userName: 'Mike Johnson',
-      category: 'Utilities',
+      category: 'IT - Software',
       amount: 120,
       date: '2024-01-18',
       description: 'Office software subscription',
@@ -668,6 +799,16 @@ const Expenses = () => {
     }
   };
 
+  const handleCategorySelect = (mainCategory, subCategory = '') => {
+    const fullCategory = subCategory ? `${mainCategory} - ${subCategory}` : mainCategory;
+    setExpenseForm(prev => ({
+      ...prev,
+      category: fullCategory,
+      subCategory: subCategory
+    }));
+    setCategoryDropdownOpen(false);
+  };
+
   const handleSubmitExpense = (e) => {
     e.preventDefault();
 
@@ -689,6 +830,7 @@ const Expenses = () => {
     setExpenses(prev => [newExpense, ...prev]);
     setExpenseForm({
       category: '',
+      subCategory: '',
       amount: '',
       date: new Date().toISOString().split('T')[0],
       description: '',
@@ -736,58 +878,77 @@ const Expenses = () => {
     setSelectedExpense(null);
   };
 
-
-
   const filteredExpenses = filterStatus === 'all'
     ? expenses
     : expenses.filter(expense => expense.status === filterStatus);
 
-  // Statistics
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const pendingExpenses = expenses.filter(expense => expense.status === 'submitted').length;
-  const approvedExpenses = expenses.filter(expense => expense.status === 'approved').reduce((sum, expense) => sum + expense.amount, 0);
-  const reimbursedExpenses = expenses.filter(expense => expense.reimbursed).reduce((sum, expense) => sum + expense.amount, 0);
+  // Statistics - Updated to match AdminDashboard
+  const monthlyBudget = 15500;
+  const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const remainingBalance = monthlyBudget - totalSpent;
+  const budgetUsedPercentage = ((totalSpent / monthlyBudget) * 100).toFixed(1);
+  const pendingReimbursements = expenses.filter(expense => expense.reimbursement && !expense.reimbursed).length;
 
   const isFormValid = expenseForm.category && expenseForm.amount && expenseForm.date && expenseForm.description && expenseForm.proofFile;
 
+  // Stats data matching AdminDashboard exactly
+  const statsData = [
+    {
+      title: "TOTAL ALLOCATED",
+      value: `₹${monthlyBudget.toLocaleString()}`,
+      icon: <WalletIcon />,
+      color: "#4361ee",
+      subtitle: "Monthly budget allocation"
+    },
+    {
+      title: "TOTAL SPENT",
+      value: `₹${totalSpent.toLocaleString()}`,
+      icon: <PaymentIcon />,
+      color: "#ef476f",
+      subtitle: `${budgetUsedPercentage}% of budget used`
+    },
+    {
+      title: "REMAINING BALANCE",
+      value: `₹${remainingBalance.toLocaleString()}`,
+      icon: <TrendingUpIcon />,
+      color: "#06d6a0",
+      subtitle: "Available funds"
+    },
+    {
+      title: "PENDING REIMBURSEMENTS",
+      value: pendingReimbursements.toString(),
+      icon: <PendingIcon />,
+      color: "#ffd166",
+      subtitle: "Awaiting payment"
+    }
+  ];
+
   return (
     <DashboardContainer>
-      {/* <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        handleLogout={handleLogout}
-        loading={loading}
-        setLoading={setLoading}
-        userName={currentUser?.displayName || 'Super Admin'}
-        userAvatar={currentUser?.displayName?.charAt(0) || 'A'}
-      /> */}
-
-      <MainContentWrapper >
+      <MainContentWrapper>
         <MainContent>
-          {/* <Navbar
-            onMenuClick={handleMenuClick}
-            darkMode={darkMode}
-            onDarkModeToggle={handleDarkModeToggle}
-          /> */}
-
           <ContentArea>
+            {/* Stats Cards - Exact same size and layout as AdminDashboard */}
             <StatsGrid>
-              <StatCard color="#ed8936" onClick={() => setActiveTab('myExpenses')}>
-                <StatNumber>{pendingExpenses}</StatNumber>
-                <StatLabel>PENDING APPROVAL</StatLabel>
-              </StatCard>
-              <StatCard color="#48bb78" onClick={() => setActiveTab('myExpenses')}>
-                <StatNumber>₹{approvedExpenses.toFixed(2)}</StatNumber>
-                <StatLabel>APPROVED AMOUNT</StatLabel>
-              </StatCard>
-              <StatCard color="#9f7aea" onClick={() => setActiveTab('myExpenses')}>
-                <StatNumber>₹{reimbursedExpenses.toFixed(2)}</StatNumber>
-                <StatLabel>REIMBURSED AMOUNT</StatLabel>
-              </StatCard>
-              <StatCard color="#667eea">
-                <StatNumber>₹{totalExpenses.toFixed(2)}</StatNumber>
-                <StatLabel>TOTAL EXPENSES</StatLabel>
-              </StatCard>
+              {statsData.map((stat, index) => (
+                <StatCard
+                  key={index}
+                  color={stat.color}
+                  onClick={() => {
+                    if (index === 1 || index === 2) setActiveTab('myExpenses');
+                    if (index === 0) setActiveTab('submitExpense');
+                  }}
+                >
+                  <StatIcon>
+                    {stat.icon}
+                  </StatIcon>
+                  <StatContent>
+                    <StatNumber>{stat.value}</StatNumber>
+                    <StatLabel>{stat.title}</StatLabel>
+                    <StatSubtitle>{stat.subtitle}</StatSubtitle>
+                  </StatContent>
+                </StatCard>
+              ))}
             </StatsGrid>
 
             <TabsContainer>
@@ -808,27 +969,41 @@ const Expenses = () => {
                 <form onSubmit={handleSubmitExpense}>
                   <FormGrid>
                     <FormGroup>
-                      <Label htmlFor="category">Expense Category *</Label>
-                      <Select
-                        id="category"
-                        name="category"
-                        value={expenseForm.category}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select Category</option>
-                        <option value="Food & Dining">Sales</option>
-                        <option value="Travel">Data</option>
-                        <option value="Entertainment">Office Expenses</option>
-                        <option value="Utilities">Utilities</option>
-                        <option value="Office Supplies">Office Supplies</option>
-                        <option value="Transportation">Transportation</option>
-                        <option value="Other">Other</option>
-                      </Select>
+                      <Label htmlFor="category">Expense Category </Label>
+                      <CategoryDropdownContainer>
+                        <CategorySelectButton
+                          type="button"
+                          open={categoryDropdownOpen}
+                          onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                        >
+                          {expenseForm.category || 'Select Category'}
+                        </CategorySelectButton>
+                        <CategoryDropdown open={categoryDropdownOpen}>
+                          {Object.entries(expenseCategories).map(([mainCategory, subCategories]) => (
+                            <div key={mainCategory}>
+                              <CategoryOption
+                                onClick={() => handleCategorySelect(mainCategory)}
+                                className={expenseForm.category === mainCategory ? 'selected' : ''}
+                              >
+                                <strong>{mainCategory}</strong>
+                              </CategoryOption>
+                              {subCategories.map(subCategory => (
+                                <SubCategoryOption
+                                  key={subCategory}
+                                  onClick={() => handleCategorySelect(mainCategory, subCategory)}
+                                  className={expenseForm.category === `${mainCategory} - ${subCategory}` ? 'selected' : ''}
+                                >
+                                  {subCategory}
+                                </SubCategoryOption>
+                              ))}
+                            </div>
+                          ))}
+                        </CategoryDropdown>
+                      </CategoryDropdownContainer>
                     </FormGroup>
 
                     <FormGroup>
-                      <Label htmlFor="amount">Amount (₹) *</Label>
+                      <Label htmlFor="amount">Amount (₹)</Label>
                       <Input
                         type="number"
                         id="amount"
@@ -843,7 +1018,7 @@ const Expenses = () => {
                     </FormGroup>
 
                     <FormGroup>
-                      <Label htmlFor="date">Expense Date *</Label>
+                      <Label htmlFor="date">Expense Date </Label>
                       <Input
                         type="date"
                         id="date"
@@ -856,7 +1031,7 @@ const Expenses = () => {
                   </FormGrid>
 
                   <FormGroup>
-                    <Label htmlFor="description">Description *</Label>
+                    <Label htmlFor="description">Description </Label>
                     <TextArea
                       id="description"
                       name="description"
@@ -868,7 +1043,7 @@ const Expenses = () => {
                   </FormGroup>
 
                   <FormGroup>
-                    <Label>Proof of Payment *</Label>
+                    <Label>Proof of Payment </Label>
                     <FileUpload>
                       <FileUploadLabel htmlFor="proofFile">
                         📎 {expenseForm.proofFile ? 'Change File' : 'Choose File'}
@@ -884,7 +1059,7 @@ const Expenses = () => {
                         <FileName>📄 {expenseForm.proofFile.name}</FileName>
                       )}
                       {!expenseForm.proofFile && (
-                        <div style={{ color: '#295cc2ff', marginTop: '12px' }}>
+                        <div style={{ color: '#718096', marginTop: '12px' }}>
                           Upload receipt or proof of payment (Image or PDF)
                         </div>
                       )}

@@ -9,10 +9,11 @@ import {
     MenuItem,
     Box,
     Avatar,
-    Switch,
-    FormControlLabel,
+    FormControl,
+    Select,
     useMediaQuery,
     useTheme,
+    Switch,
 } from "@mui/material";
 import {
     Notifications as NotificationsIcon,
@@ -20,19 +21,23 @@ import {
     Menu as MenuIcon,
     Settings as SettingsIcon,
     AccountCircle as AccountIcon,
-    Brightness4 as DarkModeIcon,
-    Brightness7 as LightModeIcon,
-    Logout as LogoutIcon
+    Business as BusinessIcon,
+    Logout as LogoutIcon,
+    DarkMode as DarkModeIcon,
+    LightMode as LightModeIcon
 } from "@mui/icons-material";
 
-import { useColorScheme } from "@mui/material/styles"
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
 
 const Navbar = ({
     onMenuClick,
     onProfileClick,
-    onSettingsClick
+    onSettingsClick,
+    darkMode,
+    onDarkModeToggle,
+    selectedLocation,
+    onLocationChange
 }) => {
     const { csrf } = useSelector((state) => state?.auth)
     const dispatch = useDispatch()
@@ -41,6 +46,12 @@ const Navbar = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+    // Locations array
+    const locations = [
+        { id: "overall", name: "Overall", color: "#28be5dff" },
+        { id: "bangalore", name: "Bangalore", color: "#3f51b5" },
+        { id: "mumbai", name: "Mumbai", color: "#f44336" },
+    ];
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -80,11 +91,26 @@ const Navbar = ({
         await dispatch(logout(csrf))
     };
 
-    const { mode, setMode } = useColorScheme();
+    const handleLocationChange = (event) => {
+        const newLocation = event.target.value;
+        if (onLocationChange) {
+            onLocationChange(newLocation);
+        }
+        console.log(`Company location changed to: ${newLocation}`);
+    };
 
     const handleDarkModeToggle = () => {
-        setMode(pre => pre === "dark" ? "light" : "dark")
+        if (onDarkModeToggle) {
+            onDarkModeToggle();
+        }
     };
+
+    // Get current location data
+    const getCurrentLocation = () => {
+        return locations.find(loc => loc.id === (selectedLocation || "Overall")) || locations[0];
+    };
+
+    const currentLocation = getCurrentLocation();
 
     const menuId = 'primary-search-account-menu';
     const notificationMenuId = 'notification-menu';
@@ -143,21 +169,84 @@ const Navbar = ({
                     gap: { xs: 0.5, sm: 1 },
                     ml: 'auto'
                 }}>
-                    {/* Dark Mode Toggle */}
-                    <IconButton
-                        color="inherit"
-                        onClick={handleDarkModeToggle}
-                        sx={{
-                            mr: { xs: 0, sm: 1 },
-                            p: { xs: 0.5, sm: 1 }
-                        }}
-                        aria-label="toggle dark mode"
-                    >
-                        {mode === "dark" ?
-                            <LightModeIcon fontSize={isMobile ? "small" : "medium"} /> :
-                            <DarkModeIcon fontSize={isMobile ? "small" : "medium"} />
-                        }
-                    </IconButton>
+                    {/* Company State Dropdown - Only show on desktop */}
+                    {!isMobile && (
+                        <FormControl
+                            size="small"
+                            sx={{
+                                minWidth: 140,
+                                mr: 1
+                            }}
+                        >
+                            <Select
+                                value={selectedLocation || "Overall"}
+                                onChange={handleLocationChange}
+                                displayEmpty
+                                inputProps={{ 'aria-label': 'Select company location' }}
+                                sx={{
+                                    fontSize: '0.875rem',
+                                    height: 40,
+                                    '& .MuiSelect-select': {
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        py: 1,
+                                    }
+                                }}
+                                renderValue={(selected) => {
+                                    const location = locations.find(loc => loc.id === selected) || locations[0];
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <BusinessIcon
+                                                sx={{
+                                                    mr: 1,
+                                                    fontSize: 18,
+                                                    color: location.color
+                                                }}
+                                            />
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    textTransform: 'capitalize',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 'medium'
+                                                }}
+                                            >
+                                                {location.name}
+                                            </Typography>
+                                        </Box>
+                                    );
+                                }}
+                            >
+                                {locations.map((location) => (
+                                    <MenuItem key={location.id} value={location.id}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                            <BusinessIcon
+                                                sx={{
+                                                    mr: 1.5,
+                                                    fontSize: 18,
+                                                    color: location.color
+                                                }}
+                                            />
+                                            <Typography variant="body2">{location.name}</Typography>
+                                        </Box>
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    {/* Dark Mode Toggle - Only show on desktop */}
+                    {!isMobile && (
+                        <IconButton
+                            size="medium"
+                            aria-label="toggle dark mode"
+                            color="inherit"
+                            onClick={handleDarkModeToggle}
+                            sx={{ p: 1 }}
+                        >
+                            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
+                    )}
 
                     {/* Notifications */}
                     <IconButton
@@ -309,12 +398,73 @@ const Navbar = ({
                     PaperProps={{
                         sx: {
                             mt: 4.5,
-                            minWidth: isMobile ? 160 : 180,
+                            minWidth: isMobile ? 200 : 220,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                         }
                     }}
                 >
+                    {/* Location Selector for Mobile */}
+                    {isMobile && (
+                        <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                                Select Location
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                                <Select
+                                    value={selectedLocation || "bangalore"}
+                                    onChange={handleLocationChange}
+                                    displayEmpty
+                                    sx={{ fontSize: '0.875rem' }}
+                                >
+                                    {locations.map((location) => (
+                                        <MenuItem key={location.id} value={location.id}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                                                <BusinessIcon
+                                                    sx={{
+                                                        mr: 1.5,
+                                                        fontSize: 18,
+                                                        color: location.color
+                                                    }}
+                                                />
+                                                <Typography variant="body2">{location.name}</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    )}
+
+                    {/* Current Location Display */}
+                    <Box sx={{
+                        px: 2,
+                        py: 1,
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <BusinessIcon
+                                sx={{
+                                    mr: 1.5,
+                                    fontSize: 18,
+                                    color: currentLocation.color
+                                }}
+                            />
+                            <Box>
+                                <Typography variant="subtitle2" fontWeight="bold">
+                                    Current Location
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {currentLocation.name}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
+
                     <MenuItem onClick={handleProfileClick}>
                         <AccountIcon sx={{
                             mr: 2,
@@ -322,6 +472,7 @@ const Navbar = ({
                         }} />
                         <Typography variant="body2">Profile</Typography>
                     </MenuItem>
+
                     <MenuItem onClick={handleSettingsClick}>
                         <SettingsIcon sx={{
                             mr: 2,
@@ -329,28 +480,36 @@ const Navbar = ({
                         }} />
                         <Typography variant="body2">Settings</Typography>
                     </MenuItem>
+
+                    {/* Dark Mode Toggle */}
                     <Box sx={{
                         px: 2,
                         py: 1,
                         borderTop: 1,
                         borderBottom: 1,
-                        borderColor: 'divider'
+                        borderColor: 'divider',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
                     }}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={mode === "dark"}
-                                    onChange={handleDarkModeToggle}
-                                    size="small"
-                                />
-                            }
-                            label={
-                                <Typography variant="body2">
-                                    {mode === "dark" ? 'Light Mode' : 'Dark Mode'}
-                                </Typography>
-                            }
+                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                            {darkMode ? (
+                                <LightModeIcon sx={{ mr: 1.5, fontSize: 18, color: 'warning.main' }} />
+                            ) : (
+                                <DarkModeIcon sx={{ mr: 1.5, fontSize: 18, color: 'primary.main' }} />
+                            )}
+                            <Typography variant="body2">
+                                {darkMode ? 'Light Mode' : 'Dark Mode'}
+                            </Typography>
+                        </Box>
+                        <Switch
+                            checked={darkMode}
+                            onChange={handleDarkModeToggle}
+                            size="small"
+                            color="primary"
                         />
                     </Box>
+
                     <MenuItem onClick={handleLogoutClick}>
                         <LogoutIcon sx={{
                             mr: 2,

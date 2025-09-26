@@ -90,9 +90,12 @@ async function bootstrap() {
   });
 
 
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes
   app.use((err, req, res, next) => {
 
     if (err.code !== 'EBADCSRFTOKEN') return next(err);

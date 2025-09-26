@@ -6,7 +6,6 @@ import {
     ListItemText,
     Typography,
     Box,
-    Avatar,
     Divider,
     useTheme,
     useMediaQuery,
@@ -28,15 +27,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
-import Logo from "./general/Logo";
-
 
 const AdminSidebar = ({
     open,
     onClose,
-    logoUrl = null,
-    companyName = "ExpenseTracker",
-
 }) => {
     const dispatch = useDispatch()
     const { csrf, loading: logoutLoader } = useSelector((state) => state?.auth)
@@ -71,6 +65,80 @@ const AdminSidebar = ({
         await dispatch(logout(csrf))
     };
 
+    // Logo Component - Full logo display
+    const Logo = () => (
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                padding: isSmallMobile ? '8px 0' : '16px 0',
+            }}
+        >
+            <Box
+                sx={{
+                    width: isSmallMobile ? '180px' : isMobile ? '200px' : '320px',
+                    height: isSmallMobile ? '80px' : isMobile ? '80px' : '90px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    borderRadius: 2,
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)',
+                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    padding: '4px',
+                }}
+            >
+                {/* Try PNG first, then SVG, then fallback */}
+                <img
+                    src="/image.png"
+                    alt="Company Logo"
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                    }}
+                    onError={(e) => {
+                        // Fallback to SVG if PNG fails
+                        e.target.src = "/image.svg";
+                        e.target.onerror = () => {
+                            // Final fallback to vite.svg
+                            e.target.src = "/vite.svg";
+                            e.target.onerror = () => {
+                                // Ultimate fallback - show text
+                                e.target.style.display = 'none';
+                                const fallback = e.target.parentElement.querySelector('.logo-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                            };
+                        };
+                    }}
+                />
+                {/* Fallback display */}
+                <Box
+                    className="logo-fallback"
+                    sx={{
+                        display: 'none',
+                        width: '100%',
+                        height: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: isSmallMobile ? '1rem' : '1.2rem',
+                        borderRadius: 1,
+                        textAlign: 'center',
+                        padding: '4px',
+                    }}
+                >
+                    Expense Manager
+                </Box>
+            </Box>
+        </Box>
+    );
+
     const SidebarContent = () => (
         <Box sx={{
             height: "100%",
@@ -95,58 +163,20 @@ const AdminSidebar = ({
                 animation: 'shimmer 3s ease infinite',
             }
         }}>
-            {/* Header with Logo and Company Name */}
+            {/* Header with Full Logo Only */}
             <Box sx={{
-                p: isSmallMobile ? 2 : 3,
+                p: isSmallMobile ? 1.5 : 2,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                position: 'relative'
+                justifyContent: 'center',
+                position: 'relative',
+                minHeight: isSmallMobile ? '70px' : '90px',
             }}>
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: isSmallMobile ? 1 : 2
-                }}>
-                    <Logo size={44} logoUrl={logoUrl} />
-                    <Box sx={{
-                        display: isMobile ? 'none' : 'block',
-                        maxWidth: isSmallMobile ? '120px' : 'none'
-                    }}>
-                        <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            sx={{
-                                background: theme.palette.mode === 'dark'
-                                    ? 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)'
-                                    : 'linear-gradient(135deg, #334155 0%, #475569 100%)',
-                                backgroundClip: "text",
-                                WebkitBackgroundClip: "text",
-                                WebkitTextFillColor: "transparent",
-                                fontSize: isSmallMobile ? '1rem' : '1.25rem',
-                                lineHeight: 1.2
-                            }}
-                        >
-                            {companyName}
-                        </Typography>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                fontSize: isSmallMobile ? '0.6rem' : '0.7rem',
-                                display: isSmallMobile ? 'none' : 'block'
-                            }}
-                        >
-                            Expense Management System
-                        </Typography>
-                    </Box>
-                </Box>
+                <Logo />
             </Box>
 
-
-
             <Divider sx={{
-                my: isSmallMobile ? 2 : 3,
+                my: 1,
                 mx: isSmallMobile ? 1 : 2,
                 background: theme.palette.mode === 'dark'
                     ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'

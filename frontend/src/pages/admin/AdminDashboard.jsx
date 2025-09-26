@@ -33,6 +33,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Search as SearchIcon,
+
   Download as DownloadIcon,
   // Person as PersonIcon,
   FilterList as FilterIcon,
@@ -75,7 +76,7 @@ const AdminDashboard = () => {
   );
 
 
-  const monthlySpending = [4200, 5800, 5100, 7200, 6900, 8300, 9500, 9100, 8200, 7800, 8900, 9200];
+  const monthlySpending = [4200, 5800, 5100, 7200, 6900, 8300, 9500, 9100, 8200, 7800, 10450, 12300];
   const monthlyLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const handleApproveExpense = (expenseId) => {
@@ -91,7 +92,7 @@ const AdminDashboard = () => {
   };
 
   const handleDownloadReport = () => {
-    const headers = ["ID", "User", "Paid To", "Amount", "Date", "Department", "Payment Mode", "Status", "Reimbursement"];
+    const headers = ["ID", "User", "Paid To", "Amount", "Date", "Department", "Status", "Reimbursement"];
     const csvData = expenses.map((expense) =>
       [
         expense.id,
@@ -158,7 +159,7 @@ const AdminDashboard = () => {
         }}
       >
         <CardContent sx={{ p: 2, display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
-          <Box sx={{ bgcolor: "rgba(255,255,255,0.2)", borderRadius: "50%", p: 1.5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box sx={{ bgcolor: "rgba(199, 184, 184, 0.2)", borderRadius: "50%", p: 1.5, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {icon}
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
