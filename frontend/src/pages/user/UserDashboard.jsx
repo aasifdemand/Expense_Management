@@ -32,9 +32,7 @@ const Dashboard = () => {
           <MonthlyTotalsChart monthlyTotals={monthlyTotals} />
         </Grid>
       </Grid>
-      <Box sx={{ mb: 4 }}>
-        <ExpenseUploadForm />
-      </Box>
+
 
     </Box>
   );

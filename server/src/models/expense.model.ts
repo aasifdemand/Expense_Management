@@ -23,6 +23,12 @@ export class Expense extends Document {
   @Prop({ required: true, enum: Department, default: Department.OTHER })
   department?: Department;
 
+  @Prop({ default: "" })
+  SubDepartment?: string
+
+  @Prop({ default: "" })
+  paymentMode?: string
+
   @Prop({ default: false })
   isReimbursed: boolean;
 

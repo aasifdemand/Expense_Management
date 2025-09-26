@@ -19,7 +19,7 @@ export class BudgetController {
     }
     if (session?.user && session?.user?.role !== "superadmin")
       throw new UnauthorizedException("Only Superadmin can allocate budgets for the user")
-    return await this.budgetService.allocateBudget(data, session?.userId as string)
+    return await this.budgetService.allocateBudget(data)
   }
 
 
@@ -29,7 +29,6 @@ export class BudgetController {
   async getExpenses(
     @Query("page") skip = "1",
     @Query("limit") limit = "20",
-    @Query("search") search: SearchBudgetAllocationsDto,
     @Session() session: Record<string, any>,
   ) {
     console.log("Session in get all budget allocations route: ", session);
@@ -40,9 +39,7 @@ export class BudgetController {
       throw new UnauthorizedException("You are not authorized to view budget allocations");
     }
 
-    if (search) {
-      return this.budgetService.searchBudgetAllocations(search)
-    }
+
 
     return this.budgetService.fetchAllocatedBudgets(Number(skip), Number(limit));
   }
@@ -57,7 +54,7 @@ export class BudgetController {
     console.log("Session in get all budget allocations route: ", session);
 
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
-      throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
+      throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
 
     if (session?.user && session?.user?.role !== "superadmin") {
@@ -65,9 +62,9 @@ export class BudgetController {
     }
 
 
-    return this.budgetService.searchBudgetAllocations(search)
-
+    return this.budgetService.searchBudgetAllocations(search);
   }
+
 
   @Get(":id")
   @UseGuards(CsrfGuard)

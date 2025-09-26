@@ -6,7 +6,7 @@
 import { HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from 'src/models/user.model';
+import { User, UserRole } from 'src/models/user.model';
 import { AuthDto } from './dto/auth.dto';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
@@ -141,4 +141,15 @@ export class AuthService {
             });
         });
     }
+
+
+    async getAll() {
+
+        const users = await this.userModel.find({
+            role: { $ne: UserRole.SUPERADMIN }
+        }).select("-password -twoFactorSecret");
+
+        return { users };
+    }
+
 }

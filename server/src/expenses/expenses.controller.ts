@@ -51,11 +51,9 @@ export class ExpensesController {
     @Session() session: Record<string, any>,
   ) {
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
-      throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
+      throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
-    if (session?.user && session?.user?.role !== "superadmin") {
-      throw new UnauthorizedException("You are not authorized to view expenses");
-    }
+
     return this.expensesService.getAllExpenses(Number(page), Number(limit));
   }
 
@@ -64,17 +62,19 @@ export class ExpensesController {
   @UsePipes(new ValidationPipe({ transform: true, forbidNonWhitelisted: true, whitelist: true }))
   async getExpensesOrSearch(
     @Query() search: SearchExpensesDto,
+    @Query("page") page = "1",
+    @Query("limit") limit = "20",
     @Session() session: Record<string, any>,
   ) {
-
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
-      throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
+      throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
     if (session?.user && session?.user?.role !== "superadmin") {
       throw new UnauthorizedException("You are not authorized to view expenses");
     }
-    return this.expensesService.searchReimbursements(search);
+    return this.expensesService.searchReimbursements(search, Number(page), Number(limit));
   }
+
 
 
   @Get(":id")

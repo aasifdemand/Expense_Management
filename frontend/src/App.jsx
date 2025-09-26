@@ -9,22 +9,36 @@ import User from "./pages/admin/User";
 import Report from "./pages/admin/Report";
 import AdminLayout from "./layouts/AdminLayout";
 import Settings from "./pages/admin/Settings";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import UserLayout from "./layouts/UserLayout";
 import UserDashboard from "./pages/user/UserDashboard"
 import MyExpenses from "./pages/user/MyExpenses";
 import UserSettings from "./pages/user/UserSettings";
+import Budgeting from "./pages/admin/Budgeting";
+import { useEffect } from "react";
+import { fetchAllUsers, fetchUser } from "./store/authSlice";
+import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
 
 
 const App = () => {
 
-  const { isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role } = useSelector((state) => state?.auth)
+  const dispatch = useDispatch()
+  const { isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role, } = useSelector((state) => state?.auth)
 
 
-  // console.log("auth logs from redux: ", isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role);
+  useEffect(() => {
+    if (role === "superadmin") {
+      dispatch(fetchAllUsers())
+    }
+  }, [dispatch, role])
 
 
 
+  useEffect(() => {
+    dispatch(fetchUser())
+  }, [dispatch])
+
+  // console.log("users ans user: ", user, users);
   const canAccessAdminRoutes =
     isAuthenticated &&
     isTwoFactorVerified &&
@@ -48,12 +62,15 @@ const App = () => {
         }
       /> */}
 
-      <Route path="user" element={<UserLayout />}>
-        <Route path="dashboard" element={
+      <Route path="/" element={<UserLayout />}>
+        <Route index path="dashboard" element={
           isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
         } />
         <Route path="expenses" element={
           isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
+        } />
+        <Route path="add" element={
+          isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
         } />
         <Route path="settings" element={
           isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
@@ -67,6 +84,12 @@ const App = () => {
           path="dashboard"
           element={
             canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="budget"
+          element={
+            canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
           }
         />
 

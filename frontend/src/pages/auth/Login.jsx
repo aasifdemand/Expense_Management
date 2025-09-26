@@ -122,6 +122,7 @@ const Login = () => {
 
 
                 const csrfRes = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/csrf-token`, {
+                    method: "GET",
                     credentials: "include",
                 });
 

@@ -1,11 +1,14 @@
 
 
 import { PartialType } from "@nestjs/mapped-types";
-import { IsNumber, Min, Max } from "class-validator";
+import { IsNumber, Min, Max, IsMongoId } from "class-validator";
 
 
 export class AllocateBudgetDto {
 
+
+    @IsMongoId()
+    userId: string
 
     @IsNumber()
     @Min(1)

@@ -49,12 +49,12 @@ const UserSidebar = ({
     const [hoveredItem, setHoveredItem] = useState(null);
 
     const menuItems = [
-        { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
-        { text: "My Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses", },
+        { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+        { text: "My Expenses", icon: <AttachMoneyIcon />, path: "/expenses", },
         // { text: "Reimbursement", icon: <ExpensesIcon />, path: "/admin/expenses" },
         // { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
         // { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
-        { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
+        { text: "Settings", icon: <SettingsIcon />, path: "/settings" }
     ];
 
     useEffect(() => {

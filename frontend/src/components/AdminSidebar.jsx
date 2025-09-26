@@ -21,6 +21,7 @@ import {
     Logout as LogoutIcon,
     Autorenew,
     Assessment as ReportsIcon,
+    MonetizationOn,
 } from "@mui/icons-material";
 
 import { useState, useEffect } from "react";
@@ -49,6 +50,7 @@ const AdminSidebar = ({
 
     const menuItems = [
         { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
+        { text: "Budgeting", icon: <MonetizationOn />, path: "/admin/budget" },
         { text: "Reimbursement", icon: <ExpensesIcon />, path: "/admin/expenses" },
         { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
         { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
