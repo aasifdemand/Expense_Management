@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 /* eslint-disable no-useless-catch */
@@ -67,5 +68,15 @@ export class AuthController {
     } catch (err: any) {
       return res.status(500).json({ message: 'Failed to logout' });
     }
+  }
+
+  @Get("users")
+  @UseGuards(CsrfGuard)
+  async getTheListOfUsers(@Session() session: Record<string, any>) {
+    if (session?.user?.role !== "superadmin") {
+      throw new UnauthorizedException("Normal User is not allowed to get other db users")
+    }
+
+    return await this.authService.getAll()
   }
 }

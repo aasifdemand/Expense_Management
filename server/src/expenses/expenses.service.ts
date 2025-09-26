@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage } from 'mongoose';
 import { Expense } from 'src/models/expense.model';
@@ -58,19 +58,19 @@ export class ExpensesService {
 
         const budget = await this.budgetModel.findOne(filter);
 
-        if (!budget) {
-            throw new BadRequestException(
-                "No budget allocated for this user this month by Superadmin"
-            );
-        }
+        // if (!budget) {
+        //     throw new BadRequestException(
+        //         "No budget allocated for this user this month by Superadmin"
+        //     );
+        // }
 
-        if (budget.spentAmount === budget.allocatedAmount) {
-            throw new BadRequestException("Sorry your allocated balance has been spent already")
-        }
+        // if (budget.spentAmount === budget.allocatedAmount) {
+        //     throw new BadRequestException("Sorry your allocated balance has been spent already")
+        // }
 
-        if (budget.spentAmount + Number(amount) > budget.allocatedAmount) {
-            throw new BadRequestException("Expense exceeds allocated budget limit");
-        }
+        // if (budget.spentAmount + Number(amount) > budget.allocatedAmount) {
+        //     throw new BadRequestException("Expense exceeds allocated budget limit");
+        // }
 
 
         const newExpense = new this.expenseModal({
@@ -86,8 +86,8 @@ export class ExpensesService {
 
         const expense = await newExpense.save();
 
-        budget.spentAmount += amount;
-        await budget.save();
+        budget!.spentAmount += amount;
+        await budget?.save();
 
 
         const safeUser = {
@@ -117,21 +117,104 @@ export class ExpensesService {
                 user: safeUser,
             },
             budget: {
-                allocated: budget.allocatedAmount,
-                spent: budget.spentAmount,
-                remaining: budget.allocatedAmount - budget.spentAmount,
+                allocated: budget!.allocatedAmount,
+                spent: budget!.spentAmount,
+                remaining: budget!.allocatedAmount - budget!.spentAmount,
             },
         };
     }
 
 
 
+    async searchReimbursements(filters: SearchExpensesDto, page = 1, limit = 20) {
+        const safePage = Math.max(Number(page), 1);
+        const safeLimit = Math.max(Number(limit), 1);
+        const skip = (safePage - 1) * safeLimit;
+
+        const cacheKey = `expenses:search:${JSON.stringify(filters)}:${safePage}:${safeLimit}`;
+        const cached = await this.cacheManager.get(cacheKey);
+
+        if (cached) {
+            return { message: "Search reimbursements fetched from cache", ...(cached as any) };
+        }
+
+        const matchStage: Record<string, any> = {};
+
+        if (filters.paidTo) {
+            matchStage.paidTo = { $regex: new RegExp(filters.paidTo, "i") };
+        }
+        if (filters.department) {
+            matchStage.department = filters.department;
+        }
+        if (filters.isReimbursed !== undefined) {
+            matchStage.isReimbursed = filters.isReimbursed;
+        }
+        if (filters.isApproved !== undefined) {
+            matchStage.isApproved = filters.isApproved;
+        }
+        if (filters.month !== undefined) {
+            matchStage.month = filters.month;
+        }
+        if (filters.year !== undefined) {
+            matchStage.year = filters.year;
+        }
+        if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
+            matchStage.amount = {};
+            if (filters.minAmount !== undefined) matchStage.amount.$gte = filters.minAmount;
+            if (filters.maxAmount !== undefined) matchStage.amount.$lte = filters.maxAmount;
+        }
+
+        const pipeline: PipelineStage[] = [
+            { $match: matchStage },
+            {
+                $lookup: {
+                    from: "users",
+                    let: { userId: { $toObjectId: "$user" } },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+                        { $project: { _id: 1, name: 1 } },
+                    ],
+                    as: "user",
+                },
+            },
+            { $unwind: "$user" },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: safeLimit },
+        ];
+
+        if (filters.userName) {
+            pipeline.splice(1, 0, {
+                $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } },
+            });
+        }
+
+        const [data, total] = await Promise.all([
+            this.expenseModal.aggregate(pipeline),
+            this.expenseModal.countDocuments(matchStage),
+        ]);
+
+        const result = {
+            message: "Search completed successfully",
+            meta: {
+                total,
+                page: safePage,
+                limit: safeLimit,
+            },
+            data,
+        };
+
+        await this.cacheManager.set(cacheKey, result, 60_000);
+
+        return result;
+    }
+
     async getAllExpenses(page = 1, limit = 20) {
-
         const safePage = Math.max(page, 1);
-        const skip = (safePage - 1) * limit;
+        const safeLimit = Math.max(limit, 1);
+        const skip = (safePage - 1) * safeLimit;
 
-        const cacheKey = `expenses:all:${safePage}:${limit}`;
+        const cacheKey = `expenses:all:${safePage}:${safeLimit}`;
         const cached = await this.cacheManager.get(cacheKey);
 
         if (cached) {
@@ -143,7 +226,7 @@ export class ExpensesService {
                 .find()
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(limit)
+                .limit(safeLimit)
                 .populate({
                     path: "user",
                     select: "name _id",
@@ -157,8 +240,7 @@ export class ExpensesService {
             meta: {
                 total,
                 page: safePage,
-                limit,
-
+                limit: safeLimit,
             },
             data: expenses,
         };
@@ -167,6 +249,7 @@ export class ExpensesService {
 
         return result;
     }
+
 
 
     async getExpenseById(id: string) {
@@ -212,87 +295,6 @@ export class ExpensesService {
 
 
 
-    async searchReimbursements(filters: SearchExpensesDto) {
-        const {
-            userName,
-            paidTo,
-            minAmount,
-            maxAmount,
-            department,
-            isReimbursed,
-            isApproved,
-            month,
-            year,
-        } = filters;
-
-        const cacheKey = `expenses:search:${JSON.stringify(filters)}`;
-        const cached = await this.cacheManager.get(cacheKey);
-
-        if (cached) {
-            return { message: "Search reimbursements fetched from cache", ...(cached as any) };
-        }
-
-        const matchStage: Record<string, any> = {};
-
-        if (paidTo) {
-            matchStage.paidTo = { $regex: new RegExp(paidTo, "i") };
-        }
-        if (department) {
-            matchStage.department = department;
-        }
-        if (isReimbursed !== undefined) {
-            matchStage.isReimbursed = isReimbursed;
-        }
-        if (isApproved !== undefined) {
-            matchStage.isApproved = isApproved;
-        }
-        if (month !== undefined) {
-            matchStage.month = month;
-        }
-        if (year !== undefined) {
-            matchStage.year = year;
-        }
-
-        if (minAmount !== undefined || maxAmount !== undefined) {
-            matchStage.amount = {};
-            if (minAmount !== undefined) matchStage.amount.$gte = minAmount;
-            if (maxAmount !== undefined) matchStage.amount.$lte = maxAmount;
-        }
-
-        const pipeline: PipelineStage[] = [
-            { $match: matchStage },
-            {
-                $lookup: {
-                    from: "users",
-                    let: { userId: { $toObjectId: "$user" } },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-                        { $project: { _id: 1, name: 1 } },
-                    ],
-                    as: "user",
-                },
-            },
-            { $unwind: "$user" },
-        ];
-
-        if (userName) {
-            pipeline.push({
-                $match: { "user.name": { $regex: new RegExp(userName, "i") } },
-            });
-        }
-
-        const reimbursements = await this.expenseModal.aggregate(pipeline);
-
-        const result = {
-            message: "Search completed successfully",
-            count: reimbursements.length,
-            data: reimbursements,
-        };
-
-        await this.cacheManager.set(cacheKey, result, 60_000); // cache for 60 sec
-
-        return result;
-    }
 
 
 }

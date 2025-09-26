@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Budget } from 'src/models/budget.model';
@@ -19,21 +19,13 @@ export class BudgetService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
-    async allocateBudget(data: AllocateBudgetDto, userId: string) {
-        const { month, year, amount } = data
+    async allocateBudget(data: AllocateBudgetDto) {
+        const { month, year, amount, userId } = data;
 
         const user = await this.userModel.findById(userId);
         if (!user) throw new NotFoundException("User not found");
 
-        const existing = await this.budgetModel.findOne({ user: userId, month, year }).populate({
-            path: "user",
-            select: "name _id"
-        });
-        if (existing) {
-            throw new BadRequestException("Budget already allocated for this user in this month");
-        }
-
-        const budget = new this.budgetModel({
+        const budget = await this.budgetModel.create({
             user: userId,
             allocatedAmount: amount,
             spentAmount: 0,
@@ -42,33 +34,40 @@ export class BudgetService {
         });
 
 
-        await budget.save();
+        user.allocatedBudgets.push(budget._id as Types.ObjectId);
+        await user.save();
 
-        user.allocatedBudgets.push(budget?._id as Types.ObjectId);
-        await user.save()
+
+        const populatedBudget = await this.budgetModel
+            .findById(budget._id)
+            .populate({
+                path: "user",
+                select: "name _id",
+            })
+            .lean();
 
 
         await this.cacheManager.del(`budgets:all:1:20`);
-        await this.cacheManager.del(`budget:${budget?._id as string}`);
-
+        await this.cacheManager.del(`budget:${budget._id as string}`);
 
         return {
             message: "Budget allocated successfully",
-            budget,
+            budget: populatedBudget,
         };
     }
 
-    async fetchAllocatedBudgets(page = 1, limit = 20) {
+
+    async fetchAllocatedBudgets(page = 1, limit = 10) {
         const safePage = Math.max(page, 1);
         const skip = (safePage - 1) * limit;
         const cacheKey = `budgets:all:${safePage}:${limit}`;
-
 
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
             return { message: "Fetched budgets from cache", ...(cached as any) };
         }
 
+        // 1️⃣ Paginated query
         const budgets = await this.budgetModel
             .find()
             .sort({ createdAt: -1 })
@@ -80,18 +79,34 @@ export class BudgetService {
             })
             .lean();
 
+        // 2️⃣ Count documents
         const total = await this.budgetModel.countDocuments();
 
+        // 3️⃣ Stats aggregation (ignores skip/limit)
+        const stats = await this.budgetModel.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    totalAllocated: { $sum: "$allocatedAmount" },
+                    totalSpent: { $sum: "$spentAmount" },
+                },
+            },
+        ]);
+
+        const { totalAllocated = 0, totalSpent = 0 } = stats[0] || {};
+
+        // 4️⃣ Final result
         const result = {
             message: "Fetched budgets successfully",
             meta: {
                 total,
                 page: safePage,
                 limit,
+                totalAllocated,
+                totalSpent,
             },
             data: budgets,
         };
-
 
         await this.cacheManager.set(cacheKey, result, 60_000);
 
@@ -107,8 +122,13 @@ export class BudgetService {
             maxAllocated,
             minSpent,
             maxSpent,
+            page = 1,
+            limit = 10,
         } = filters;
 
+        const safePage = Math.max(Number(page), 1);
+        const safeLimit = Math.max(Number(limit), 1);
+        const skip = (safePage - 1) * safeLimit;
 
         const cacheKey = `budgets:search:${JSON.stringify(filters)}`;
         const cached = await this.cacheManager.get(cacheKey);
@@ -121,10 +141,8 @@ export class BudgetService {
         if (year) matchStage.year = year;
         if (minAllocated !== undefined || maxAllocated !== undefined) {
             matchStage.allocatedAmount = {};
-            if (minAllocated !== undefined)
-                matchStage.allocatedAmount.$gte = minAllocated;
-            if (maxAllocated !== undefined)
-                matchStage.allocatedAmount.$lte = maxAllocated;
+            if (minAllocated !== undefined) matchStage.allocatedAmount.$gte = minAllocated;
+            if (maxAllocated !== undefined) matchStage.allocatedAmount.$lte = maxAllocated;
         }
         if (minSpent !== undefined || maxSpent !== undefined) {
             matchStage.spentAmount = {};
@@ -154,19 +172,50 @@ export class BudgetService {
             });
         }
 
-        const budgets = await this.budgetModel.aggregate(pipeline);
+        // Pagination + totals + stats
+        pipeline.push({
+            $facet: {
+                data: [
+                    { $sort: { createdAt: -1 } },
+                    { $skip: skip },
+                    { $limit: safeLimit },
+                ],
+                totalCount: [{ $count: "count" }],
+                stats: [
+                    {
+                        $group: {
+                            _id: null,
+                            totalAllocated: { $sum: "$allocatedAmount" },
+                            totalSpent: { $sum: "$spentAmount" },
+                        },
+                    },
+                ],
+            },
+        });
 
-        const result = {
+        const [result] = await this.budgetModel.aggregate(pipeline);
+
+        const total = result?.totalCount?.[0]?.count || 0;
+        const { totalAllocated = 0, totalSpent = 0 } = result?.stats?.[0] || {};
+
+        const response = {
             message: "Fetched budgets successfully",
-            count: budgets.length,
-            data: budgets,
+            meta: {
+                total,
+                page: safePage,
+                limit: safeLimit,
+                totalAllocated,
+                totalSpent,
+            },
+            data: result?.data || [],
         };
 
+        await this.cacheManager.set(cacheKey, response, 60_000);
 
-        await this.cacheManager.set(cacheKey, result, 60_000);
-
-        return result;
+        return response;
     }
+
+
 
     async editAllocatedBudget(id: string, data: UpdateAllocatedBudgetDto, userId: string) {
         const budget = await this.budgetModel.findById(id);
