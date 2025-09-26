@@ -174,83 +174,87 @@ const Reports = () => {
         window.print();
     };
 
-    // CSS Styles with enhanced design
+    // Enhanced CSS Styles for perfect dashboard integration
     const styles = {
         container: {
-            padding: '20px',
-            backgroundColor: '#f8fafc',
-            minHeight: '100vh',
-            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            padding: '24px 32px',
+            // backgroundColor: '#f8fafc',
+            minHeight: 'calc(100vh - 80px)',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            margin: 0,
+            width: '100%',
+            boxSizing: 'border-box'
         },
-        header: {
-            marginBottom: '30px',
-            textAlign: 'center'
-        },
-        headerTitle: {
-            color: '#1e293b',
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '15px',
-            fontSize: '2.5rem',
-            fontWeight: '700',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-        },
-        headerDescription: {
-            color: '#64748b',
-            fontSize: '1.1rem',
-            maxWidth: '600px',
-            margin: '0 auto',
-            lineHeight: '1.6'
-        },
+        // header: {
+        //     marginBottom: '32px',
+        //     textAlign: 'left'
+        // },
+        // headerTitle: {
+        //     color: '#1e293b',
+        //     marginBottom: '12px',
+        //     display: 'flex',
+        //     alignItems: 'center',
+        //     gap: '16px',
+        //     fontSize: '2.25rem',
+        //     fontWeight: '700',
+        //     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        //     WebkitBackgroundClip: 'text',
+        //     WebkitTextFillColor: 'transparent',
+        //     padding: 0
+        // },
+        // headerDescription: {
+        //     color: '#64748b',
+        //     fontSize: '1.1rem',
+        //     maxWidth: '800px',
+        //     margin: 0,
+        //     lineHeight: '1.6',
+        //     fontWeight: '400'
+        // },
         content: {
             display: 'flex',
             flexDirection: 'column',
-            gap: '30px',
-            maxWidth: '1200px',
-            margin: '0 auto'
+            gap: '32px',
+            width: '100%',
+            margin: 0
         },
         card: {
             background: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-            padding: '30px',
-            border: '1px solid #f1f5f9',
-            transition: 'all 0.3s ease',
+            borderRadius: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            padding: '28px',
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.2s ease',
             position: 'relative',
             overflow: 'hidden'
         },
-        cardHover: {
-            transform: 'translateY(-5px)',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)'
-        },
+        // cardHover: {
+        //     transform: 'translateY(-2px)',
+        //     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        // },
         cardTitle: {
-            marginBottom: '25px',
+            marginBottom: '24px',
             color: '#1e293b',
-            borderBottom: '2px solid #f1f5f9',
-            paddingBottom: '15px',
+            borderBottom: '1px solid #f1f5f9',
+            paddingBottom: '16px',
             fontSize: '1.5rem',
             fontWeight: '600',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px'
+            gap: '12px'
         },
         filterOptions: {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '25px',
-            marginBottom: '30px'
+            gap: '24px',
+            marginBottom: '28px'
         },
         filterGroup: {
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            gap: '8px'
         },
         filterLabel: {
             fontWeight: '600',
-            marginBottom: '10px',
             color: '#374151',
             fontSize: '0.95rem',
             display: 'flex',
@@ -258,17 +262,17 @@ const Reports = () => {
             gap: '8px'
         },
         filterSelect: {
-            padding: '12px 15px',
-            border: '2px solid #e2e8f0',
-            borderRadius: '10px',
-            fontSize: '15px',
-            transition: 'all 0.3s ease',
-            backgroundColor: '#f8fafc'
+            padding: '12px 16px',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            fontSize: '14px',
+            transition: 'all 0.2s ease',
+            backgroundColor: 'white',
+            outline: 'none'
         },
         filterSelectFocus: {
             borderColor: '#3b82f6',
-            boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)',
-            backgroundColor: 'white'
+            boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
         },
         dateRange: {
             display: 'flex',
@@ -277,72 +281,66 @@ const Reports = () => {
         },
         dateRangeSpan: {
             color: '#64748b',
-            fontWeight: '500'
+            fontWeight: '500',
+            fontSize: '14px'
         },
         actionButtons: {
             display: 'flex',
-            gap: '15px',
+            gap: '16px',
             flexWrap: 'wrap'
         },
         button: {
             padding: '12px 24px',
             border: 'none',
-            borderRadius: '10px',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontWeight: '600',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            transition: 'all 0.3s ease',
-            fontSize: '15px',
+            transition: 'all 0.2s ease',
+            fontSize: '14px',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            outline: 'none'
         },
         buttonPrimary: {
             background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             color: 'white',
-            boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
+            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
         },
         buttonPrimaryHover: {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)'
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 8px rgba(59, 130, 246, 0.3)'
         },
         buttonSecondary: {
-            backgroundColor: '#f1f5f9',
-            color: '#475569',
-            border: '2px solid #e2e8f0'
+            backgroundColor: 'white',
+            color: '#374151',
+            border: '1px solid #d1d5db'
         },
         buttonSecondaryHover: {
-            backgroundColor: '#e2e8f0',
-            transform: 'translateY(-2px)'
+            backgroundColor: '#f9fafb',
+            transform: 'translateY(-1px)'
         },
         buttonDownload: {
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
             color: 'white',
-            boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
-        },
-        buttonDownloadHover: {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)'
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
         },
         buttonPrint: {
-            background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+            background: 'linear-gradient(135deg, #059669 0%, #059669 100%)',
             color: 'white',
-            boxShadow: '0 4px 15px rgba(107, 114, 128, 0.3)'
-        },
-        buttonPrintHover: {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 6px 20px rgba(107, 114, 128, 0.4)'
+            boxShadow: '0 2px 4px rgba(107, 114, 128, 0.2)'
         },
         reportHeader: {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: '25px',
-            borderBottom: '2px solid #f1f5f9',
+            marginBottom: '24px',
+            borderBottom: '1px solid #f1f5f9',
             paddingBottom: '20px',
             flexWrap: 'wrap',
-            gap: '15px'
+            gap: '16px'
         },
         reportActions: {
             display: 'flex',
@@ -351,56 +349,58 @@ const Reports = () => {
         },
         reportSummary: {
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '20px',
-            marginBottom: '30px',
+            marginBottom: '28px',
             padding: '20px',
             backgroundColor: '#f8fafc',
-            borderRadius: '12px',
+            borderRadius: '8px',
             border: '1px solid #e2e8f0'
         },
         summaryItem: {
             display: 'flex',
             flexDirection: 'column',
             textAlign: 'center',
-            padding: '15px',
+            padding: '16px',
             backgroundColor: 'white',
-            borderRadius: '10px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)'
+            borderRadius: '6px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
         },
         summaryLabel: {
             fontWeight: '600',
             color: '#64748b',
-            fontSize: '0.9rem',
+            fontSize: '0.875rem',
             marginBottom: '8px'
         },
         summaryValue: {
-            fontSize: '1.3rem',
+            fontSize: '1.25rem',
             color: '#1e293b',
             fontWeight: '700'
         },
         reportTable: {
             overflowX: 'auto',
-            borderRadius: '10px',
+            borderRadius: '8px',
             border: '1px solid #e2e8f0'
         },
         table: {
             width: '100%',
-            borderCollapse: 'collapse'
+            borderCollapse: 'collapse',
+            minWidth: '600px'
         },
         tableHeader: {
             padding: '16px 20px',
             textAlign: 'left',
-            borderBottom: '2px solid #e2e8f0',
+            borderBottom: '1px solid #e2e8f0',
             backgroundColor: '#f8fafc',
             fontWeight: '600',
             color: '#374151',
-            fontSize: '0.95rem'
+            fontSize: '0.875rem'
         },
         tableCell: {
             padding: '14px 20px',
             textAlign: 'left',
             borderBottom: '1px solid #f1f5f9',
+            fontSize: '0.875rem',
             transition: 'background-color 0.2s ease'
         },
         tableRow: {
@@ -410,33 +410,37 @@ const Reports = () => {
         },
         statusBadge: {
             padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '0.85rem',
+            borderRadius: '6px',
+            fontSize: '0.75rem',
             fontWeight: '600',
             textTransform: 'capitalize',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '5px'
+            gap: '4px'
         },
         statusPending: {
-            backgroundColor: '#fef3c7',
-            color: '#92400e'
+            backgroundColor: '#fffbeb',
+            color: '#d97706',
+            border: '1px solid #fed7aa'
         },
         statusApproved: {
-            backgroundColor: '#d1fae5',
-            color: '#065f46'
+            backgroundColor: '#f0fdf4',
+            color: '#16a34a',
+            border: '1px solid #bbf7d0'
         },
         statusReimbursed: {
-            backgroundColor: '#dbeafe',
-            color: '#1e40af'
+            backgroundColor: '#eff6ff',
+            color: '#2563eb',
+            border: '1px solid #bfdbfe'
         },
         statusGenerated: {
-            backgroundColor: '#e0e7ff',
-            color: '#3730a3'
+            backgroundColor: '#faf5ff',
+            color: '#7c3aed',
+            border: '1px solid #ddd6fe'
         },
         reportsList: {
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
             gap: '20px'
         },
         reportItem: {
@@ -444,15 +448,11 @@ const Reports = () => {
             flexDirection: 'column',
             padding: '20px',
             border: '1px solid #e2e8f0',
-            borderRadius: '12px',
-            transition: 'all 0.3s ease',
+            borderRadius: '8px',
+            transition: 'all 0.2s ease',
             backgroundColor: 'white',
-            cursor: 'pointer'
-        },
-        reportItemHover: {
-            transform: 'translateY(-5px)',
-            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-            borderColor: '#3b82f6'
+            cursor: 'pointer',
+            height: '100%'
         },
         reportInfo: {
             flex: 1
@@ -468,13 +468,13 @@ const Reports = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            marginBottom: '15px'
+            marginBottom: '16px'
         },
         reportMetaItem: {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontSize: '0.9rem',
+            fontSize: '0.875rem',
             color: '#64748b'
         },
         reportFooter: {
@@ -490,9 +490,9 @@ const Reports = () => {
         },
         loadingSpinner: {
             display: 'inline-block',
-            width: '20px',
-            height: '20px',
-            border: '3px solid rgba(255,255,255,.3)',
+            width: '16px',
+            height: '16px',
+            border: '2px solid rgba(255,255,255,.3)',
             borderRadius: '50%',
             borderTopColor: '#fff',
             animation: 'spin 1s ease-in-out infinite'
@@ -501,19 +501,20 @@ const Reports = () => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
-            fontSize: '0.8rem',
+            fontSize: '0.75rem',
             fontWeight: '600',
             padding: '2px 8px',
-            borderRadius: '10px',
-            marginLeft: '8px'
+            borderRadius: '4px'
         },
         trendUp: {
-            backgroundColor: '#d1fae5',
-            color: '#065f46'
+            backgroundColor: '#f0fdf4',
+            color: '#16a34a',
+            border: '1px solid #bbf7d0'
         },
         trendDown: {
-            backgroundColor: '#fee2e2',
-            color: '#991b1b'
+            backgroundColor: '#fef2f2',
+            color: '#dc2626',
+            border: '1px solid #fecaca'
         }
     };
 
@@ -525,26 +526,26 @@ const Reports = () => {
     // Animation keyframes
     const animationStyles = `
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
+            from { opacity: 0; transform: translateX(-10px); }
             to { opacity: 1; transform: translateX(0); }
         }
         
         @keyframes pulse {
             0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
         
         @keyframes bounce {
             0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0,-10px,0); }
-            70% { transform: translate3d(0,-5px,0); }
-            90% { transform: translate3d(0,-2px,0); }
+            40%, 43% { transform: translate3d(0,-5px,0); }
+            70% { transform: translate3d(0,-3px,0); }
+            90% { transform: translate3d(0,-1px,0); }
         }
         
         @keyframes fadeOut {
@@ -556,20 +557,58 @@ const Reports = () => {
             to { transform: rotate(360deg); }
         }
         
-        .fade-in { animation: fadeIn 0.8s ease-out; }
-        .slide-in { animation: slideIn 0.5s ease-out; }
-        .pulse { animation: pulse 0.5s ease-in-out; }
-        .bounce { animation: bounce 0.8s ease-in-out; }
-        .fade-out { animation: fadeOut 0.5s ease-out; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .pulse { animation: pulse 0.3s ease-in-out; }
+        .bounce { animation: bounce 0.5s ease-in-out; }
+        .fade-out { animation: fadeOut 0.3s ease-out; }
         
         /* Hover effects */
         .hover-lift:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
-        .hover-glow:hover {
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        .hover-glow:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .responsive-container {
+                padding: 16px 20px !important;
+            }
+            
+            .responsive-header {
+                text-align: center !important;
+                margin-bottom: 24px !important;
+            }
+            
+            .responsive-grid {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+            }
+            
+            .responsive-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .responsive-buttons button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .responsive-container {
+                padding: 12px 16px !important;
+            }
+            
+            .responsive-card {
+                padding: 20px !important;
+            }
         }
     `;
 
@@ -585,8 +624,8 @@ const Reports = () => {
     }, []);
 
     return (
-        <div style={styles.container} className={animationClass}>
-            <div style={styles.header}>
+        <div style={styles.container} className={`${animationClass} responsive-container`}>
+            {/* <div style={styles.header} className="responsive-header">
                 <h1 style={styles.headerTitle}>
                     <i className="fas fa-chart-bar"></i> Reports & Analytics
                 </h1>
@@ -594,15 +633,15 @@ const Reports = () => {
                     Generate and analyze expense reports with advanced filtering options.
                     Track spending trends and reimbursement status across departments.
                 </p>
-            </div>
+            </div> */}
 
             <div style={styles.content}>
                 {/* Report Generator Section */}
-                <div style={styles.card} className="hover-lift">
+                <div style={styles.card} className="hover-lift responsive-card">
                     <h2 style={styles.cardTitle}>
                         <i className="fas fa-cogs"></i> Report Generator
                     </h2>
-                    <div style={styles.filterOptions}>
+                    <div style={styles.filterOptions} className="responsive-grid">
                         <div style={styles.filterGroup}>
                             <label style={styles.filterLabel}>
                                 <i className="fas fa-chart-pie"></i> Report Type
@@ -683,7 +722,7 @@ const Reports = () => {
                         </div>
                     </div>
 
-                    <div style={styles.actionButtons}>
+                    <div style={styles.actionButtons} className="responsive-buttons">
                         <button
                             style={combineStyles(styles.button, styles.buttonPrimary)}
                             onClick={generateReport}
@@ -713,10 +752,10 @@ const Reports = () => {
 
                 {/* Generated Report Section */}
                 {generatedReport && (
-                    <div style={styles.card} className={`hover-lift ${animationClass}`}>
+                    <div style={styles.card} className={`hover-lift ${animationClass} responsive-card`}>
                         <div style={styles.reportHeader}>
-                            <h3>{generatedReport.title}</h3>
-                            <div style={styles.reportActions}>
+                            <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#1e293b' }}>{generatedReport.title}</h3>
+                            <div style={styles.reportActions} className="responsive-buttons">
                                 <button
                                     style={combineStyles(styles.button, styles.buttonDownload)}
                                     onClick={downloadCSV}
@@ -810,11 +849,11 @@ const Reports = () => {
                 )}
 
                 {/* Recent Reports Section */}
-                <div style={styles.card} className="hover-lift">
+                <div style={styles.card} className="hover-lift responsive-card">
                     <h2 style={styles.cardTitle}>
                         <i className="fas fa-history"></i> Recent Reports
                     </h2>
-                    <div style={styles.reportsList}>
+                    <div style={styles.reportsList} className="responsive-grid">
                         {reports.map(report => (
                             <div key={report.id} style={styles.reportItem} className="hover-lift">
                                 <div style={styles.reportInfo}>
