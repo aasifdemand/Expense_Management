@@ -173,14 +173,17 @@ const BudgetTable = ({
                                     </TableCell>
                                     <TableCell>
                                         {row?.createdAt
-                                            ? new Date(row.createdAt).toLocaleString("default", {
+                                            ? new Date(row.createdAt).toLocaleString("en-US", {
                                                 year: "numeric",
                                                 month: "short",
                                                 day: "numeric",
                                                 hour: "2-digit",
                                                 minute: "2-digit",
+                                                hour12: true,
+                                                timeZone: "Asia/Kolkata",
                                             })
                                             : "-"}
+
                                     </TableCell>
                                     <TableCell align="center">
                                         <IconButton onClick={() => handleOpen(row)} color="primary">

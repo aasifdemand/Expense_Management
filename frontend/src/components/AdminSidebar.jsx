@@ -336,18 +336,12 @@ const AdminSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        {logoutLoader ? (
-                            <Autorenew
-                                sx={{
-                                    animation: 'spin 1s linear infinite',
-                                }}
-                            />
-                        ) : (
-                            <LogoutIcon />
-                        )}
+
+                        <LogoutIcon />
+
                     </ListItemIcon>
                     <ListItemText
-                        primary={logoutLoader ? "Logging out..." : "Logout"}
+                        primary={"Logout"}
                         primaryTypographyProps={{
                             fontWeight: 600,
                             fontSize: isSmallMobile ? '0.85rem' : '0.95rem'

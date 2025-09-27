@@ -7,11 +7,13 @@ import {
   fetchExpenses
 } from "../store/expenseSlice";
 import { getMonthByNumber } from "../utils/get-month";
+import { fetchBudgets } from "../store/budgetSlice";
 
 export const useExpenses = () => {
   const dispatch = useDispatch();
-  const { expenses, loading, meta } = useSelector((state) => state?.expense);
-  const { users } = useSelector((state) => state?.auth);
+  const { expenses, loading, meta,userExpenses } = useSelector((state) => state?.expense);
+  const { role } = useSelector((state) => state?.auth);
+  const { users,user } = useSelector((state) => state?.auth);
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
@@ -43,6 +45,9 @@ export const useExpenses = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+
+  
+  
   
 useEffect(() => {
     const hasFilters =
@@ -64,13 +69,18 @@ useEffect(() => {
           page,
           limit,
         })
-      );
+      )
     }
-  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear]);
+  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear,role]);
 
 
   const handleOpen = (row) => {
-    setSelectedExpense(row);
+    console.log("row: ",row);
+    
+    setSelectedExpense({
+      name: user?.name,
+      ...row
+    });
     setFormData({
       userId: row.user?._id,
       amount: row.allocatedAmount,
@@ -88,7 +98,8 @@ useEffect(() => {
 
   const handleAdd = async () => {
     const response = await dispatch(addExpense(formData));
-    if (response) {
+    if (addExpense.fulfilled.match(response)) {
+      await dispatch(fetchBudgets())
       setFormData({
         userId: "",
         amount: "",
@@ -98,13 +109,17 @@ useEffect(() => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedExpense) return;
-    dispatch(updateExpense({ id: selectedExpense._id, updates: formData }));
+    const res = dispatch(updateExpense({ id: selectedExpense._id, updates: formData }));
+    if(updateExpense.fulfilled.match(res)){
+      await dispatch(fetchBudgets())
+    }
     setOpen(false);
   };
 
   return {
+    userExpenses,
     expenses,
     loading,
     meta,

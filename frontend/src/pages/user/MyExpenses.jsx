@@ -2,10 +2,17 @@ import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextFie
 import { useExpenses } from "../../hooks/useExpenses";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import { useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux";
+import { useEffect } from "react";
+import { fetchExpensesForUser } from "../../store/expenseSlice";
 
 export default function MyExpenses() {
+    const { user } = useSelector((state) => state?.auth)
 
-    const { expenses,
+
+
+    const {
+        userExpenses,
         loading,
         meta,
         page,
@@ -26,7 +33,22 @@ export default function MyExpenses() {
 
 
 
-    const navigate = useNavigate
+    const navigate = useNavigate()
+
+    const dispatch = useDispatch()
+
+    useEffect(() => {
+        dispatch(fetchExpensesForUser({
+            search,
+            month: filterMonth,
+            year: filterYear
+        }))
+    }, [dispatch, search, filterMonth, filterYear])
+
+
+
+
+
 
     return (
         <Box sx={{ mt: 4 }}>
@@ -62,7 +84,7 @@ export default function MyExpenses() {
             <ExpenseTable
                 limit={limit}
                 setLimit={setLimit}
-                expenses={expenses}
+                expenses={userExpenses}
                 loading={loading}
                 meta={meta}
                 page={page}
@@ -84,7 +106,7 @@ export default function MyExpenses() {
                         <>
                             <TextField
                                 label="Payee"
-                                value={selectedExpense.user?.name || ""}
+                                value={user?.name || ""}
                                 onChange={(e) =>
                                     setSelectedExpense({
                                         ...selectedExpense,

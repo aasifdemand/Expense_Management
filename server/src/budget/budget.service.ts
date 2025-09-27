@@ -60,58 +60,77 @@ export class BudgetService {
     async fetchAllocatedBudgets(page = 1, limit = 10) {
         const safePage = Math.max(page, 1);
         const skip = (safePage - 1) * limit;
-        const cacheKey = `budgets:all:${safePage}:${limit}`;
 
-        const cached = await this.cacheManager.get(cacheKey);
-        if (cached) {
-            return { message: "Fetched budgets from cache", ...(cached as any) };
+        // 🔹 Pagination cache (just the current slice of budgets)
+        const cacheKeyPage = `budgets:page:${safePage}:${limit}`;
+        const cachedPage = await this.cacheManager.get(cacheKeyPage);
+
+        // 🔹 Global stats cache (only computed once until invalidated)
+        const cacheKeyStats = `budgets:stats:global`;
+        const cachedStats = await this.cacheManager.get(cacheKeyStats);
+
+        // -----------------------------
+        // 1️⃣ Fetch paginated budgets
+        // -----------------------------
+        let budgets;
+        if (cachedPage) {
+            budgets = (cachedPage as any).data;
+        } else {
+            budgets = await this.budgetModel
+                .find()
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .populate({
+                    path: "user",
+                    select: "name _id",
+                })
+                .lean();
+
+            await this.cacheManager.set(cacheKeyPage, { data: budgets }, 60_000);
         }
 
-        // 1️⃣ Paginated query
-        const budgets = await this.budgetModel
-            .find()
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate({
-                path: "user",
-                select: "name _id",
-            })
-            .lean();
-
-        // 2️⃣ Count documents
-        const total = await this.budgetModel.countDocuments();
-
-        // 3️⃣ Stats aggregation (ignores skip/limit)
-        const stats = await this.budgetModel.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalAllocated: { $sum: "$allocatedAmount" },
-                    totalSpent: { $sum: "$spentAmount" },
+        // -----------------------------
+        // 2️⃣ Fetch global stats
+        // -----------------------------
+        let stats;
+        if (cachedStats) {
+            stats = cachedStats as any;
+        } else {
+            const [agg] = await this.budgetModel.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalAllocated: { $sum: "$allocatedAmount" },
+                        totalSpent: { $sum: "$spentAmount" },
+                        total: { $sum: 1 },
+                    },
                 },
-            },
-        ]);
+            ]);
 
-        const { totalAllocated = 0, totalSpent = 0 } = stats[0] || {};
+            stats = {
+                total: agg?.total || 0,
+                totalAllocated: agg?.totalAllocated || 0,
+                totalSpent: agg?.totalSpent || 0,
+            };
 
-        // 4️⃣ Final result
-        const result = {
-            message: "Fetched budgets successfully",
+            await this.cacheManager.set(cacheKeyStats, stats, 60_000);
+        }
+
+        // -----------------------------
+        // 3️⃣ Return combined response
+        // -----------------------------
+        return {
+            message: cachedPage ? "Fetched budgets from cache" : "Fetched budgets successfully",
             meta: {
-                total,
+                ...stats,
                 page: safePage,
                 limit,
-                totalAllocated,
-                totalSpent,
             },
             data: budgets,
         };
-
-        await this.cacheManager.set(cacheKey, result, 60_000);
-
-        return result;
     }
+
 
     async searchBudgetAllocations(filters: SearchBudgetAllocationsDto) {
         const {
@@ -130,12 +149,13 @@ export class BudgetService {
         const safeLimit = Math.max(Number(limit), 1);
         const skip = (safePage - 1) * safeLimit;
 
-        const cacheKey = `budgets:search:${JSON.stringify(filters)}`;
-        const cached = await this.cacheManager.get(cacheKey);
-        if (cached) {
-            return { message: "Fetched budgets from cache", ...(cached as any) };
-        }
+        // 🔹 Separate cache keys
+        const cacheKeyPage = `budgets:search:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;
+        const cacheKeyStats = `budgets:search:stats:${JSON.stringify(filters)}`;
 
+        // -----------------------------
+        // 1️⃣ Build match stage once
+        // -----------------------------
         const matchStage: any = {};
         if (month) matchStage.month = month;
         if (year) matchStage.year = year;
@@ -150,70 +170,106 @@ export class BudgetService {
             if (maxSpent !== undefined) matchStage.spentAmount.$lte = maxSpent;
         }
 
-        const pipeline: any[] = [
-            { $match: matchStage },
-            {
-                $lookup: {
-                    from: "users",
-                    let: { userId: { $toObjectId: "$user" } },
-                    pipeline: [
-                        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-                        { $project: { _id: 1, name: 1 } },
-                    ],
-                    as: "user",
+        // -----------------------------
+        // 2️⃣ Pagination (with cache)
+        // -----------------------------
+        let budgets;
+        const cachedPage = await this.cacheManager.get(cacheKeyPage);
+        if (cachedPage) {
+            budgets = (cachedPage as any).data;
+        } else {
+            const pipelinePage: any[] = [
+                { $match: matchStage },
+                {
+                    $lookup: {
+                        from: "users",
+                        let: { userId: { $toObjectId: "$user" } },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+                            { $project: { _id: 1, name: 1 } },
+                        ],
+                        as: "user",
+                    },
                 },
-            },
-            { $unwind: "$user" },
-        ];
+                { $unwind: "$user" },
+            ];
 
-        if (userName) {
-            pipeline.push({
-                $match: { "user.name": { $regex: userName, $options: "i" } },
-            });
+            if (userName) {
+                pipelinePage.push({
+                    $match: { "user.name": { $regex: userName, $options: "i" } },
+                });
+            }
+
+            pipelinePage.push({ $sort: { createdAt: -1 } });
+            pipelinePage.push({ $skip: skip });
+            pipelinePage.push({ $limit: safeLimit });
+
+            budgets = await this.budgetModel.aggregate(pipelinePage);
+
+            await this.cacheManager.set(cacheKeyPage, { data: budgets }, 60_000);
         }
 
-        // Pagination + totals + stats
-        pipeline.push({
-            $facet: {
-                data: [
-                    { $sort: { createdAt: -1 } },
-                    { $skip: skip },
-                    { $limit: safeLimit },
-                ],
-                totalCount: [{ $count: "count" }],
-                stats: [
-                    {
-                        $group: {
-                            _id: null,
-                            totalAllocated: { $sum: "$allocatedAmount" },
-                            totalSpent: { $sum: "$spentAmount" },
-                        },
+
+        let stats;
+        const cachedStats = await this.cacheManager.get(cacheKeyStats);
+        if (cachedStats) {
+            stats = cachedStats as any;
+        } else {
+            const pipelineStats: any[] = [
+                { $match: matchStage },
+                {
+                    $lookup: {
+                        from: "users",
+                        let: { userId: { $toObjectId: "$user" } },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+                            { $project: { _id: 1, name: 1 } },
+                        ],
+                        as: "user",
                     },
-                ],
-            },
-        });
+                },
+                { $unwind: "$user" },
+            ];
 
-        const [result] = await this.budgetModel.aggregate(pipeline);
+            if (userName) {
+                pipelineStats.push({
+                    $match: { "user.name": { $regex: userName, $options: "i" } },
+                });
+            }
 
-        const total = result?.totalCount?.[0]?.count || 0;
-        const { totalAllocated = 0, totalSpent = 0 } = result?.stats?.[0] || {};
+            pipelineStats.push({
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    totalAllocated: { $sum: "$allocatedAmount" },
+                    totalSpent: { $sum: "$spentAmount" },
+                },
+            });
 
-        const response = {
-            message: "Fetched budgets successfully",
+            const [agg] = await this.budgetModel.aggregate(pipelineStats);
+            stats = {
+                total: agg?.total || 0,
+                totalAllocated: agg?.totalAllocated || 0,
+                totalSpent: agg?.totalSpent || 0,
+            };
+
+            await this.cacheManager.set(cacheKeyStats, stats, 60_000);
+        }
+
+        // -----------------------------
+        // 4️⃣ Response
+        // -----------------------------
+        return {
+            message: cachedPage ? "Fetched budgets from cache" : "Fetched budgets successfully",
             meta: {
-                total,
+                ...stats,
                 page: safePage,
                 limit: safeLimit,
-                totalAllocated,
-                totalSpent,
             },
-            data: result?.data || [],
+            data: budgets,
         };
-
-        await this.cacheManager.set(cacheKey, response, 60_000);
-
-        return response;
     }
+
 
 
 

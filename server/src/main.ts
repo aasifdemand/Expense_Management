@@ -79,6 +79,7 @@ async function bootstrap() {
     '/api/v1/api-docs/json',
     '/api/v1/auth/login',
     '/api/v1/auth/2fa/verify',
+    '/api/v1/auth/2fa/show-qr'
 
   ];
 
@@ -90,12 +91,9 @@ async function bootstrap() {
   });
 
 
-<<<<<<< Updated upstream
 
 
 
-=======
->>>>>>> Stashed changes
   app.use((err, req, res, next) => {
 
     if (err.code !== 'EBADCSRFTOKEN') return next(err);

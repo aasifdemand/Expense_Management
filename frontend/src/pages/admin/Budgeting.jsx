@@ -40,8 +40,11 @@ const Budgeting = () => {
 
     const selectedMonth = currentMonth || new Date().getMonth() + 1;
 
-    const totalAllocated = meta?.totalAllocated
-    const totalSpent = meta?.totalSpent
+    const totalAllocated = meta?.totalAllocated || 0
+    const totalSpent = meta?.totalSpent || 0
+
+
+    // console.log("meta: ", meta);
 
     const stats = [
         { label: "Allocated Budget", value: `₹${totalAllocated}`, color: theme.palette.primary.main },

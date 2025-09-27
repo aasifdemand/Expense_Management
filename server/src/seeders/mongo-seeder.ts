@@ -24,14 +24,15 @@ async function seed() {
     // Array of users to create
     const users = [
       { name: 'Kaleem', password: 'kaleem@dcm', role: UserRole.SUPERADMIN },
-      { name: 'Ashraf', password: 'ashraf@dcm', role: UserRole.USER },
+      { name: 'Ashraf Ali', password: 'ashraf@dcm', role: UserRole.USER },
       { name: 'Nihal Ahmad', password: 'nihal@dcm', role: UserRole.USER },
       { name: 'Mohammed ovez', password: 'ovez@dcm', role: UserRole.USER },
-    //   { name: 'user4', password: 'password123', role: UserRole.USER },
-    //   { name: 'user5', password: 'password123', role: UserRole.USER },
-    //   { name: 'user6', password: 'password123', role: UserRole.USER },
-    //   { name: 'user7', password: 'password123', role: UserRole.USER },
-    //   { name: 'user8', password: 'password123', role: UserRole.USER },
+      { name: "Dinesh Kumar", password: "dinesh@dcm", role: UserRole.USER }
+      //   { name: 'user4', password: 'password123', role: UserRole.USER },
+      //   { name: 'user5', password: 'password123', role: UserRole.USER },
+      //   { name: 'user6', password: 'password123', role: UserRole.USER },
+      //   { name: 'user7', password: 'password123', role: UserRole.USER },
+      //   { name: 'user8', password: 'password123', role: UserRole.USER },
     ];
 
     // Hash passwords and insert users
