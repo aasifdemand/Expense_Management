@@ -342,6 +342,7 @@ const AdminSidebar = ({
                     </ListItemIcon>
                     <ListItemText
                         primary={"Logout"}
+
                         primaryTypographyProps={{
                             fontWeight: 600,
                             fontSize: isSmallMobile ? '0.85rem' : '0.95rem'

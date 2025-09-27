@@ -86,7 +86,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
 
                 <PrimaryButton
                     variant="contained"
-                    color="primary"
+                    color="blue"
                     loading={loading}
                     onClick={handleAdd}
                     sx={{

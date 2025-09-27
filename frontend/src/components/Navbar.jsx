@@ -45,8 +45,9 @@ const Navbar = ({
     const [notificationAnchor, setNotificationAnchor] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isSmallMobile = useMediaQuery('(max-width:480px)');
 
-    // Locations array
+    // Enhanced locations array
     const locations = [
         { id: "overall", name: "Overall", color: "#28be5dff" },
         { id: "bangalore", name: "Bangalore", color: "#3f51b5" },
@@ -71,20 +72,12 @@ const Navbar = ({
 
     const handleProfileClick = () => {
         handleMenuClose();
-        if (onProfileClick) {
-            onProfileClick();
-        } else {
-            console.log("Profile clicked");
-        }
+        if (onProfileClick) onProfileClick();
     };
 
     const handleSettingsClick = () => {
         handleMenuClose();
-        if (onSettingsClick) {
-            onSettingsClick();
-        } else {
-            console.log("Settings clicked");
-        }
+        if (onSettingsClick) onSettingsClick();
     };
 
     const handleLogoutClick = async () => {
@@ -93,21 +86,15 @@ const Navbar = ({
 
     const handleLocationChange = (event) => {
         const newLocation = event.target.value;
-        if (onLocationChange) {
-            onLocationChange(newLocation);
-        }
-        console.log(`Company location changed to: ${newLocation}`);
+        if (onLocationChange) onLocationChange(newLocation);
     };
 
     const handleDarkModeToggle = () => {
-        if (onDarkModeToggle) {
-            onDarkModeToggle();
-        }
+        if (onDarkModeToggle) onDarkModeToggle();
     };
 
-    // Get current location data
     const getCurrentLocation = () => {
-        return locations.find(loc => loc.id === (selectedLocation || "Overall")) || locations[0];
+        return locations.find(loc => loc.id === (selectedLocation || "overall")) || locations[0];
     };
 
     const currentLocation = getCurrentLocation();
@@ -130,9 +117,11 @@ const Navbar = ({
         >
             <Toolbar sx={{
                 minHeight: { xs: 56, sm: 64 },
-                px: { xs: 1, sm: 2 }
+                px: { xs: 1, sm: 2 },
+                py: { xs: 0.5, sm: 1 },
+                transition: 'all 0.3s ease',
             }}>
-                {/* Hamburger Menu for mobile */}
+                {/* Enhanced Hamburger Menu */}
                 <IconButton
                     color="inherit"
                     aria-label="open drawer"
@@ -141,55 +130,70 @@ const Navbar = ({
                     sx={{
                         mr: 2,
                         display: { md: 'none' },
-                        p: { xs: 0.5, sm: 1 }
+                        p: { xs: 0.5, sm: 1 },
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            transform: 'scale(1.1)',
+                        }
                     }}
                 >
                     <MenuIcon fontSize={isMobile ? "small" : "medium"} />
                 </IconButton>
 
-                {/* App Title for mobile */}
+                {/* Enhanced App Title */}
                 {isMobile && (
                     <Typography
                         variant="h6"
                         component="div"
                         sx={{
                             flexGrow: 1,
-                            fontSize: '1.1rem',
-                            fontWeight: 600
+                            fontSize: isSmallMobile ? '1rem' : '1.1rem',
+                            fontWeight: 600,
+                            transition: 'all 0.3s ease',
                         }}
                     >
                         ExpenseTracker
                     </Typography>
                 )}
 
-                {/* Right side icons */}
+                {/* Enhanced Right side icons */}
                 <Box sx={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: { xs: 0.5, sm: 1 },
-                    ml: 'auto'
+                    ml: 'auto',
+                    transition: 'all 0.3s ease',
                 }}>
-                    {/* Company State Dropdown - Only show on desktop */}
+                    {/* Enhanced Company State Dropdown */}
                     {!isMobile && (
                         <FormControl
                             size="small"
                             sx={{
                                 minWidth: 140,
-                                mr: 1
+                                mr: 1,
+                                transition: 'all 0.3s ease',
+                                '@media (max-width: 1024px)': {
+                                    minWidth: 120,
+                                }
                             }}
                         >
                             <Select
-                                value={selectedLocation || "Overall"}
+                                value={selectedLocation || "overall"}
                                 onChange={handleLocationChange}
                                 displayEmpty
                                 inputProps={{ 'aria-label': 'Select company location' }}
                                 sx={{
                                     fontSize: '0.875rem',
                                     height: 40,
+                                    transition: 'all 0.3s ease',
                                     '& .MuiSelect-select': {
                                         display: 'flex',
                                         alignItems: 'center',
                                         py: 1,
+                                    },
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
                                     }
                                 }}
                                 renderValue={(selected) => {
@@ -235,33 +239,47 @@ const Navbar = ({
                         </FormControl>
                     )}
 
-                    {/* Dark Mode Toggle - Only show on desktop */}
-                    {!isMobile && (
+                    {/* Enhanced Dark Mode Toggle */}
+                    {/* {!isMobile && (
                         <IconButton
                             size="medium"
                             aria-label="toggle dark mode"
                             color="inherit"
                             onClick={handleDarkModeToggle}
-                            sx={{ p: 1 }}
+                            sx={{
+                                p: 1,
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                    transform: 'scale(1.1)',
+                                }
+                            }}
                         >
                             {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
                         </IconButton>
-                    )}
+                    )} */}
 
-                    {/* Notifications */}
+                    {/* Enhanced Notifications */}
                     <IconButton
                         size={isMobile ? "small" : "medium"}
                         aria-label="show notifications"
                         color="inherit"
                         onClick={handleNotificationClick}
-                        sx={{ p: { xs: 0.5, sm: 1 } }}
+                        sx={{
+                            p: { xs: 0.5, sm: 1 },
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                transform: 'scale(1.1)',
+                            }
+                        }}
                     >
                         <Badge badgeContent={4} color="error" size={isMobile ? "small" : "medium"}>
                             <NotificationsIcon fontSize={isMobile ? "small" : "medium"} />
                         </Badge>
                     </IconButton>
 
-                    {/* Three dots menu */}
+                    {/* Enhanced Three dots menu */}
                     <IconButton
                         size={isMobile ? "small" : "medium"}
                         edge="end"
@@ -270,13 +288,20 @@ const Navbar = ({
                         aria-haspopup="true"
                         onClick={handleProfileMenuOpen}
                         color="inherit"
-                        sx={{ p: { xs: 0.5, sm: 1 } }}
+                        sx={{
+                            p: { xs: 0.5, sm: 1 },
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                transform: 'scale(1.1)',
+                            }
+                        }}
                     >
                         <MoreVertIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
                 </Box>
 
-                {/* Notification Menu */}
+                {/* Enhanced Notification Menu */}
                 <Menu
                     disableScrollLock
                     anchorEl={notificationAnchor}
@@ -299,6 +324,12 @@ const Navbar = ({
                             maxWidth: isMobile ? '90vw' : 400,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                            transition: 'all 0.3s ease',
+                            '@media (max-width: 480px)': {
+                                minWidth: '95vw',
+                                maxWidth: '95vw',
+                                mx: 1,
+                            }
                         }
                     }}
                 >
@@ -307,13 +338,15 @@ const Navbar = ({
                             display: 'flex',
                             alignItems: 'center',
                             px: 1,
-                            py: 0.5
+                            py: 0.5,
+                            transition: 'all 0.3s ease',
                         }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
                                 mr: 2,
-                                bgcolor: 'primary.main'
+                                bgcolor: 'primary.main',
+                                transition: 'all 0.3s ease',
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
@@ -332,13 +365,15 @@ const Navbar = ({
                             display: 'flex',
                             alignItems: 'center',
                             px: 1,
-                            py: 0.5
+                            py: 0.5,
+                            transition: 'all 0.3s ease',
                         }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
                                 mr: 2,
-                                bgcolor: 'success.main'
+                                bgcolor: 'success.main',
+                                transition: 'all 0.3s ease',
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
@@ -357,13 +392,15 @@ const Navbar = ({
                             display: 'flex',
                             alignItems: 'center',
                             px: 1,
-                            py: 0.5
+                            py: 0.5,
+                            transition: 'all 0.3s ease',
                         }}>
                             <Avatar sx={{
                                 width: 32,
                                 height: 32,
                                 mr: 2,
-                                bgcolor: 'warning.main'
+                                bgcolor: 'warning.main',
+                                transition: 'all 0.3s ease',
                             }}>
                                 <NotificationsIcon fontSize="small" />
                             </Avatar>
@@ -379,7 +416,7 @@ const Navbar = ({
                     </MenuItem>
                 </Menu>
 
-                {/* Profile Menu */}
+                {/* Enhanced Profile Menu */}
                 <Menu
                     disableScrollLock
                     anchorEl={anchorEl}
@@ -401,18 +438,30 @@ const Navbar = ({
                             minWidth: isMobile ? 200 : 220,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                            transition: 'all 0.3s ease',
+                            '@media (max-width: 480px)': {
+                                minWidth: '95vw',
+                                maxWidth: '95vw',
+                                mx: 1,
+                            }
                         }
                     }}
                 >
-                    {/* Location Selector for Mobile */}
+                    {/* Enhanced Location Selector for Mobile */}
                     {isMobile && (
-                        <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+                        <Box sx={{
+                            px: 2,
+                            py: 1,
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                            transition: 'all 0.3s ease',
+                        }}>
                             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
                                 Select Location
                             </Typography>
                             <FormControl fullWidth size="small">
                                 <Select
-                                    value={selectedLocation || "bangalore"}
+                                    value={selectedLocation || "overall"}
                                     onChange={handleLocationChange}
                                     displayEmpty
                                     sx={{ fontSize: '0.875rem' }}
@@ -436,7 +485,7 @@ const Navbar = ({
                         </Box>
                     )}
 
-                    {/* Current Location Display */}
+                    {/* Enhanced Current Location Display */}
                     <Box sx={{
                         px: 2,
                         py: 1,
@@ -444,7 +493,8 @@ const Navbar = ({
                         borderColor: 'divider',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        transition: 'all 0.3s ease',
                     }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <BusinessIcon
@@ -465,7 +515,7 @@ const Navbar = ({
                         </Box>
                     </Box>
 
-                    <MenuItem onClick={handleProfileClick}>
+                    <MenuItem onClick={handleProfileClick} sx={{ transition: 'all 0.3s ease' }}>
                         <AccountIcon sx={{
                             mr: 2,
                             fontSize: isMobile ? 18 : 20
@@ -473,7 +523,7 @@ const Navbar = ({
                         <Typography variant="body2">Profile</Typography>
                     </MenuItem>
 
-                    <MenuItem onClick={handleSettingsClick}>
+                    <MenuItem onClick={handleSettingsClick} sx={{ transition: 'all 0.3s ease' }}>
                         <SettingsIcon sx={{
                             mr: 2,
                             fontSize: isMobile ? 18 : 20
@@ -481,7 +531,7 @@ const Navbar = ({
                         <Typography variant="body2">Settings</Typography>
                     </MenuItem>
 
-                    {/* Dark Mode Toggle */}
+                    {/* Enhanced Dark Mode Toggle */}
                     <Box sx={{
                         px: 2,
                         py: 1,
@@ -490,7 +540,8 @@ const Navbar = ({
                         borderColor: 'divider',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        transition: 'all 0.3s ease',
                     }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                             {darkMode ? (
@@ -510,7 +561,7 @@ const Navbar = ({
                         />
                     </Box>
 
-                    <MenuItem onClick={handleLogoutClick}>
+                    <MenuItem onClick={handleLogoutClick} sx={{ transition: 'all 0.3s ease' }}>
                         <LogoutIcon sx={{
                             mr: 2,
                             fontSize: isMobile ? 18 : 20
