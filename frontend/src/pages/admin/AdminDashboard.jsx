@@ -220,28 +220,28 @@ const AdminDashboard = () => {
               {
                 title: "Total Allocated",
                 value: `₹15,500`,
-                icon: <WalletIcon />,
+                icon: "💰",
                 color: "#4361ee",
                 subtitle: "Monthly budget allocation"
               },
               {
                 title: "Total Spent",
                 value: `₹4,035`,
-                icon: <PaymentIcon />,
+                icon: "💳",
                 color: "#ef476f",
                 subtitle: "25.0% of budget used"
               },
               {
                 title: "Remaining Balance",
                 value: `₹11,465`,
-                icon: <TrendingUpIcon />,
+                icon: "📈",
                 color: "#06d6a0",
                 subtitle: "Available funds"
               },
               {
                 title: "Pending Reimbursements",
                 value: "2",
-                icon: <PendingIcon />,
+                icon: "📊",
                 color: "#ffd166",
                 subtitle: "Awaiting payment"
               },

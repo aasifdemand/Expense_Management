@@ -244,9 +244,10 @@ const Reports = () => {
         },
         filterOptions: {
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            height: "44px",
             gap: '24px',
-            marginBottom: '28px'
+            marginBottom: '78px'
         },
         filterGroup: {
             display: 'flex',

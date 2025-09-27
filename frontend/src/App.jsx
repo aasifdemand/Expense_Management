@@ -17,7 +17,11 @@ import Budgeting from "./pages/admin/Budgeting";
 import { useEffect } from "react";
 import { fetchAllUsers, fetchUser } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
-import CreateExpenseForm from "./components/user/ExpenseUploadForm";
+
+
+
+
+
 
 
 const App = () => {
@@ -31,7 +35,6 @@ const App = () => {
       dispatch(fetchAllUsers())
     }
   }, [dispatch, role])
-
 
 
   useEffect(() => {
@@ -58,7 +61,7 @@ const App = () => {
       {/* <Route
         path="/"
         element={isRedirectToUserDashboard ?
-          <Dashboard /> : <Navigate to={"/login"} />
+<Dashboard /> : <Navigate to={"/login"} />
         }
       /> */}
 
@@ -70,7 +73,7 @@ const App = () => {
           isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
         } />
         <Route path="add" element={
-          isRedirectToUserDashboard ? <CreateExpenseForm /> : <Navigate to="/login" />
+          isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
         } />
         <Route path="settings" element={
           isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
@@ -92,13 +95,35 @@ const App = () => {
             canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
           }
         />
+        <Route
+          path="dashboard"
+          element={
+            canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="budget"
+          element={
+            canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
+          }
+        />
 
         {/* Expenses Management */}
         <Route
           path="expenses"
           element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
         />
+        {/* Expenses Management */}
+        <Route
+          path="expenses"
+          element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
+        />
 
+        {/* Users */}
+        <Route
+          path="user"
+          element={canAccessAdminRoutes ? <User /> : <Navigate to="/login" />}
+        />
         {/* Users */}
         <Route
           path="user"
@@ -115,7 +140,6 @@ const App = () => {
           element={canAccessAdminRoutes ? <Settings /> : <Navigate to="/login" />}
         />
       </Route>
-
 
 
       {/* 2FA */}

@@ -14,21 +14,21 @@ const BudgetCard = ({ budgetData }) => {
             title: "Total Spent",
             subtitle: `${((budgetData.totalSpent / budgetData.monthlyBudget) * 100).toFixed(1)}% of budget used`,
             value: budgetData.totalSpent,
-            color: "#ef4444", // red
+            color: "#ef476f", // red/pink
             icon: <TrendingUp fontSize="large" />
         },
         {
             title: "Remaining Balance",
             subtitle: "Available funds",
             value: budgetData.remainingBalance,
-            color: "#10b981", // green
+            color: "#06d6a0", // green
             icon: <CurrencyRupee fontSize="large" />
         },
         {
             title: "Pending Reimbursements",
             subtitle: "Awaiting payment",
             value: budgetData.pendingReimbursements,
-            color: "#f59e0b", // yellow
+            color: "#ffd166", // yellow
             icon: <AccessTime fontSize="large" />
         },
     ];
