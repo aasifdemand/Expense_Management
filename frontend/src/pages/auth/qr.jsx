@@ -260,7 +260,7 @@ const QRVerification = () => {
                 >
                     Having trouble?{" "}
                     <Button
-                        // onClick={handleRegenerateQr}
+                        onClick={() => { }}
                         variant="text"
                         size="small"
                         sx={{

@@ -1,107 +1,101 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+// --------------------
+// ✅ Initial State
+// --------------------
 const initialState = {
     expenses: [],
+    userExpenses: [],
     expense: null,
     loading: false,
     error: null,
-    meta: { total: 0, page: 1, limit: 20 },
+    meta: {
+        total: 0,
+        page: 1,
+        limit: 20,
+    },
 };
 
+// --------------------
+// ✅ Async Thunks
+// --------------------
 
 export const addExpense = createAsyncThunk(
-    "expenses/add",
+    "expenses/addExpense",
     async (data, { getState, rejectWithValue }) => {
-
-        const { paidTo, amount, department, date, proof } = data
-        const formdata = new FormData()
-
-        formdata.append("paidTo", paidTo)
-        formdata.append("amount", amount)
-        formdata.append("department", department)
-        formdata.append("month", new Date(date)?.getMonth() + 1)
-        formdata.append("year", new Date(date)?.getFullYear())
-        formdata.append("proof", proof)
         try {
+            const { paidTo, amount, department, date, proof } = data;
+            const formData = new FormData();
+
+            formData.append("paidTo", paidTo);
+            formData.append("amount", amount);
+            formData.append("department", department);
+            formData.append("month", new Date(date).getMonth() + 1);
+            formData.append("year", new Date(date).getFullYear());
+            if (proof) formData.append("proof", proof);
+
             const csrf = getState().auth.csrf;
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASEURL}/expenses/create`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
 
-                        "x-csrf-token": csrf,
-                    },
-                    body: formdata
-                }
-            );
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/create`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "x-csrf-token": csrf,
+                },
+                body: formData,
+            });
 
-            if (!response.ok) {
-                throw new Error("Failed to add expense");
-            }
+            if (!response.ok) throw new Error("Failed to add expense");
 
-            const data = await response.json();
-            return data?.expense;
+            const result = await response.json();
+            return result?.expense;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Unexpected error");
         }
     }
 );
 
-// ✅ Update Expense
 export const updateExpense = createAsyncThunk(
-    "expenses/update",
+    "expenses/updateExpense",
     async ({ id, updates }, { getState, rejectWithValue }) => {
         try {
             const csrf = getState().auth.csrf;
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASEURL}/expenses/${id}`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-csrf-token": csrf,
-                    },
-                    body: JSON.stringify(updates),
-                }
-            );
 
-            if (!response.ok) {
-                throw new Error("Failed to update expense");
-            }
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/${id}`, {
+                method: "PATCH",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": csrf,
+                },
+                body: JSON.stringify(updates),
+            });
+
+            if (!response.ok) throw new Error("Failed to update expense");
 
             const data = await response.json();
             return data?.expense;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Unexpected error");
         }
     }
 );
 
 export const fetchExpenses = createAsyncThunk(
-    "expenses/fetchAll",
+    "expenses/fetchAllExpenses",
     async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
         try {
             const csrf = getState().auth.csrf;
 
-            const query = new URLSearchParams({
-                page: String(page),
-                limit: String(limit),
+            const query = new URLSearchParams({ page, limit });
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses?${query}`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": csrf,
+                },
             });
-
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASEURL}/expenses?${query.toString()}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-csrf-token": csrf,
-                    },
-                }
-            );
 
             if (!response.ok) throw new Error("Failed to fetch expenses");
 
@@ -111,31 +105,58 @@ export const fetchExpenses = createAsyncThunk(
                 meta: data?.meta || { total: 0, page: 1, limit: 20 },
             };
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Unexpected error");
         }
     }
 );
 
+export const fetchExpensesForUser = createAsyncThunk(
+    "expenses/fetchUserExpenses",
+    async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
+        try {
+            const csrf = getState().auth.csrf;
+
+            const query = new URLSearchParams({ page, limit });
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/user?${query}`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": csrf,
+                },
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch user expenses");
+
+            const data = await response.json();
+            return {
+                expenses: data?.data || [],
+                meta: data?.meta || { total: 0, page: 1, limit: 20 },
+            };
+        } catch (error) {
+            return rejectWithValue(error.message || "Unexpected error");
+        }
+    }
+);
 
 export const searchExpenses = createAsyncThunk(
-    "expenses/search",
-    async (
-        {
-            userName = "",
-            paidTo = "",
-            department = "",
-            isReimbursed,
-            isApproved,
-            minAmount,
-            maxAmount,
-            month,
-            year,
-            page = 1,
-            limit = 20,
-        },
-        { getState, rejectWithValue }
-    ) => {
+    "expenses/searchExpenses",
+    async (filters, { getState, rejectWithValue }) => {
         try {
+            const {
+                userName,
+                paidTo,
+                department,
+                isReimbursed,
+                isApproved,
+                minAmount,
+                maxAmount,
+                month,
+                year,
+                page = 1,
+                limit = 20,
+            } = filters;
+
             const csrf = getState().auth.csrf;
 
             const query = new URLSearchParams({
@@ -152,47 +173,46 @@ export const searchExpenses = createAsyncThunk(
                 limit: String(limit),
             });
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASEURL}/expenses/search?${query.toString()}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-csrf-token": csrf,
-                    },
-                }
-            );
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/search?${query}`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": csrf,
+                },
+            });
 
             if (!response.ok) throw new Error("Failed to search expenses");
 
             const data = await response.json();
-
             return {
                 expenses: data?.data || [],
                 meta: data?.meta || { total: data?.count || 0, page, limit },
             };
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Unexpected error");
         }
     }
 );
 
-// --- Slice ---
+// --------------------
+// ✅ Slice
+// --------------------
 const expenseSlice = createSlice({
     name: "expenses",
     initialState,
     reducers: {},
     extraReducers: (builder) => {
         builder
+            // ✅ Add Expense
             .addCase(addExpense.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(addExpense.fulfilled, (state, action) => {
                 state.loading = false;
-                state.expenses.unshift(action.payload);
                 state.expense = action.payload;
+                state.expenses.unshift(action.payload);
             })
             .addCase(addExpense.rejected, (state, action) => {
                 state.loading = false;
@@ -206,16 +226,19 @@ const expenseSlice = createSlice({
             })
             .addCase(updateExpense.fulfilled, (state, action) => {
                 state.loading = false;
-                const idx = state.expenses.findIndex((e) => e._id === action.payload._id);
-                if (idx !== -1) {
-                    state.expenses[idx] = action.payload;
-                }
-                state.expense = action.payload;
+                const updated = action.payload;
+                const idx = state.expenses.findIndex((e) => e._id === updated._id);
+                if (idx !== -1) state.expenses[idx] = updated;
+                const userIdx = state.userExpenses.findIndex((e) => e._id === updated._id);
+                if (userIdx !== -1) state.userExpenses[userIdx] = updated;
+                state.expense = updated;
             })
             .addCase(updateExpense.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
+
+            // ✅ Fetch All Expenses
             .addCase(fetchExpenses.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -230,7 +253,22 @@ const expenseSlice = createSlice({
                 state.error = action.payload;
             })
 
-            // Search
+            // ✅ Fetch User Expenses
+            .addCase(fetchExpensesForUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchExpensesForUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.userExpenses = action.payload.expenses;
+                state.meta = action.payload.meta;
+            })
+            .addCase(fetchExpensesForUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+
+            // ✅ Search Expenses
             .addCase(searchExpenses.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -247,4 +285,5 @@ const expenseSlice = createSlice({
     },
 });
 
+// --------------------
 export default expenseSlice.reducer;

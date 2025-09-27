@@ -27,6 +27,9 @@ export class User extends Document {
   expenses: Types.ObjectId[];
 
 
+  @Prop({ default: "Banglaore" })
+  userLoc?: string
+
   @Prop({ type: [{ type: Types.ObjectId, ref: "Budget" }] })
   allocatedBudgets: Types.ObjectId[];
 

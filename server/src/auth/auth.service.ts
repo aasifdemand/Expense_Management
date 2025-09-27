@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { User, UserRole } from 'src/models/user.model';
 import { AuthDto } from './dto/auth.dto';
 import * as speakeasy from 'speakeasy';
@@ -70,18 +70,16 @@ export class AuthService {
 
 
     async verifyTwoFactorCode(token: string, session: Record<string, any>) {
-
         console.log("session: ", session);
 
-
-        const user = await this.userModel.findById(session?.userId)
-
-        if (user?.twoFactorSecret !== session.twoFactorSecret) {
-            throw new UnauthorizedException("Unauthorized, please login again")
+        if (!session?.twoFactorSecret || !session?.userId) {
+            throw new UnauthorizedException('2FA not initialized in session');
         }
 
-        if (!session.twoFactorSecret || !session.userId) {
-            throw new UnauthorizedException('2FA not initialized in session');
+        const user = await this.userModel.findById(session.userId);
+
+        if (user?.twoFactorSecret !== session.twoFactorSecret) {
+            throw new UnauthorizedException("Unauthorized, please login again");
         }
 
         const verified = await speakeasy.totp.verify({
@@ -91,15 +89,18 @@ export class AuthService {
             window: 1,
         });
 
-        if (verified) {
-            session.twoFactorPending = false;
-            session.twoFactorVerified = true;
-            session.authenticated = true;
+        if (!verified) {
+            throw new UnauthorizedException('Invalid 2FA token');
         }
+
+        // Set session flags on successful verification
+        session.twoFactorPending = false;
+        session.twoFactorVerified = true;
+        session.authenticated = true;
 
         return {
             verified,
-            message: verified ? "Verified successfully" : "Invalid token",
+            message: "Verified successfully",
             session: {
                 twoFactorPending: session.twoFactorPending,
                 twoFactorVerified: session.twoFactorVerified,
@@ -109,22 +110,44 @@ export class AuthService {
     }
 
 
-    getSessionData(session: Record<string, any>) {
+
+    async getSessionData(session: Record<string, any>) {
         if (!session || !session.user) {
             throw new NotFoundException('Session not found or has expired');
         }
 
         if (session.twoFactorPending) {
-            throw new UnauthorizedException("Please verify first by 2FA")
+            throw new UnauthorizedException("Please verify first by 2FA");
+        }
+
+        const userId = session.userId as Types.ObjectId
+
+        const user = await this.userModel
+            .findById(userId)
+            .select("name email role expenses")
+            .populate({
+                path: "expenses",
+                select: "amount department paidTo isReimbursed proof year month createdAt",
+                options: { sort: { createdAt: -1 }, limit: 10 },
+            })
+            .lean();
+
+        if (!user) {
+            throw new NotFoundException("User not found");
         }
 
         return {
-            user: session.user,
+            user,
             twoFactorPending: session.twoFactorPending,
             twoFactorVerified: session.twoFactorVerified,
             authenticated: session.authenticated,
         };
     }
+
+
+
+
+
 
 
 

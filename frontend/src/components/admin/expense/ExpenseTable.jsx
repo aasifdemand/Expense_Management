@@ -15,8 +15,9 @@ import {
     MenuItem,
     Select,
     Stack,
+    Tooltip,
 } from "@mui/material";
-import { Edit } from "@mui/icons-material";
+import { DoneAll, Edit } from "@mui/icons-material";
 import {
     SectionCard,
     StyledTextField,
@@ -24,6 +25,9 @@ import {
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
 import { months } from "../../../utils/months";
+import { useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { updateExpense } from "../../../store/expenseSlice";
 
 const ExpenseTable = ({
     expenses,
@@ -41,6 +45,28 @@ const ExpenseTable = ({
     setLimit,
     limit,
 }) => {
+    const { pathname } = useLocation()
+    const dispatch = useDispatch()
+    console.log("pathname: ", pathname);
+    const { role } = useSelector((state) => state?.auth)
+
+    const handleReimburse = async (expense) => {
+        try {
+            await dispatch(updateExpense({
+                id: expense?._id,
+                updates: { isReimbursed: expense?.isReimbursed === true ? false : true }
+            }));
+
+
+
+        } catch (err) {
+            console.log("error: ", err);
+
+        }
+    };
+
+
+
     return (
         <SectionCard>
             {/* Filters */}
@@ -121,6 +147,12 @@ const ExpenseTable = ({
                 <Table>
                     <TableHead>
                         <TableRow>
+                            {
+                                pathname === "/admin/expenses" && role === "superadmin" ?
+                                    <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
+                                        User
+                                    </TableCell> : ""
+                            }
                             <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                 Paid To
                             </TableCell>
@@ -157,13 +189,19 @@ const ExpenseTable = ({
                                         "&:hover": { backgroundColor: "action.hover" },
                                     }}
                                 >
+                                    {
+                                        pathname === "/admin/expenses" && role === "superadmin" ? <TableCell>
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                <Avatar sx={{ bgcolor: "secondary.main" }}>
+                                                    {row?.user?.name?.charAt(0).toUpperCase()}
+                                                </Avatar>
+                                                <Typography fontWeight={500}>{row?.user?.name}</Typography>
+                                            </Box>
+                                        </TableCell> : ""
+                                    }
+
                                     <TableCell>
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                            <Avatar sx={{ bgcolor: "secondary.main" }}>
-                                                {row?.user?.name?.charAt(0).toUpperCase()}
-                                            </Avatar>
-                                            <Typography fontWeight={500}>{row?.user?.name}</Typography>
-                                        </Box>
+                                        {row?.paidTo}
                                     </TableCell>
                                     <TableCell sx={{ fontWeight: "bold" }}>
                                         ₹{row?.amount?.toLocaleString()}
@@ -171,19 +209,36 @@ const ExpenseTable = ({
                                     <TableCell>{row?.department || "-"}</TableCell>
                                     <TableCell>
                                         {row?.createdAt
-                                            ? new Date(row?.createdAt).toLocaleString("default", {
+                                            ? new Date(row.createdAt).toLocaleString("en-US", {
                                                 year: "numeric",
                                                 month: "short",
                                                 day: "numeric",
                                                 hour: "2-digit",
                                                 minute: "2-digit",
+                                                hour12: true,
+                                                timeZone: "Asia/Kolkata",
                                             })
                                             : "-"}
                                     </TableCell>
                                     <TableCell align="center">
-                                        <IconButton onClick={() => handleOpen(row)} color="primary">
-                                            <Edit />
-                                        </IconButton>
+                                        {
+                                            pathname === "/expenses" && role === "user" && <IconButton onClick={() => handleOpen(row)} color="primary">
+                                                <Edit />
+                                            </IconButton>
+                                        }
+                                        {pathname === "/admin/expenses" && role === "superadmin" && (
+                                            <Tooltip title={row?.isReimbursed ? "Already Reimbursed" : "Mark as Reimbursed"}>
+                                                <span> {/* Needed to avoid button disabling tooltip issue */}
+                                                    <IconButton
+                                                        onClick={() => handleReimburse(row)}
+                                                        color="success"
+                                                        disabled={row?.isReimbursed}
+                                                    >
+                                                        <DoneAll />
+                                                    </IconButton>
+                                                </span>
+                                            </Tooltip>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))

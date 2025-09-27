@@ -30,13 +30,6 @@ export class ExpensesController {
       if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
         throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
       }
-
-      if (session?.user && session?.user?.role !== "user") {
-        throw new UnauthorizedException("Only users can create the expenses")
-      }
-
-
-
       return this.expensesService.handleCreateExpense(createExpenseDto, session?.userId as string, file);
     } catch (error) {
       throw error;
@@ -69,10 +62,23 @@ export class ExpensesController {
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
-    if (session?.user && session?.user?.role !== "superadmin") {
-      throw new UnauthorizedException("You are not authorized to view expenses");
-    }
+
     return this.expensesService.searchReimbursements(search, Number(page), Number(limit));
+  }
+
+
+  @Get("user")
+  @UseGuards(CsrfGuard)
+  async getExpensesForUser(
+    @Query("page") page = "1",
+    @Query("limit") limit = "20",
+    @Session() session: Record<string, any>,
+  ) {
+    if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
+      throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
+    }
+
+    return this.expensesService.getAllExpensesForUser(Number(page), Number(limit), session);
   }
 
 
@@ -94,7 +100,7 @@ export class ExpensesController {
 
   @Patch(":id")
   @UseGuards(CsrfGuard)
-
+  @UsePipes(new ValidationPipe({ transform: true, forbidNonWhitelisted: true, whitelist: true }))
   async updateExpense(@Body() data: UpdateExpenseDto, @Param("id") id: string, @Session() session: Record<string, any>,) {
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first")

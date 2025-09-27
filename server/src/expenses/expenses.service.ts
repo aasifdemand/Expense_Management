@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PipelineStage } from 'mongoose';
+import { Model, PipelineStage, Types } from 'mongoose';
 import { Expense } from 'src/models/expense.model';
 import { CreateExpenseDto, UpdateExpenseDto } from './dtos/create-expense.dto';
 import { ImagekitService } from 'src/services/media.service';
@@ -26,12 +27,18 @@ export class ExpensesService {
         // private readonly notificationService: NotificationsService
     ) { }
 
+    private EXPENSE_ALL_KEY = (page: number, limit: number) => `expenses:all:${page}:${limit}`;
+    private EXPENSE_USER_KEY = (userId: string, page: number, limit: number) => `expenses:user:${userId}:${page}:${limit}`;
+    private EXPENSE_BY_ID_KEY = (id: string) => `expenses:${id}`;
 
 
-    async handleCreateExpense(data: CreateExpenseDto, userId: string, file?: Express.Multer.File,) {
+
+
+
+    async handleCreateExpense(data: CreateExpenseDto, userId: string, file?: Express.Multer.File) {
         const { amount, department, paidTo, isReimbursed, year, month } = data;
 
-        const user = await this.userModal.findById(userId).select("name _id");
+        const user = await this.userModal.findById(userId).select("name _id expenses");
         if (!user) throw new NotFoundException("User not found!!");
 
         let proof: string | undefined;
@@ -46,33 +53,31 @@ export class ExpensesService {
         }
 
 
-
-
-        const filter = {
+        const budgets = await this.budgetModel.find({
             user: userId,
             year,
-            month
-        };
+            month,
+        });
 
-        console.log("Budget filter:", filter);
-
-        const budget = await this.budgetModel.findOne(filter);
-
-        // if (!budget) {
-        //     throw new BadRequestException(
-        //         "No budget allocated for this user this month by Superadmin"
-        //     );
-        // }
-
-        // if (budget.spentAmount === budget.allocatedAmount) {
-        //     throw new BadRequestException("Sorry your allocated balance has been spent already")
-        // }
-
-        // if (budget.spentAmount + Number(amount) > budget.allocatedAmount) {
-        //     throw new BadRequestException("Expense exceeds allocated budget limit");
-        // }
+        if (!budgets || budgets.length === 0) {
+            throw new BadRequestException("No budget allocated for this user this month by Superadmin");
+        }
 
 
+        let selectedBudget: Budget | null = null;
+
+        for (const b of budgets) {
+            if (b.spentAmount < b.allocatedAmount && b.spentAmount + Number(amount) <= b.allocatedAmount) {
+                selectedBudget = b;
+                break;
+            }
+        }
+
+        if (!selectedBudget) {
+            throw new BadRequestException("No budget found with sufficient remaining balance.");
+        }
+
+        // 💸 Create expense
         const newExpense = new this.expenseModal({
             amount,
             department,
@@ -81,48 +86,55 @@ export class ExpensesService {
             proof,
             paidTo,
             year,
-            month
+            month,
         });
 
         const expense = await newExpense.save();
 
-        budget!.spentAmount += amount;
-        await budget?.save();
+
+        selectedBudget.spentAmount += amount;
+        await selectedBudget.save();
 
 
-        const safeUser = {
-            id: user._id,
-            name: user.name,
-        };
+        await this.userModal.findByIdAndUpdate(userId, {
+            $push: { expenses: expense._id },
+        });
 
+        // 📦 Optional: notify superadmin
         // const superadmin = await this.userModal.findOne({ role: UserRole.SUPERADMIN });
-
         // if (superadmin) {
         //     await this.notificationService.createNotification(
-        //         superadmin?._id as string,
+        //         superadmin._id,
         //         `${user.name} created a new expense of ₹${amount} in ${department}`
-        //     )
+        //     );
         // }
 
 
+        await Promise.all([
+            this.cacheManager.del(this.EXPENSE_BY_ID_KEY(expense._id as string)),
+            this.cacheManager.del(`expenses:all:${1}:${20}`),
+            this.cacheManager.del(`expenses:user:${userId}:${1}:${20}`),
+            this.cacheManager.del('expenses:search:*'),
+        ]);
 
-
-        await this.cacheManager.del("expenses:all");
-        await this.cacheManager.del("expenses:search:*");
 
         return {
             message: "Created the new Expense successfully",
             expense: {
                 ...expense.toObject(),
-                user: safeUser,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                },
             },
             budget: {
-                allocated: budget!.allocatedAmount,
-                spent: budget!.spentAmount,
-                remaining: budget!.allocatedAmount - budget!.spentAmount,
+                allocated: selectedBudget.allocatedAmount,
+                spent: selectedBudget.spentAmount,
+                remaining: selectedBudget.allocatedAmount - selectedBudget.spentAmount,
             },
         };
     }
+
 
 
 
@@ -209,7 +221,7 @@ export class ExpensesService {
         return result;
     }
 
-    async getAllExpenses(page = 1, limit = 20) {
+    async getAllExpenses(page = 1, limit = 10) {
         const safePage = Math.max(page, 1);
         const safeLimit = Math.max(limit, 1);
         const skip = (safePage - 1) * safeLimit;
@@ -252,6 +264,71 @@ export class ExpensesService {
 
 
 
+
+    async getAllExpensesForUser(page = 1, limit = 10, session: Record<string, any>) {
+        console.log("getAllExpensesForUser — session:", session);
+
+        if (!session?.userId) {
+            throw new UnauthorizedException("Unauthorized: User not logged in");
+        }
+
+        const userId = session.userId;
+
+
+        let userIdObj: Types.ObjectId;
+        try {
+            userIdObj = new Types.ObjectId(userId);
+        } catch (err: any) {
+            console.warn("Invalid userId format:", userId, err);
+            throw new UnauthorizedException("Invalid user ID in session");
+        }
+
+        const safePage = Math.max(page, 1);
+        const safeLimit = Math.max(limit, 1);
+        const skip = (safePage - 1) * safeLimit;
+
+        const cacheKey = this.EXPENSE_USER_KEY(userId, safePage, safeLimit);
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            console.log("Returning from cache for user:", userId, "key:", cacheKey);
+            return { message: "Fetched user's expenses from cache", ...(cached as any) };
+        }
+
+        // Log before query
+        console.log("Querying expenses for user:", userIdObj);
+
+        const [expenses, total] = await Promise.all([
+            this.expenseModal
+                .find({ user: userIdObj })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(safeLimit)
+                .populate({ path: "user", select: "name _id" })
+                .lean(),
+            this.expenseModal.countDocuments({ user: userIdObj }),
+        ]);
+
+        console.log("Fetched expenses count:", expenses.length, "total:", total);
+
+        const result = {
+            message: "Fetched user's expenses successfully",
+            meta: {
+                total,
+                page: safePage,
+                limit: safeLimit,
+            },
+            data: expenses,
+        };
+
+        // Cache it
+        await this.cacheManager.set(cacheKey, result, 60_000);
+
+        return result;
+    }
+
+
+
+
     async getExpenseById(id: string) {
         const cacheKey = `expenses:${id}`;
         const cached = await this.cacheManager.get(cacheKey);
@@ -286,9 +363,13 @@ export class ExpensesService {
             throw new NotFoundException("Expense doesn't exist");
         }
 
-        await this.cacheManager.del(`expenses:${id}`);
-        await this.cacheManager.del("expenses:all");
-        await this.cacheManager.del("expenses:search:*");
+        await Promise.all([
+            this.cacheManager.del(this.EXPENSE_BY_ID_KEY(id)),
+            this.cacheManager.del(this.EXPENSE_ALL_KEY(1, 20)),
+            this.cacheManager.del('expenses:search:*'),
+            this.cacheManager.del(this.EXPENSE_USER_KEY(updatedExpense.user._id.toString(), 1, 20)),
+        ]);
+
 
         return { message: "Expense updated successfully", expense: updatedExpense };
     }

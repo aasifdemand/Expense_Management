@@ -72,7 +72,7 @@ useEffect(() => {
   const handleOpen = (row) => {
     setSelectedBudget(row);
     setFormData({
-      userId: row.user?._id,
+      userId: row?.user?._id,
       amount: row.allocatedAmount,
       month: row.month,
       year: row.year,
@@ -87,20 +87,31 @@ useEffect(() => {
   };
 
   const handleAdd = async () => {
-    const response = await dispatch(allocateBudget(formData));
-    if (response) {
-      setFormData({
-        userId: "",
-        amount: "",
-        month: currentMonth,
-        year: year,
-      });
-    }
-  };
+  const resultAction = await dispatch(allocateBudget(formData));
 
-  const handleSubmit = () => {
+  if (allocateBudget.fulfilled.match(resultAction)) {
+   
+    await dispatch(fetchBudgets());
+
+    setFormData({
+      userId: "",
+      amount: "",
+      month: currentMonth,
+      year: year,
+    });
+  } else {
+    
+    console.error("Allocation failed:", resultAction);
+  }
+};
+
+
+  const handleSubmit =async () => {
     if (!selectedBudget) return;
-    dispatch(updateBudget({ id: selectedBudget._id, updates: formData }));
+    const res = await dispatch(updateBudget({ id: selectedBudget._id, updates: formData }));
+    if(updateBudget.fulfilled.match(res)){
+      await dispatch(fetchBudgets());
+    }
     setOpen(false);
   };
 

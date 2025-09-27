@@ -137,7 +137,7 @@ export const searchBudgets = createAsyncThunk(
 
 export const updateBudget = createAsyncThunk(
   "budget/update",
-  async ({ id, updates }, { getState, rejectWithValue }) => {
+  async ({ id, updates }, { dispatch, getState, rejectWithValue }) => {
     try {
       const csrf = getState().auth.csrf;
       const response = await fetch(
@@ -158,6 +158,11 @@ export const updateBudget = createAsyncThunk(
       }
 
       const data = await response.json();
+
+      // ✅ Re-fetch latest budgets + meta
+      const { page, limit } = getState().budget.meta;
+      dispatch(fetchBudgets({ page, limit }));
+
       return data?.budget;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -209,11 +214,8 @@ const budgetSlice = createSlice({
       })
       .addCase(updateBudget.fulfilled, (state, action) => {
         state.loading = false;
-        const idx = state.budgets.findIndex((b) => b._id === action.payload._id);
-        if (idx !== -1) {
-          state.budgets[idx] = action.payload;
-        }
         state.budget = action.payload;
+
       })
       .addCase(updateBudget.rejected, (state, action) => {
         state.loading = false;

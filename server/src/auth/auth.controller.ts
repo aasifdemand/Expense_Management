@@ -37,11 +37,16 @@ export class AuthController {
     return result;
   }
 
+
+
   @Get('csrf-token')
   getCsrfToken(@Req() req: Request) {
     console.log("Generated CSRF token:", req.csrfToken());
     return { csrfToken: req.csrfToken() };
   }
+
+
+
 
 
 
