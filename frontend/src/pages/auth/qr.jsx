@@ -250,28 +250,7 @@ const QRVerification = () => {
                     {isLoading ? "Verifying..." : "Verify Code"}
                 </Button>
 
-                {/* Help text */}
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    align="center"
-                    mt={3}
-                    sx={{ fontWeight: 500 }}
-                >
-                    Having trouble?{" "}
-                    <Button
-                        onClick={() => { }}
-                        variant="text"
-                        size="small"
-                        sx={{
-                            textTransform: "none",
-                            fontWeight: 600,
-                            color: "primary.main",
-                        }}
-                    >
-                        Regenerate QR
-                    </Button>
-                </Typography>
+
             </Paper>
         </Box>
     );

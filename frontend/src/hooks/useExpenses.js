@@ -4,16 +4,17 @@ import {
   updateExpense,
   addExpense,
   searchExpenses,
-  fetchExpenses
+  fetchExpenses,
+  fetchExpensesForUser
 } from "../store/expenseSlice";
 import { getMonthByNumber } from "../utils/get-month";
 import { fetchBudgets } from "../store/budgetSlice";
 
 export const useExpenses = () => {
   const dispatch = useDispatch();
-  const { expenses, loading, meta,userExpenses } = useSelector((state) => state?.expense);
+  const { expenses, loading, meta, userExpenses, stats, allExpenses } = useSelector((state) => state?.expense);
   const { role } = useSelector((state) => state?.auth);
-  const { users,user } = useSelector((state) => state?.auth);
+  const { users, user } = useSelector((state) => state?.auth);
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
@@ -27,6 +28,8 @@ export const useExpenses = () => {
     month: currentMonth,
     year: year,
   });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
 
   const [open, setOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
@@ -46,16 +49,35 @@ export const useExpenses = () => {
   }, [search]);
 
 
-  
-  
-  
-useEffect(() => {
+
+
+
+  useEffect(() => {
     const hasFilters =
       Boolean(filterMonth) || Boolean(filterYear) || debouncedSearch?.trim();
 
-    if (hasFilters) {
+    if (role === "superadmin") {
+      if (hasFilters) {
+        dispatch(
+          searchExpenses({
+            userName: debouncedSearch || undefined,
+            month: filterMonth || undefined,
+            year: filterYear || undefined,
+            page,
+            limit,
+          })
+        );
+      } else {
+        dispatch(
+          fetchExpenses({
+            page,
+            limit,
+          })
+        );
+      }
+    } else {
       dispatch(
-        searchExpenses({
+        fetchExpensesForUser({
           userName: debouncedSearch || undefined,
           month: filterMonth || undefined,
           year: filterYear || undefined,
@@ -63,20 +85,15 @@ useEffect(() => {
           limit,
         })
       );
-    } else {
-      dispatch(
-        fetchExpenses({
-          page,
-          limit,
-        })
-      )
     }
-  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear,role]);
+  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear, role]);
+
+
 
 
   const handleOpen = (row) => {
-    console.log("row: ",row);
-    
+    console.log("row: ", row);
+
     setSelectedExpense({
       name: user?.name,
       ...row
@@ -99,7 +116,8 @@ useEffect(() => {
   const handleAdd = async () => {
     const response = await dispatch(addExpense(formData));
     if (addExpense.fulfilled.match(response)) {
-      await dispatch(fetchBudgets())
+      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
+      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
       setFormData({
         userId: "",
         amount: "",
@@ -111,14 +129,25 @@ useEffect(() => {
 
   const handleSubmit = async () => {
     if (!selectedExpense) return;
-    const res = dispatch(updateExpense({ id: selectedExpense._id, updates: formData }));
-    if(updateExpense.fulfilled.match(res)){
-      await dispatch(fetchBudgets())
+
+    try {
+      const resultAction = await dispatch(updateExpense({ id: selectedExpense._id, updates: formData }));
+      if (updateExpense.fulfilled.match(resultAction)) {
+        await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
+        await dispatch(fetchExpenses({ page: 1, limit: 20 }));
+      } else {
+        console.error("Update expense failed:", resultAction.payload || resultAction.error);
+      }
+      setOpen(false);
+    } catch (err) {
+      console.error("Unexpected error updating expense:", err);
     }
-    setOpen(false);
   };
 
+
   return {
+    allExpenses,
+    stats,
     userExpenses,
     expenses,
     loading,
@@ -147,5 +176,7 @@ useEffect(() => {
     getMonthByNumber,
     selectedExpense,
     setSelectedExpense,
+    selectedMonth,
+    setSelectedMonth,
   };
 };

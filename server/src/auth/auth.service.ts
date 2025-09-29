@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -17,56 +18,52 @@ export class AuthService {
     constructor(@InjectModel(User.name) private readonly userModel: Model<User>) { }
 
     async auth(data: AuthDto, session: Record<string, any>) {
-
-        // Todo: session has to be deleted before re-login
-
         const user = await this.userModel.findOne({ name: data.name });
         if (!user) throw new UnauthorizedException('User not found');
 
         const passwordMatches = await argon2.verify(user.password, data.password);
         if (!passwordMatches) throw new UnauthorizedException('Invalid password');
 
-        const secret = speakeasy.generateSecret({
-            name: `ExpenseManagement (${data.name})`,
-        });
+        let qrCodeDataUrl: string | null = null;
 
-        const qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
-
-        user.password = await argon2.hash(data.password);
-        user.twoFactorSecret = secret.base32;
-        await user.save();
-
+        // If user has no secret yet, generate one and save
+        if (!user.twoFactorSecret) {
+            const secret = speakeasy.generateSecret({
+                name: `ExpenseManagement (${user.name})`,
+            });
+            user.twoFactorSecret = secret.base32;
+            await user.save();
+            qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+        }
 
         const safeUser = {
-            id: user?._id?.toString(),
+            id: user._id as Types.ObjectId, // important: session stores string IDs
             name: user.name,
             role: user.role,
         };
 
-
         session.user = safeUser;
         session.userId = safeUser.id;
-        session.twoFactorSecret = secret.base32;
+        session.twoFactorSecret = user.twoFactorSecret; // use saved secret
         session.twoFactorPending = true;
         session.twoFactorVerified = false;
-        session.authenticated = false
+        session.authenticated = false;
 
-        await new Promise((resolve, reject) => {
-            session.save((err) => (err ? reject(err) : resolve(true)));
-        });
-
+        await new Promise((resolve, reject) => session.save(err => (err ? reject(err) : resolve(true))));
 
         return {
             status: HttpStatus.OK,
+            qr: qrCodeDataUrl, // only send QR if first time setup
             session: {
-                role: session?.user?.role,
-                twoFactorPending: session?.twoFactorPending,
-                twoFactorVerified: session?.twoFactorVerified,
-                authenticated: session?.authenticated
+                role: session.user.role,
+                twoFactorPending: session.twoFactorPending,
+                twoFactorVerified: session.twoFactorVerified,
+                authenticated: session.authenticated,
             },
-            qr: qrCodeDataUrl,
         };
     }
+
+
 
 
     async verifyTwoFactorCode(token: string, session: Record<string, any>) {
@@ -82,11 +79,11 @@ export class AuthService {
             throw new UnauthorizedException("Unauthorized, please login again");
         }
 
-        const verified = await speakeasy.totp.verify({
-            secret: session.twoFactorSecret,
+        const verified = speakeasy.totp.verify({
+            secret: session.twoFactorSecret, // must match saved base32
             encoding: 'base32',
             token,
-            window: 1,
+            window: 1, // allows 30s drift
         });
 
         if (!verified) {

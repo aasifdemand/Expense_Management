@@ -1,28 +1,22 @@
 import { useMemo } from "react";
-import { BarChart } from "@mui/x-charts/BarChart";
-import {
-    Box,
-    Typography,
-    FormControl,
-    Select,
-    MenuItem,
-    InputLabel,
-} from "@mui/material";
+import { LineChart } from "@mui/x-charts/LineChart";
+import { Box, Typography, FormControl, Select, MenuItem, InputLabel } from "@mui/material";
 
 const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ];
 
-const BudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) => {
+const DashboardBudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) => {
     const currentMonth = new Date().getMonth() + 1;
     const monthNumber = Number(selectedMonth) || currentMonth;
 
     const filteredBudgets = useMemo(
         () =>
-            budgets?.filter(
-                (b) => Number(b.month) === monthNumber && Number(b.year) === Number(year)
-            ) || [],
+            budgets?.filter((b) => {
+                const date = new Date(b.createdAt);
+                return date.getMonth() + 1 === monthNumber && date.getFullYear() === Number(year);
+            }) || [],
         [budgets, monthNumber, year]
     );
 
@@ -47,10 +41,10 @@ const BudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) 
                 borderRadius: 3,
                 bgcolor: "background.paper",
                 boxShadow: 2,
-                mb: 4
+                mb: 4,
             }}
         >
-            {/* Header with Title + Dropdown */}
+            {/* Header */}
             <Box
                 sx={{
                     display: "flex",
@@ -62,7 +56,7 @@ const BudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) 
                 }}
             >
                 <Typography variant="h6" fontWeight="bold">
-                    Budget Analysis – {year}
+                    Daily Budget – {year}
                 </Typography>
 
                 <FormControl size="small" sx={{ minWidth: 180 }}>
@@ -73,33 +67,37 @@ const BudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) 
                         onChange={(e) => setSelectedMonth(Number(e.target.value))}
                     >
                         {months.map((m, i) => (
-                            <MenuItem key={m} value={i + 1}>
-                                {m}
-                            </MenuItem>
+                            <MenuItem key={m} value={i + 1}>{m}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
             </Box>
 
-            {/* Chart */}
-            <BarChart
+            {/* Line Chart with animation */}
+            <LineChart
+                series={[
+                    {
+                        type: "line",
+                        data: allocatedPerDay,
+                        label: "Allocated",
+                        color: theme.palette.primary.main,
+                        area: true,
+                        animation: { duration: 1000, easing: "easeInOut" }, // Smooth animation
+                    },
+                    {
+                        type: "line",
+                        data: spentPerDay,
+                        label: "Spent",
+                        color: theme.palette.secondary.main,
+                        area: true,
+                        animation: { duration: 1000, easing: "easeInOut" },
+                    },
+                ]}
                 xAxis={[
                     {
                         scaleType: "band",
                         data: Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`),
-                        label: `${selectedMonth}`,
-                    },
-                ]}
-                series={[
-                    {
-                        data: allocatedPerDay,
-                        label: "Allocated",
-                        color: theme.palette.primary.main,
-                    },
-                    {
-                        data: spentPerDay,
-                        label: "Spent",
-                        color: theme.palette.secondary.main,
+                        label: `${months[monthNumber - 1]}`,
                     },
                 ]}
                 height={350}
@@ -109,4 +107,4 @@ const BudgetChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) 
     );
 };
 
-export default BudgetChart;
+export default DashboardBudgetChart;

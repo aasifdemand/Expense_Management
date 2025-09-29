@@ -105,9 +105,9 @@ export class ExpensesController {
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
     }
-    if (session?.user && session?.user?.role !== "superadmin") {
-      throw new UnauthorizedException("you are not authorized to Update this expense")
-    }
+    // if (session?.user && session?.user?.role !== "superadmin") {
+    //   throw new UnauthorizedException("you are not authorized to Update this expense")
+    // }
 
     return this.expensesService.updateReimbursement(data, id)
   }
