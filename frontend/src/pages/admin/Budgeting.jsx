@@ -5,12 +5,15 @@ import BudgetChart from "../../components/admin/budgeting/BudgetChart";
 import BudgetForm from "../../components/admin/budgeting/BudgetForm";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { fetchAllUsers } from "../../store/authSlice";
 
 const Budgeting = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const isSmallMobile = useMediaQuery("(max-width:400px)");
-
+    const dispatch = useDispatch()
     const {
         budgets,
         loading,
@@ -76,6 +79,10 @@ const Budgeting = () => {
             subtitle: "Current month allocations"
         },
     ];
+
+    useEffect(() => {
+        dispatch(fetchAllUsers())
+    }, [dispatch])
 
     return (
         <Box sx={{ p: 3, width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>

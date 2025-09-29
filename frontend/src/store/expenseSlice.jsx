@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// --------------------
-// ✅ Initial State
-// --------------------
+
 const initialState = {
     expenses: [],
     userExpenses: [],
@@ -16,9 +14,7 @@ const initialState = {
     },
 };
 
-// --------------------
-// ✅ Async Thunks
-// --------------------
+
 
 export const addExpense = createAsyncThunk(
     "expenses/addExpense",
@@ -140,60 +136,66 @@ export const fetchExpensesForUser = createAsyncThunk(
 );
 
 export const searchExpenses = createAsyncThunk(
-    "expenses/searchExpenses",
-    async (filters, { getState, rejectWithValue }) => {
+    "expense/search",
+    async (
+        {
+            userName = "",
+            department = "",
+            isReimbursed,
+            isApproved,
+            minAmount,
+            maxAmount,
+            month = "",
+            year = "",
+            page = 1,
+            limit = 10,
+        },
+        { getState, rejectWithValue }
+    ) => {
         try {
-            const {
-                userName,
-                paidTo,
-                department,
-                isReimbursed,
-                isApproved,
-                minAmount,
-                maxAmount,
-                month,
-                year,
-                page = 1,
-                limit = 20,
-            } = filters;
-
             const csrf = getState().auth.csrf;
 
             const query = new URLSearchParams({
                 ...(userName && { userName }),
-                ...(paidTo && { paidTo }),
                 ...(department && { department }),
                 ...(isReimbursed !== undefined && { isReimbursed: String(isReimbursed) }),
                 ...(isApproved !== undefined && { isApproved: String(isApproved) }),
                 ...(minAmount !== undefined && { minAmount: String(minAmount) }),
                 ...(maxAmount !== undefined && { maxAmount: String(maxAmount) }),
-                ...(month !== undefined && { month: String(month) }),
-                ...(year !== undefined && { year: String(year) }),
+                ...(month && { month }),
+                ...(year && { year }),
                 page: String(page),
                 limit: String(limit),
             });
 
-            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/search?${query}`, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-csrf-token": csrf,
-                },
-            });
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASEURL}/expenses/search?${query.toString()}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-csrf-token": csrf,
+                    },
+                }
+            );
 
-            if (!response.ok) throw new Error("Failed to search expenses");
+            if (!response.ok) {
+                throw new Error("Failed to search expenses");
+            }
 
             const data = await response.json();
+
             return {
                 expenses: data?.data || [],
-                meta: data?.meta || { total: data?.count || 0, page, limit },
+                meta: data?.meta || { total: 0, page: 1, limit: 10 },
             };
         } catch (error) {
-            return rejectWithValue(error.message || "Unexpected error");
+            return rejectWithValue(error.message);
         }
     }
 );
+
 
 // --------------------
 // ✅ Slice

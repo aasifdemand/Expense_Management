@@ -47,7 +47,7 @@ const ExpenseTable = ({
 }) => {
     const { pathname } = useLocation()
     const dispatch = useDispatch()
-    console.log("pathname: ", pathname);
+
     const { role } = useSelector((state) => state?.auth)
 
     const handleReimburse = async (expense) => {
