@@ -28,6 +28,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
 import Logo from "./general/Logo";
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import PieChartIcon from "@mui/icons-material/PieChart";
+
 
 
 
@@ -50,7 +52,8 @@ const UserSidebar = ({
 
     const menuItems = [
         { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-        { text: "My Expenses", icon: <AttachMoneyIcon />, path: "/expenses", },
+        { text: "Expenses", icon: <AttachMoneyIcon />, path: "/expenses", },
+        { text: "Budgeting", icon: <PieChartIcon />, path: "/budgeting" },
         // { text: "Reimbursement", icon: <ExpensesIcon />, path: "/admin/expenses" },
         // { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
         // { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
