@@ -9,8 +9,6 @@ import { fetchExpensesForUser } from "../../store/expenseSlice";
 export default function MyExpenses() {
     const { user } = useSelector((state) => state?.auth)
 
-
-
     const {
         userExpenses,
         loading,
@@ -29,12 +27,12 @@ export default function MyExpenses() {
         setFilterYear,
         getMonthByNumber,
         setLimit,
-        limit, selectedExpense, setSelectedExpense } = useExpenses();
-
-
+        limit,
+        selectedExpense,
+        setSelectedExpense
+    } = useExpenses();
 
     const navigate = useNavigate()
-
     const dispatch = useDispatch()
 
     useEffect(() => {
@@ -45,13 +43,12 @@ export default function MyExpenses() {
         }))
     }, [dispatch, search, filterMonth, filterYear])
 
-
-
-
-
+    const handleUpload = () => {
+        console.log("Upload button clicked");
+    };
 
     return (
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ mt: -1 }}>
             <Box
                 sx={{
                     display: "flex",
@@ -61,26 +58,24 @@ export default function MyExpenses() {
                 }}
             >
                 <Button
-                    variant="contained"
-                    color="primary"
+                    onClick={handleUpload}
                     sx={{
-                        textTransform: "none",
-                        borderRadius: 2,
+                        background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                        color: "white",
                         px: 3,
-                        py: 1,
+                        py: 1.2,
+                        borderRadius: "10px",
                         fontWeight: 600,
-                        boxShadow: 2,
+                        textTransform: "none",
                         "&:hover": {
-                            boxShadow: 4,
-                        },
+                            background: "linear-gradient(135deg, #2563eb 0%, #1e40af 100%)"
+                        }
                     }}
-                    onClick={() => navigate("/add")}
                 >
-                    + Upload New Expense
+                    Upload New Expense
                 </Button>
             </Box>
 
-            {/* <ExpenseUploadForm /> */}
             <ExpenseTable
                 limit={limit}
                 setLimit={setLimit}
@@ -97,6 +92,31 @@ export default function MyExpenses() {
                 setFilterYear={setFilterYear}
                 getMonthByNumber={getMonthByNumber}
                 handleOpen={handleOpen}
+                // Add thin blue border to existing search, dropdowns, and rows-per-page inside ExpenseTable
+                searchSx={{
+                    '& .MuiOutlinedInput-root': {
+                        borderColor: '#3b82f6',
+                        '& fieldset': { borderColor: '#3b82f6', borderWidth: 1 },
+                        '&:hover fieldset': { borderColor: '#2563eb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1d4ed8' },
+                    }
+                }}
+                selectSx={{
+                    '& .MuiOutlinedInput-root': {
+                        borderColor: '#3b82f6',
+                        '& fieldset': { borderColor: '#3b82f6', borderWidth: 1 },
+                        '&:hover fieldset': { borderColor: '#2563eb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1d4ed8' },
+                    }
+                }}
+                paginationSx={{
+                    '& .MuiOutlinedInput-root': {
+                        borderColor: '#3b82f6',
+                        '& fieldset': { borderColor: '#3b82f6', borderWidth: 1 },
+                        '&:hover fieldset': { borderColor: '#2563eb' },
+                        '&.Mui-focused fieldset': { borderColor: '#1d4ed8' },
+                    }
+                }}
             />
 
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
@@ -154,6 +174,5 @@ export default function MyExpenses() {
                 </DialogActions>
             </Dialog>
         </Box>
-
     );
 }

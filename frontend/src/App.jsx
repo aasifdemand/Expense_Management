@@ -17,11 +17,7 @@ import Budgeting from "./pages/admin/Budgeting";
 import { useEffect } from "react";
 import { fetchAllUsers, fetchUser } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
-
-
-
-
-
+import Budgetings from "./pages/user/Budgetings";
 
 
 const App = () => {
@@ -72,6 +68,15 @@ const App = () => {
         <Route path="expenses" element={
           isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
         } />
+
+          <Route
+    path="budgeting"
+    element={
+      isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
+    }
+  />
+
+
         <Route path="add" element={
           isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
         } />
