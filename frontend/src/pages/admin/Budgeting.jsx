@@ -15,12 +15,12 @@ const Budgeting = () => {
     const isSmallMobile = useMediaQuery("(max-width:400px)");
     const dispatch = useDispatch()
     const {
+        allBudgets,
         budgets,
         loading,
         meta,
         users,
         year,
-        currentMonth,
         page,
         setPage,
         formData,
@@ -39,15 +39,30 @@ const Budgeting = () => {
         setFilterYear,
         getMonthByNumber,
         setLimit,
-        limit
+        limit,
+        setSelectedMonth, selectedMonth
     } = useBudgeting();
 
-    const selectedMonth = currentMonth || new Date().getMonth() + 1;
 
-    const totalAllocated = meta?.totalAllocated || 0;
-    const totalSpent = meta?.totalSpent || 0;
+
+
+
+    const totalAllocated = allBudgets?.reduce(
+        (acc, b) => acc + (b.allocatedAmount || 0),
+        0
+    );
+
+    const totalSpent = allBudgets?.reduce(
+        (acc, b) => acc + (b.spentAmount || 0),
+        0
+    );
+
     const remainingBalance = totalAllocated - totalSpent;
-    const budgetUsagePercentage = totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0;
+    const budgetUsagePercentage =
+        totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0;
+
+    // const remainingBalance = totalAllocated - totalSpent;
+    // const budgetUsagePercentage = totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0;
 
     const stats = [
         {
@@ -73,7 +88,7 @@ const Budgeting = () => {
         },
         {
             title: "Allocations This Month",
-            value: budgets?.length || 0,
+            value: allBudgets?.length || 0,
             icon: "📊",
             color: "#ffd166",
             subtitle: "Current month allocations"
@@ -83,6 +98,9 @@ const Budgeting = () => {
     useEffect(() => {
         dispatch(fetchAllUsers())
     }, [dispatch])
+
+
+    console.log("all budgets: ", allBudgets);
 
     return (
         <Box sx={{ p: 3, width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
@@ -94,9 +112,10 @@ const Budgeting = () => {
 
             <BudgetChart
                 theme={theme}
-                budgets={budgets}
+                budgets={allBudgets}
                 selectedMonth={selectedMonth}
                 year={year}
+                setSelectedMonth={setSelectedMonth}
             />
 
             <BudgetForm

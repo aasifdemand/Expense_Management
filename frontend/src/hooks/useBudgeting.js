@@ -7,14 +7,17 @@ import {
   updateBudget,
 } from "../store/budgetSlice";
 import { getMonthByNumber } from "../utils/get-month";
+import { fetchExpenses } from "../store/expenseSlice";
 
 export const useBudgeting = () => {
   const dispatch = useDispatch();
-  const { budgets, loading, meta } = useSelector((state) => state?.budget);
+  const { budgets, loading, meta, allBudgets } = useSelector((state) => state?.budget);
   const { users } = useSelector((state) => state?.auth);
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // default current month
+
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -43,8 +46,8 @@ export const useBudgeting = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  
-useEffect(() => {
+
+  useEffect(() => {
     const hasFilters =
       Boolean(filterMonth) || Boolean(filterYear) || debouncedSearch?.trim();
 
@@ -87,35 +90,40 @@ useEffect(() => {
   };
 
   const handleAdd = async () => {
-  const resultAction = await dispatch(allocateBudget(formData));
+    const resultAction = await dispatch(allocateBudget(formData));
 
-  if (allocateBudget.fulfilled.match(resultAction)) {
-   
-    await dispatch(fetchBudgets());
-
-    setFormData({
-      userId: "",
-      amount: "",
-      month: currentMonth,
-      year: year,
-    });
-  } else {
-    
-    console.error("Allocation failed:", resultAction);
-  }
-};
-
-
-  const handleSubmit =async () => {
-    if (!selectedBudget) return;
-    const res = await dispatch(updateBudget({ id: selectedBudget._id, updates: formData }));
-    if(updateBudget.fulfilled.match(res)){
-      await dispatch(fetchBudgets());
+    if (allocateBudget.fulfilled.match(resultAction)) {
+      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }))
+      await dispatch(fetchExpenses({ page: 1, limit: 20 }))
+      setFormData({
+        userId: "",
+        amount: "",
+        month: currentMonth,
+        year: year,
+      });
+    } else {
+      console.error("Allocation failed:", resultAction);
     }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedBudget) return;
+
+    const res = await dispatch(
+      updateBudget({ id: selectedBudget._id, updates: formData })
+    );
+
+    if (updateBudget.fulfilled.match(res)) {
+      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }))
+      await dispatch(fetchExpenses({ page: 1, limit: 20 }))
+    }
+
     setOpen(false);
   };
 
+
   return {
+    allBudgets,
     budgets,
     loading,
     meta,
@@ -141,5 +149,6 @@ useEffect(() => {
     filterYear,
     setFilterYear,
     getMonthByNumber,
+    selectedMonth, setSelectedMonth
   };
 };

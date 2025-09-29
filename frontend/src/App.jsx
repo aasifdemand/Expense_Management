@@ -53,15 +53,9 @@ const App = () => {
   return (
 
     <Routes>
-      {/* User Dashboard */}
-      {/* <Route
-        path="/"
-        element={isRedirectToUserDashboard ?
-<Dashboard /> : <Navigate to={"/login"} />
-        }
-      /> */}
 
-      <Route path="/" element={<UserLayout />}>
+
+      <Route path="user" element={<UserLayout />}>
         <Route path="dashboard" element={
           isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
         } />
@@ -69,12 +63,12 @@ const App = () => {
           isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
         } />
 
-          <Route
-    path="budgeting"
-    element={
-      isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
-    }
-  />
+        <Route
+          path="budgeting"
+          element={
+            isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
+          }
+        />
 
 
         <Route path="add" element={
@@ -157,7 +151,7 @@ const App = () => {
             role === "superadmin" ? (
               <Navigate to="/admin/dashboard" />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/user/dashboard" />
             )
           ) : (
             <Navigate to="/login" />
@@ -173,7 +167,7 @@ const App = () => {
             role === "superadmin" ? (
               <Navigate to="/admin/dashboard" />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/user/dashboard" />
             )
           ) : (
             <Login />
@@ -188,7 +182,7 @@ const App = () => {
           role === "superadmin" ? (
             <Navigate to="/admin-dashboard" />
           ) : (
-            <Navigate to="/" />
+            <Navigate to="/user/dashboard" />
           )
         }
       />

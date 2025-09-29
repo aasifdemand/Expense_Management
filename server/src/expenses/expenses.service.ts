@@ -115,6 +115,8 @@ export class ExpensesService {
             this.cacheManager.del(`expenses:all:${1}:${20}`),
             this.cacheManager.del(`expenses:user:${userId}:${1}:${20}`),
             this.cacheManager.del('expenses:search:*'),
+
+
         ]);
 
 
@@ -145,38 +147,24 @@ export class ExpensesService {
 
         const cacheKey = `expenses:search:${JSON.stringify(filters)}:${safePage}:${safeLimit}`;
         const cached = await this.cacheManager.get(cacheKey);
+        if (cached) return { message: "Search reimbursements fetched from cache", ...(cached as any) };
 
-        if (cached) {
-            return { message: "Search reimbursements fetched from cache", ...(cached as any) };
-        }
-
+        // --- Build match stage based on filters ---
         const matchStage: Record<string, any> = {};
-
-        if (filters.paidTo) {
-            matchStage.paidTo = { $regex: new RegExp(filters.paidTo, "i") };
-        }
-        if (filters.department) {
-            matchStage.department = filters.department;
-        }
-        if (filters.isReimbursed !== undefined) {
-            matchStage.isReimbursed = filters.isReimbursed;
-        }
-        if (filters.isApproved !== undefined) {
-            matchStage.isApproved = filters.isApproved;
-        }
-        if (filters.month !== undefined) {
-            matchStage.month = filters.month;
-        }
-        if (filters.year !== undefined) {
-            matchStage.year = filters.year;
-        }
+        if (filters.paidTo) matchStage.paidTo = { $regex: new RegExp(filters.paidTo, "i") };
+        if (filters.department) matchStage.department = filters.department;
+        if (filters.isReimbursed !== undefined) matchStage.isReimbursed = filters.isReimbursed;
+        if (filters.isApproved !== undefined) matchStage.isApproved = filters.isApproved;
+        if (filters.month !== undefined) matchStage.month = Number(filters.month);
+        if (filters.year !== undefined) matchStage.year = Number(filters.year);
         if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
             matchStage.amount = {};
             if (filters.minAmount !== undefined) matchStage.amount.$gte = filters.minAmount;
             if (filters.maxAmount !== undefined) matchStage.amount.$lte = filters.maxAmount;
         }
 
-        const pipeline: PipelineStage[] = [
+        // --- Paginated filtered data ---
+        const pipelinePaginated: PipelineStage[] = [
             { $match: matchStage },
             {
                 $lookup: {
@@ -194,32 +182,71 @@ export class ExpensesService {
             { $skip: skip },
             { $limit: safeLimit },
         ];
-
         if (filters.userName) {
-            pipeline.splice(1, 0, {
-                $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } },
-            });
+            pipelinePaginated.splice(3, 0, { $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } } });
         }
 
-        const [data, total] = await Promise.all([
-            this.expenseModal.aggregate(pipeline),
-            this.expenseModal.countDocuments(matchStage),
-        ]);
+        const data = await this.expenseModal.aggregate(pipelinePaginated);
+
+        // --- Total count for pagination ---
+        const countPipeline: PipelineStage[] = [
+            { $match: matchStage },
+        ];
+        if (filters.userName) {
+            countPipeline.push({
+                $lookup: {
+                    from: "users",
+                    let: { userId: { $toObjectId: "$user" } },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
+                        { $project: { _id: 1, name: 1 } },
+                    ],
+                    as: "user",
+                },
+            });
+            countPipeline.push({ $unwind: "$user" });
+            countPipeline.push({ $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } } });
+        }
+        countPipeline.push({ $count: "total" });
+        const countResult = await this.expenseModal.aggregate(countPipeline);
+        const total = countResult[0]?.total || 0;
+
+        // --- Full dataset (always unfiltered) ---
+        const allExpenses = await this.expenseModal
+            .find()
+            .sort({ createdAt: -1 })
+            .populate({ path: "user", select: "name _id" })
+            .lean();
+
+        // --- Stats based on full dataset ---
+        const statsPipeline: PipelineStage[] = [
+            {
+                $group: {
+                    _id: null,
+                    totalSpent: { $sum: "$amount" },
+                    totalReimbursed: { $sum: { $cond: [{ $eq: ["$isReimbursed", true] }, "$amount", 0] } },
+                    totalApproved: { $sum: { $cond: [{ $eq: ["$isApproved", true] }, "$amount", 0] } },
+                },
+            },
+        ];
+        const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
+        const stats = statsResult || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 };
 
         const result = {
             message: "Search completed successfully",
-            meta: {
-                total,
-                page: safePage,
-                limit: safeLimit,
-            },
-            data,
+            data,           // filtered + paginated
+            allExpenses,    // full dataset always
+            stats,
+            meta: { total, page: safePage, limit: safeLimit },
         };
 
         await this.cacheManager.set(cacheKey, result, 60_000);
-
         return result;
     }
+
+
+
+
 
     async getAllExpenses(page = 1, limit = 10) {
         const safePage = Math.max(page, 1);
@@ -228,10 +255,7 @@ export class ExpensesService {
 
         const cacheKey = `expenses:all:${safePage}:${safeLimit}`;
         const cached = await this.cacheManager.get(cacheKey);
-
-        if (cached) {
-            return { message: "Fetched expenses from cache", ...(cached as any) };
-        }
+        if (cached) return { message: "Fetched expenses from cache", ...(cached as any) };
 
         const [expenses, total] = await Promise.all([
             this.expenseModal
@@ -239,64 +263,64 @@ export class ExpensesService {
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(safeLimit)
-                .populate({
-                    path: "user",
-                    select: "name _id",
-                })
+                .populate({ path: "user", select: "name _id" })
                 .lean(),
             this.expenseModal.countDocuments(),
         ]);
 
+        // Full dataset for charts/stats
+        const allExpenses = await this.expenseModal
+            .find()
+            .sort({ createdAt: -1 })
+            .populate({ path: "user", select: "name _id" })
+            .lean();
+
+        // Stats based on full dataset
+        const statsPipeline: PipelineStage[] = [
+            {
+                $group: {
+                    _id: null,
+                    totalSpent: { $sum: "$amount" },
+                    totalReimbursed: { $sum: { $cond: [{ $eq: ["$isReimbursed", true] }, "$amount", 0] } },
+                    totalApproved: { $sum: { $cond: [{ $eq: ["$isApproved", true] }, "$amount", 0] } },
+                },
+            },
+        ];
+        const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
+        const stats = statsResult || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 };
+
         const result = {
             message: "Fetched expenses successfully",
-            meta: {
-                total,
-                page: safePage,
-                limit: safeLimit,
-            },
-            data: expenses,
+            meta: { total, page: safePage, limit: safeLimit },
+            stats,
+            data: expenses,    // paginated
+            allExpenses,       // full dataset always
         };
 
         await this.cacheManager.set(cacheKey, result, 60_000);
-
         return result;
     }
 
 
-
-
     async getAllExpensesForUser(page = 1, limit = 10, session: Record<string, any>) {
-        console.log("getAllExpensesForUser — session:", session);
-
-        if (!session?.userId) {
-            throw new UnauthorizedException("Unauthorized: User not logged in");
-        }
-
-        const userId = session.userId;
-
+        if (!session?.userId) throw new UnauthorizedException("Unauthorized: User not logged in");
 
         let userIdObj: Types.ObjectId;
         try {
-            userIdObj = new Types.ObjectId(userId);
+            userIdObj = new Types.ObjectId(session.userId);
         } catch (err: any) {
-            console.warn("Invalid userId format:", userId, err);
-            throw new UnauthorizedException("Invalid user ID in session");
+            throw new UnauthorizedException("Invalid user ID in session", err);
         }
 
         const safePage = Math.max(page, 1);
         const safeLimit = Math.max(limit, 1);
         const skip = (safePage - 1) * safeLimit;
 
-        const cacheKey = this.EXPENSE_USER_KEY(userId, safePage, safeLimit);
+        const cacheKey = this.EXPENSE_USER_KEY(session.userId, safePage, safeLimit);
         const cached = await this.cacheManager.get(cacheKey);
-        if (cached) {
-            console.log("Returning from cache for user:", userId, "key:", cacheKey);
-            return { message: "Fetched user's expenses from cache", ...(cached as any) };
-        }
+        if (cached) return { message: "Fetched user's expenses from cache", ...(cached as any) };
 
-        // Log before query
-        console.log("Querying expenses for user:", userIdObj);
-
+        // --- Paginated expenses ---
         const [expenses, total] = await Promise.all([
             this.expenseModal
                 .find({ user: userIdObj })
@@ -308,23 +332,40 @@ export class ExpensesService {
             this.expenseModal.countDocuments({ user: userIdObj }),
         ]);
 
-        console.log("Fetched expenses count:", expenses.length, "total:", total);
+        // --- Full dataset for the user ---
+        const allExpenses = await this.expenseModal
+            .find({ user: userIdObj })
+            .sort({ createdAt: -1 })
+            .populate({ path: "user", select: "name _id" })
+            .lean();
+
+        // --- Stats for this user's full dataset ---
+        const statsPipeline: PipelineStage[] = [
+            { $match: { user: userIdObj } },
+            {
+                $group: {
+                    _id: null,
+                    totalSpent: { $sum: "$amount" },
+                    totalReimbursed: { $sum: { $cond: [{ $eq: ["$isReimbursed", true] }, "$amount", 0] } },
+                    totalApproved: { $sum: { $cond: [{ $eq: ["$isApproved", true] }, "$amount", 0] } },
+                },
+            },
+        ];
+        const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
+        const stats = statsResult || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 };
 
         const result = {
             message: "Fetched user's expenses successfully",
-            meta: {
-                total,
-                page: safePage,
-                limit: safeLimit,
-            },
-            data: expenses,
+            meta: { total, page: safePage, limit: safeLimit },
+            stats,
+            data: expenses,      // paginated
+            allExpenses,         // full dataset for charts/stats
         };
 
-        // Cache it
         await this.cacheManager.set(cacheKey, result, 60_000);
-
         return result;
     }
+
 
 
 
