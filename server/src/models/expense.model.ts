@@ -26,6 +26,9 @@ export class Expense extends Document {
   @Prop({ default: "" })
   SubDepartment?: string
 
+
+
+
   @Prop({ default: "" })
   paymentMode?: string
 
@@ -42,6 +45,9 @@ export class Expense extends Document {
   @Prop({ type: Types.ObjectId, ref: "User" })
   user: Types.ObjectId
 
+
+  @Prop({ type: Types.ObjectId, ref: "Budget", required: true })
+  budget: Types.ObjectId;
 }
 
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);

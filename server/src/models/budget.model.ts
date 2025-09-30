@@ -19,6 +19,11 @@ export class Budget extends Document {
   @Prop({ required: true })
   year: number
 
+
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
+  expenses: Types.ObjectId[];
+
 }
 
 export const BudgetSchema =

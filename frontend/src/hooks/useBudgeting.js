@@ -57,6 +57,7 @@ export const useBudgeting = () => {
           userName: debouncedSearch || undefined,
           month: filterMonth || undefined,
           year: filterYear || undefined,
+
           page,
           limit,
         })
@@ -69,7 +70,7 @@ export const useBudgeting = () => {
         })
       );
     }
-  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear]);
+  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear,]);
 
 
   const handleOpen = (row) => {
@@ -123,6 +124,8 @@ export const useBudgeting = () => {
 
 
   return {
+
+
     allBudgets,
     budgets,
     loading,

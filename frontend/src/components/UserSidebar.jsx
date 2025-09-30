@@ -45,8 +45,12 @@ const UserSidebar = ({
 
     const menuItems = [
         { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
-        { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses", },
+
         { text: "Budgeting", icon: <PieChartIcon />, path: "/user/budgeting" },
+        { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses", },
+        // { text: "Reimbursement", icon: <ExpensesIcon />, path: "/admin/expenses" },
+        // { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
+        // { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
         { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
     ];
 

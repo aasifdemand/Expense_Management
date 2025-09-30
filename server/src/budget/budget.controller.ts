@@ -34,13 +34,11 @@ export class BudgetController {
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
     }
-    if (session?.user && session?.user?.role !== "superadmin") {
-      throw new UnauthorizedException("You are not authorized to view budget allocations");
-    }
 
 
 
-    return this.budgetService.fetchAllocatedBudgets(Number(skip), Number(limit));
+
+    return this.budgetService.fetchAllocatedBudgets(Number(skip), Number(limit), session);
   }
 
   @Get("search")
@@ -56,12 +54,10 @@ export class BudgetController {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
 
-    if (session?.user && session?.user?.role !== "superadmin") {
-      throw new UnauthorizedException("You are not authorized to view budget allocations");
-    }
 
 
-    return this.budgetService.searchBudgetAllocations(search);
+
+    return this.budgetService.searchBudgetAllocations(search, session);
   }
 
 

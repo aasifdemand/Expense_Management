@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
@@ -54,19 +55,28 @@ export class BudgetService {
     }
 
 
-    async fetchAllocatedBudgets(page = 1, limit = 20) {
+    async fetchAllocatedBudgets(page = 1, limit = 20, session: Record<string, any>) {
         const safePage = Math.max(page, 1);
         const safeLimit = Math.max(limit, 1);
         const skip = (safePage - 1) * safeLimit;
+        console.log("session in allocated budgets fetch: ", session);
 
-        const cacheKeyPage = `budgets:page:${safePage}:${safeLimit}`;
-        const cacheKeyAll = `budgets:all`;
 
-        // Fetch paginated budgets
+        const { user } = session;
+
+        const query: any = {};
+        if (user?.role !== "superadmin") {
+            query.user = user?.id;
+        }
+
+        const cacheKeyPage = `budgets:${user?.role}:${user?.id}:page:${safePage}:${safeLimit}`;
+        const cacheKeyAll = `budgets:${user?.role}:${user?.id}:all`;
+
+        // Paginated budgets
         let budgets = await this.cacheManager.get(cacheKeyPage);
         if (!budgets) {
             budgets = await this.budgetModel
-                .find()
+                .find(query)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(safeLimit)
@@ -76,14 +86,14 @@ export class BudgetService {
             await this.cacheManager.set(cacheKeyPage, budgets, 3000);
         }
 
-        // Count total for meta
-        const total = await this.budgetModel.countDocuments();
+        // Count total (based on query)
+        const total = await this.budgetModel.countDocuments(query);
 
-        // Fetch all budgets
+        // All budgets (with same filtering)
         let allBudgets = await this.cacheManager.get(cacheKeyAll);
         if (!allBudgets) {
             allBudgets = await this.budgetModel
-                .find()
+                .find(query)
                 .sort({ createdAt: -1 })
                 .populate({ path: "user", select: "name _id" })
                 .lean();
@@ -105,13 +115,20 @@ export class BudgetService {
 
 
 
-    async searchBudgetAllocations(filters: SearchBudgetAllocationsDto) {
+
+    async searchBudgetAllocations(filters: SearchBudgetAllocationsDto, session: Record<string, any>) {
         const { userName, month, year, minAllocated, maxAllocated, minSpent, maxSpent, page = 1, limit = 10 } = filters;
         const safePage = Math.max(Number(page), 1);
         const safeLimit = Math.max(Number(limit), 1);
         const skip = (safePage - 1) * safeLimit;
 
+        const { user } = session;
+
+        // Build match stage based on filters + role
         const matchStage: Record<string, any> = {};
+        if (user?.role !== "superadmin") {
+            matchStage.user = user?.id;
+        }
         if (month) matchStage.month = month;
         if (year) matchStage.year = year;
         if (minAllocated !== undefined || maxAllocated !== undefined) {
@@ -125,10 +142,10 @@ export class BudgetService {
             if (maxSpent !== undefined) matchStage.spentAmount.$lte = maxSpent;
         }
 
-        const cacheKeyPage = `budgets:search:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;
-        const cacheKeyAll = `budgets:search:all:${JSON.stringify(filters)}`;
+        const cacheKeyPage = `budgets:search:${user?.role}:${user?.id}:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;
+        const cacheKeyAll = `budgets:search:${user?.role}:${user?.id}:all:${JSON.stringify(filters)}`;
 
-
+        // Page results
         let budgets: any[] | undefined = await this.cacheManager.get(cacheKeyPage);
         if (!budgets) {
             const pipelinePage: PipelineStage[] = [
@@ -174,8 +191,14 @@ export class BudgetService {
                 },
             },
             { $unwind: "$user" },
-            { $count: "total" },
         ];
+        if (userName) {
+            countPipeline.push({
+                $match: { "user.name": { $regex: userName, $options: "i" } },
+            });
+        }
+        countPipeline.push({ $count: "total" });
+
         const countResult = await this.budgetModel.aggregate(countPipeline);
         const total = countResult[0]?.total || 0;
 
@@ -219,6 +242,7 @@ export class BudgetService {
             },
         };
     }
+
 
 
 
