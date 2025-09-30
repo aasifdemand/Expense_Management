@@ -15,8 +15,10 @@ import {
     MenuItem,
     Select,
     Stack,
+    Modal,
+    Paper,
 } from "@mui/material";
-import { Edit } from "@mui/icons-material";
+import { Edit, Visibility } from "@mui/icons-material";
 import {
     SectionCard,
     StyledTextField,
@@ -24,6 +26,8 @@ import {
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
 import { months } from "../../../utils/months";
+import { useSelector } from "react-redux";
+import { useState } from "react";
 
 const BudgetTable = ({
     budgets,
@@ -41,6 +45,21 @@ const BudgetTable = ({
     setLimit,
     limit,
 }) => {
+    const { user } = useSelector((state) => state?.auth);
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedBudget, setSelectedBudget] = useState(null);
+
+    const handleOpenModel = (row) => {
+        setSelectedBudget(row);
+        setIsOpen(true);
+    };
+
+    const handleCloseModel = () => {
+        setIsOpen(false);
+        setSelectedBudget(null);
+    };
+
     return (
         <SectionCard>
             {/* Filters */}
@@ -133,11 +152,18 @@ const BudgetTable = ({
                             <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                 Date
                             </TableCell>
-                            <TableCell
-                                sx={{ fontWeight: "bold", fontSize: "1rem", textAlign: "center" }}
-                            >
-                                Actions
-                            </TableCell>
+                            {user?.role !== "user" && (
+                                <TableCell
+                                    sx={{
+                                        fontWeight: "bold",
+                                        fontSize: "1rem",
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    Actions
+                                </TableCell>
+                            )}
+                            <TableCell />
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -162,7 +188,9 @@ const BudgetTable = ({
                                             <Avatar sx={{ bgcolor: "primary.main" }}>
                                                 {row?.user?.name?.charAt(0).toUpperCase()}
                                             </Avatar>
-                                            <Typography fontWeight={500}>{row?.user?.name}</Typography>
+                                            <Typography fontWeight={500}>
+                                                {row?.user?.name}
+                                            </Typography>
                                         </Box>
                                     </TableCell>
                                     <TableCell sx={{ fontWeight: "bold" }}>
@@ -183,11 +211,23 @@ const BudgetTable = ({
                                                 timeZone: "Asia/Kolkata",
                                             })
                                             : "-"}
-
                                     </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton onClick={() => handleOpen(row)} color="primary">
-                                            <Edit />
+                                    {user?.role !== "user" && (
+                                        <TableCell align="center">
+                                            <IconButton
+                                                onClick={() => handleOpen(row)}
+                                                color="primary"
+                                            >
+                                                <Edit />
+                                            </IconButton>
+                                        </TableCell>
+                                    )}
+                                    <TableCell>
+                                        <IconButton
+                                            onClick={() => handleOpenModel(row)}
+                                            color="primary"
+                                        >
+                                            <Visibility />
                                         </IconButton>
                                     </TableCell>
                                 </TableRow>
@@ -203,7 +243,7 @@ const BudgetTable = ({
                 </Table>
             </TableContainer>
 
-            {/* Pagination + Limit Selector */}
+            {/* Pagination */}
             {meta?.total > 0 && (
                 <Box
                     display="flex"
@@ -227,6 +267,55 @@ const BudgetTable = ({
                     />
                 </Box>
             )}
+
+            {/* Modal for budget details */}
+            <Modal open={isOpen} onClose={handleCloseModel}>
+                <Paper
+                    sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 400,
+                        p: 4,
+                        borderRadius: 2,
+                        boxShadow: 24,
+                    }}
+                >
+                    {selectedBudget ? (
+                        <Box>
+                            <Typography variant="h6" gutterBottom>
+                                Budget Details
+                            </Typography>
+                            <Typography>
+                                <strong>User:</strong> {selectedBudget?.user?.name}
+                            </Typography>
+                            <Typography>
+                                <strong>Allocated:</strong> ₹
+                                {selectedBudget?.allocatedAmount?.toLocaleString()}
+                            </Typography>
+                            <Typography>
+                                <strong>Spent:</strong> ₹
+                                {selectedBudget?.spentAmount?.toLocaleString()}
+                            </Typography>
+                            <Typography>
+                                <strong>Date:</strong>{" "}
+                                {new Date(selectedBudget?.createdAt).toLocaleString("en-US", {
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                    timeZone: "Asia/Kolkata",
+                                })}
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Typography>No budget selected</Typography>
+                    )}
+                </Paper>
+            </Modal>
         </SectionCard>
     );
 };

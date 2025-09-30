@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/auth/Login";
-import Dashboard from "./pages/user/UserDashboard";
 import Qr from "./pages/auth/qr";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Expenses from "./pages/admin/Expenses";
@@ -18,6 +17,7 @@ import { useEffect } from "react";
 import { fetchAllUsers, fetchUser } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
 import Budgetings from "./pages/user/Budgetings";
+
 
 
 const App = () => {

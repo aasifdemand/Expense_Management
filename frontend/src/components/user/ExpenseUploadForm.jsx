@@ -21,6 +21,7 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import { useDispatch } from "react-redux";
 import { addExpense } from "../../store/expenseSlice";
 import { SectionCard } from "../../styles/budgeting.styles";
+import { useBudgeting } from "../../hooks/useBudgeting";
 
 // Department structure with sub-departments
 const departmentStructure = {
@@ -74,6 +75,11 @@ const paymentModes = ["Cash", "Credit Card", "Debit Card", "Bank Transfer", "UPI
 
 export default function CreateExpenseForm() {
     const dispatch = useDispatch();
+
+    const { allBudgets } = useBudgeting()
+
+    console.log("all budgets: ", allBudgets);
+
 
     const [form, setForm] = useState({
         paidTo: "",

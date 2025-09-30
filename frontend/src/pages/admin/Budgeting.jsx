@@ -15,6 +15,7 @@ const Budgeting = () => {
     const isSmallMobile = useMediaQuery("(max-width:400px)");
     const dispatch = useDispatch()
     const {
+
         allBudgets,
         budgets,
         loading,
@@ -127,6 +128,7 @@ const Budgeting = () => {
                 loading={loading}
             />
             <BudgetTable
+
                 limit={limit}
                 setLimit={setLimit}
                 budgets={budgets}
