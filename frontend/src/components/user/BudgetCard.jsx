@@ -1,89 +1,102 @@
-import { Grid, Card, CardContent, Typography, Box } from "@mui/material";
+import { Grid, Card, CardContent, Typography, Box, Container, useMediaQuery } from "@mui/material";
 import { CreditCard, TrendingUp, CurrencyRupee, AccessTime } from "@mui/icons-material";
 
 const BudgetCard = ({ budgetData }) => {
+    const isSmallMobile = useMediaQuery("(max-width:400px)");
+
     const items = [
         {
             title: "Total Allocated",
-            subtitle: "Monthly budget allocation",
-            value: budgetData.monthlyBudget,
-            color: "#2563eb", // blue
-            icon: <CreditCard fontSize="large" />
+            value: `₹${(budgetData?.monthlyBudget || 0).toLocaleString("en-IN")}`,
+            icon: <CreditCard fontSize="large" />,
+            color: "#4361ee",
+            subtitle: "Monthly budget allocation"
         },
         {
             title: "Total Spent",
-            subtitle: `${((budgetData.totalSpent / budgetData.monthlyBudget) * 100).toFixed(1)}% of budget used`,
-            value: budgetData.totalSpent,
-            color: "#ef476f", // red/pink
-            icon: <TrendingUp fontSize="large" />
+            value: `₹${(budgetData?.totalSpent || 0).toLocaleString("en-IN")}`,
+            icon: <TrendingUp fontSize="large" />,
+            color: "#ef476f",
+            subtitle: `${budgetData?.monthlyBudget ? ((budgetData.totalSpent / budgetData.monthlyBudget) * 100).toFixed(1) : '0'}% of budget used`
         },
         {
             title: "Remaining Balance",
-            subtitle: "Available funds",
-            value: budgetData.remainingBalance,
-            color: "#06d6a0", // green
-            icon: <CurrencyRupee fontSize="large" />
+            value: `₹${(budgetData?.remainingBalance || 0).toLocaleString("en-IN")}`,
+            icon: <CurrencyRupee fontSize="large" />,
+            color: "#06d6a0",
+            subtitle: "Available funds"
         },
         {
             title: "Pending Reimbursements",
-            subtitle: "Awaiting payment",
-            value: budgetData.pendingReimbursements,
-            color: "#ffd166", // yellow
-            icon: <AccessTime fontSize="large" />
+            value: (budgetData?.pendingReimbursements || 0).toString(),
+            icon: <AccessTime fontSize="large" />,
+            color: "#ffd166",
+            subtitle: "Awaiting payment"
         },
     ];
 
-    return (
-        <Box
-            sx={{
-                display: "flex",
-                flexWrap: "wrap",      // wrap if screen smaller
-                gap: 2,
-            }}
-        >
-            {items.map((item) => (
-                <Card
-                    key={item.title}
-                    sx={{
-                        flex: "1 1 250px",     // each card flexible, min width ~250px
-                        backgroundColor: item.color,
-                        color: "white",
-                        borderRadius: 2,       // theme spacing → consistent rounded corners
-                        boxShadow: 3,
-                        height: 120,
+    const StatCard = ({ title, value, icon, color, subtitle }) => {
+        return (
+            <Card
+                sx={{
+                    background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+                    color: "white",
+                    borderRadius: 3,
+                    boxShadow: 3,
+                    height: "100%",
+                    minHeight: isSmallMobile ? 120 : 140, // EXACT SAME HEIGHT
+                    display: "flex",
+                    alignItems: "center",
+                }}
+            >
+                <CardContent sx={{
+                    p: 2, // EXACT SAME PADDING
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6, // EXACT SAME GAP
+                    width: "100%"
+                }}>
+                    <Box sx={{
+                        bgcolor: "rgba(199, 184, 184, 0.2)", // EXACT SAME COLOR
+                        borderRadius: "50%",
+                        p: 1.5, // EXACT SAME PADDING
                         display: "flex",
                         alignItems: "center",
-                    }}
-                >
-                    <CardContent
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                            width: "100%",
-                            p: 2,
-                            // consistent padding
-                        }}
-                    >
-                        <Box sx={{ fontSize: 32, display: "flex", alignItems: "center" }}>
-                            {item.icon}
-                        </Box>
-                        <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="h6" fontWeight="bold">
-                                ₹{item.value.toLocaleString("en-IN")}
-                            </Typography>
-                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                {item.title}
-                            </Typography>
-                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                                {item.subtitle}
-                            </Typography>
-                        </Box>
-                    </CardContent>
-                </Card>
-            ))}
-        </Box>
+                        justifyContent: "center"
+                    }}>
+                        {icon}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="h4" fontWeight="bold">
+                            {value}
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                            {title}
+                        </Typography>
+                        {subtitle && <Typography variant="body2">{subtitle}</Typography>}
+                    </Box>
+                </CardContent>
+            </Card>
+        );
+    };
 
+    return (
+        <Container maxWidth="xl" sx={{ mt: 6, mb: 4 }}>
+            {/* EXACT SAME LAYOUT AS ADMINDASHBOARD */}
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 3 }}>
+                {items.map((item, index) => (
+                    <Box sx={{ width: "100%" }} key={index}>
+                        <StatCard
+                            title={item.title}
+                            value={item.value}
+                            icon={item.icon}
+                            color={item.color}
+                            subtitle={item.subtitle}
+                        />
+                    </Box>
+                ))}
+            </Box>
+        </Container>
     );
 };
 

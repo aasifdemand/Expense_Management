@@ -86,13 +86,16 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
 
                 <PrimaryButton
                     variant="contained"
-                    color="blue"
                     loading={loading}
                     onClick={handleAdd}
                     sx={{
                         minWidth: "auto",
                         p: 1.2,
                         borderRadius: 2,
+                        backgroundColor: '#1976d2',
+                        '&:hover': {
+                            backgroundColor: '#1565c0',
+                        },
                     }}
                 >
                     <AddIcon />

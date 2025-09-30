@@ -74,7 +74,7 @@ export default function MyExpenses() {
                             boxShadow: 4,
                         },
                     }}
-                    onClick={() => navigate("/add")}
+                    onClick={() => navigate("/user/add")}
                 >
                     + Upload New Expense
                 </Button>
