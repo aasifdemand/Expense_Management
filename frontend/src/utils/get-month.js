@@ -1,4 +1,4 @@
-export const getMonthByNumber = (num)=> {
+export const getMonthByNumber = (num) => {
   let month;
   switch (num) {
     case 1:
@@ -42,3 +42,5 @@ export const getMonthByNumber = (num)=> {
   }
   return month;
 };
+
+

@@ -103,8 +103,8 @@ const DashboardExpensesChart = ({ expenses, selectedMonth, setSelectedMonth, yea
                         label: "Amount (₹)",
                     },
                 ]}
-                height={350}
-                margin={{ left: 70, right: 30, top: 30, bottom: 70 }}
+                height={300}
+                margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
                 borderRadius={4}
                 grid={{ vertical: true }}
                 layout="stacked"

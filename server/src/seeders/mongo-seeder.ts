@@ -23,11 +23,13 @@ async function seed() {
 
     // Array of users to create
     const users = [
-      { name: 'Kaleem', password: 'kaleem@dcm', role: UserRole.SUPERADMIN },
+      { name: 'Kaleem Mohammed', password: 'kaleem@dcm', role: UserRole.SUPERADMIN },
+      { name: "Malik Muzammil", password: "muzammil@dcm", role: UserRole.SUPERADMIN },
       { name: 'Ashraf Ali', password: 'ashraf@dcm', role: UserRole.USER },
-      { name: 'Nihal Ahmad', password: 'nihal@dcm', role: UserRole.USER },
-      { name: 'Mohammed ovez', password: 'ovez@dcm', role: UserRole.USER },
-      { name: "Dinesh Kumar", password: "dinesh@dcm", role: UserRole.USER }
+      { name: 'Nihal Ahmed', password: 'nihal@dcm', role: UserRole.USER },
+      { name: 'Mohammed Ovez', password: 'ovez@dcm', role: UserRole.USER },
+      { name: "Dinesh Kumar", password: "dinesh@dcm", role: UserRole.USER },
+
       //   { name: 'user4', password: 'password123', role: UserRole.USER },
       //   { name: 'user5', password: 'password123', role: UserRole.USER },
       //   { name: 'user6', password: 'password123', role: UserRole.USER },

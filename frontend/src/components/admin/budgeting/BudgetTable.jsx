@@ -11,21 +11,19 @@ import {
     Typography,
     Avatar,
     IconButton,
-    InputLabel,
-    MenuItem,
-    Select,
     Stack,
     Modal,
     Paper,
+    Select,
+    MenuItem,
+    InputLabel,
 } from "@mui/material";
-import { Edit, Visibility } from "@mui/icons-material";
+import { Visibility } from "@mui/icons-material";
 import {
     SectionCard,
     StyledTextField,
-    StyledSelect,
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
-import { months } from "../../../utils/months";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 
@@ -33,29 +31,26 @@ const BudgetTable = ({
     budgets,
     loading,
     meta,
-    page,
+    page = 1,
     setPage,
     search,
     setSearch,
-    filterMonth,
-    setFilterMonth,
-    filterYear,
-    setFilterYear,
-    handleOpen,
+    handleOpen, // optional
+    limit = 5,
     setLimit,
-    limit,
+    showPagination = false,
 }) => {
     const { user } = useSelector((state) => state?.auth);
 
     const [isOpen, setIsOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState(null);
 
-    const handleOpenModel = (row) => {
+    const handleOpenModal = (row) => {
         setSelectedBudget(row);
         setIsOpen(true);
     };
 
-    const handleCloseModel = () => {
+    const handleCloseModal = () => {
         setIsOpen(false);
         setSelectedBudget(null);
     };
@@ -73,50 +68,15 @@ const BudgetTable = ({
                     p: 3,
                 }}
             >
-                {/* Search Input */}
                 <StyledTextField
-                    placeholder="🔍 Search By Name..."
+                    placeholder="Search By Name..."
                     size="medium"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    sx={{
-                        flex: "1 1 250px",
-                        minWidth: "250px",
-                    }}
+                    sx={{ flex: "1 1 250px", minWidth: "250px" }}
                 />
 
-                {/* Filters Row */}
-                <Stack direction="row" spacing={2} flexWrap="wrap">
-                    <StyledFormControl size="medium" sx={{ minWidth: "160px" }}>
-                        <InputLabel>Month</InputLabel>
-                        <StyledSelect
-                            value={filterMonth}
-                            onChange={(e) => setFilterMonth(e.target.value)}
-                            label="Month"
-                        >
-                            <MenuItem value="">All Months</MenuItem>
-                            {months.map((m) => (
-                                <MenuItem key={m.value} value={m.value}>
-                                    {m.name}
-                                </MenuItem>
-                            ))}
-                        </StyledSelect>
-                    </StyledFormControl>
-
-                    <StyledFormControl size="medium" sx={{ minWidth: "140px" }}>
-                        <InputLabel>Year</InputLabel>
-                        <StyledSelect
-                            value={filterYear}
-                            onChange={(e) => setFilterYear(e.target.value)}
-                            label="Year"
-                        >
-                            <MenuItem value="">All Years</MenuItem>
-                            <MenuItem value="2025">2025</MenuItem>
-                            <MenuItem value="2024">2024</MenuItem>
-                            <MenuItem value="2023">2023</MenuItem>
-                        </StyledSelect>
-                    </StyledFormControl>
-
+                {setLimit && showPagination && (
                     <StyledFormControl size="medium" sx={{ minWidth: "120px" }}>
                         <InputLabel>Rows per page</InputLabel>
                         <Select
@@ -130,7 +90,7 @@ const BudgetTable = ({
                             <MenuItem value={50}>50</MenuItem>
                         </Select>
                     </StyledFormControl>
-                </Stack>
+                )}
             </Box>
 
             <Divider />
@@ -140,46 +100,22 @@ const BudgetTable = ({
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                User Name
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                Allocated Amount
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                Date
-                            </TableCell>
-                            {user?.role !== "user" && (
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: "1rem",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    Types
-                                </TableCell>
-                            )}
+                            <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Allocated Amount</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
                             <TableCell />
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={4} align="center">
                                     <Typography>Loading...</Typography>
                                 </TableCell>
                             </TableRow>
                         ) : budgets?.length > 0 ? (
                             budgets.map((row) => (
-                                <TableRow
-                                    key={row._id}
-                                    hover
-                                    sx={{
-                                        transition: "all 0.2s",
-                                        "&:hover": { backgroundColor: "action.hover" },
-                                    }}
-                                >
+                                <TableRow key={row._id} hover>
                                     <TableCell>
                                         <Box display="flex" alignItems="center" gap={2}>
                                             <Avatar sx={{ bgcolor: "primary.main" }}>
@@ -206,21 +142,8 @@ const BudgetTable = ({
                                             })
                                             : "-"}
                                     </TableCell>
-                                    {user?.role !== "user" && (
-                                        <TableCell align="center">
-                                            <IconButton
-                                                onClick={() => handleOpen(row)}
-                                                color="primary"
-                                            >
-                                                <Edit />
-                                            </IconButton>
-                                        </TableCell>
-                                    )}
-                                    <TableCell>
-                                        <IconButton
-                                            onClick={() => handleOpenModel(row)}
-                                            color="primary"
-                                        >
+                                    <TableCell align="center">
+                                        <IconButton onClick={() => handleOpenModal(row)} color="primary">
                                             <Visibility />
                                         </IconButton>
                                     </TableCell>
@@ -228,7 +151,7 @@ const BudgetTable = ({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={4} align="center">
                                     <Typography>No budgets found</Typography>
                                 </TableCell>
                             </TableRow>
@@ -238,22 +161,13 @@ const BudgetTable = ({
             </TableContainer>
 
             {/* Pagination */}
-            {meta?.total > 0 && (
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    p={3}
-                    flexWrap="wrap"
-                    gap={2}
-                >
+            {showPagination && meta?.total > 0 && setPage && (
+                <Box display="flex" justifyContent="space-between" alignItems="center" p={3} flexWrap="wrap" gap={2}>
                     <Typography variant="body2" color="text.secondary">
-                        Showing {(page - 1) * limit + 1}–
-                        {Math.min(page * limit, meta.total)} of {meta.total} entries
+                        Showing {(page - 1) * limit + 1}–{Math.min(page * limit, meta.total)} of {meta.total} entries
                     </Typography>
-
                     <Pagination
-                        count={Math.ceil(meta.total / meta.limit)}
+                        count={Math.ceil(meta.total / limit)}
                         page={page}
                         onChange={(e, val) => setPage(val)}
                         color="primary"
@@ -262,15 +176,15 @@ const BudgetTable = ({
                 </Box>
             )}
 
-            {/* Modal for budget details */}
-            <Modal open={isOpen} onClose={handleCloseModel}>
+            {/* Modal */}
+            <Modal open={isOpen} onClose={handleCloseModal}>
                 <Paper
                     sx={{
                         position: "absolute",
                         top: "50%",
                         left: "50%",
                         transform: "translate(-50%, -50%)",
-                        width: 400,
+                        width: { xs: "90%", sm: 400 },
                         p: 4,
                         borderRadius: 2,
                         boxShadow: 24,
@@ -285,13 +199,8 @@ const BudgetTable = ({
                                 <strong>User:</strong> {selectedBudget?.user?.name}
                             </Typography>
                             <Typography>
-                                <strong>Allocated:</strong> ₹
-                                {selectedBudget?.allocatedAmount?.toLocaleString()}
+                                <strong>Allocated:</strong> ₹{selectedBudget?.allocatedAmount?.toLocaleString()}
                             </Typography>
-                            {/* <Typography>
-                                <strong>Spent:</strong> ₹
-                                {selectedBudget?.spentAmount?.toLocaleString()}
-                            </Typography> */}
                             <Typography>
                                 <strong>Date:</strong>{" "}
                                 {new Date(selectedBudget?.createdAt).toLocaleString("en-US", {

@@ -26,7 +26,7 @@ export class AuthService {
 
         let qrCodeDataUrl: string | null = null;
 
-        // If user has no secret yet, generate one and save
+
         if (!user.twoFactorSecret) {
             const secret = speakeasy.generateSecret({
                 name: `ExpenseManagement (${user.name})`,
@@ -37,7 +37,7 @@ export class AuthService {
         }
 
         const safeUser = {
-            id: user._id as Types.ObjectId, // important: session stores string IDs
+            id: user._id as Types.ObjectId,
             name: user.name,
             role: user.role,
         };
@@ -121,13 +121,21 @@ export class AuthService {
 
         const user = await this.userModel
             .findById(userId)
-            .select("name email role expenses")
-            .populate({
-                path: "expenses",
-                select: "amount department paidTo isReimbursed proof year month createdAt",
-                options: { sort: { createdAt: -1 }, limit: 10 },
-            })
+            .select("name email role spentAmount reimbursedAmount allocatedAmount budgetLeft")
+            // .populate([
+            //     {
+            //         path: "expenses",
+            //         select: "amount reimbursedAmount department paidTo isReimbursed proof year month createdAt budget",
+            //         options: { sort: { createdAt: -1 }, limit: 10 },
+
+            //     },
+            //     {
+            //         path: "allocatedBudgets",
+            //         select: "allocatedAmount spentAmount reimbursedAmount year month",
+            //     },
+            // ])
             .lean();
+
 
         if (!user) {
             throw new NotFoundException("User not found");

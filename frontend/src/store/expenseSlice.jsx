@@ -20,18 +20,21 @@ const initialState = {
     },
 };
 
-// --- Add Expense ---
+
 export const addExpense = createAsyncThunk(
     "expenses/addExpense",
     async (data, { getState, rejectWithValue }) => {
         try {
-            const { paidTo, amount, department, date, proof } = data;
+            const { paidTo, amount, department, date, proof, subDepartment, paymentMode, budget } = data;
             const formData = new FormData();
             formData.append("paidTo", paidTo);
             formData.append("amount", amount);
             formData.append("department", department);
+            formData.append("subDepartment", subDepartment)
+            formData.append("paymentMode", paymentMode)
             formData.append("month", String(new Date(date).getMonth() + 1));
             formData.append("year", String(new Date(date).getFullYear()));
+            if (budget) formData.append("budgetId", budget)
             if (proof) formData.append("proof", proof);
 
             const csrf = getState().auth.csrf;
