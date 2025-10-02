@@ -27,6 +27,7 @@ export const useBudgeting = () => {
     amount: 0,
     month: currentMonth,
     year: year,
+
   });
 
   const [open, setOpen] = useState(false);
@@ -74,12 +75,16 @@ export const useBudgeting = () => {
 
 
   const handleOpen = (row) => {
+
+    console.log("row: ", row);
+
     setSelectedBudget(row);
     setFormData({
       userId: row?.user?._id,
       amount: row.allocatedAmount,
       month: row.month,
       year: row.year,
+
     });
     setOpen(true);
   };

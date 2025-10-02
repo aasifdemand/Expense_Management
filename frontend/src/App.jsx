@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import { fetchAllUsers, fetchUser } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
 import Budgetings from "./pages/user/Budgetings";
+import Reimbursements from "./pages/admin/Reimbursements";
 
 
 
@@ -88,18 +89,8 @@ const App = () => {
             canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
           }
         />
-        <Route
-          path="budget"
-          element={
-            canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
-          }
-        />
-        <Route
-          path="dashboard"
-          element={
-            canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
-          }
-        />
+
+
         <Route
           path="budget"
           element={
@@ -107,22 +98,21 @@ const App = () => {
           }
         />
 
-        {/* Expenses Management */}
-        <Route
-          path="expenses"
-          element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
-        />
+
+
+
         {/* Expenses Management */}
         <Route
           path="expenses"
           element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
         />
 
-        {/* Users */}
-        <Route
-          path="user"
-          element={canAccessAdminRoutes ? <User /> : <Navigate to="/login" />}
-        />
+        <Route path="reimbursements" element={
+          canAccessAdminRoutes ? <Reimbursements /> : <Navigate to="/login" />
+        } />
+
+
+
         {/* Users */}
         <Route
           path="user"
@@ -180,7 +170,7 @@ const App = () => {
         path="*"
         element={
           role === "superadmin" ? (
-            <Navigate to="/admin-dashboard" />
+            <Navigate to="/admin/dashboard" />
           ) : (
             <Navigate to="/user/dashboard" />
           )

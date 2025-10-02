@@ -141,13 +141,10 @@ const BudgetTable = ({
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                User
+                                User Name
                             </TableCell>
                             <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                Allocated
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                Spent
+                                Allocated Amount
                             </TableCell>
                             <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                 Date
@@ -160,7 +157,7 @@ const BudgetTable = ({
                                         textAlign: "center",
                                     }}
                                 >
-                                    Actions
+                                    Types
                                 </TableCell>
                             )}
                             <TableCell />
@@ -195,9 +192,6 @@ const BudgetTable = ({
                                     </TableCell>
                                     <TableCell sx={{ fontWeight: "bold" }}>
                                         ₹{row?.allocatedAmount?.toLocaleString()}
-                                    </TableCell>
-                                    <TableCell sx={{ fontWeight: "bold" }}>
-                                        ₹{row?.spentAmount?.toLocaleString()}
                                     </TableCell>
                                     <TableCell>
                                         {row?.createdAt
@@ -294,10 +288,10 @@ const BudgetTable = ({
                                 <strong>Allocated:</strong> ₹
                                 {selectedBudget?.allocatedAmount?.toLocaleString()}
                             </Typography>
-                            <Typography>
+                            {/* <Typography>
                                 <strong>Spent:</strong> ₹
                                 {selectedBudget?.spentAmount?.toLocaleString()}
-                            </Typography>
+                            </Typography> */}
                             <Typography>
                                 <strong>Date:</strong>{" "}
                                 {new Date(selectedBudget?.createdAt).toLocaleString("en-US", {

@@ -1,246 +1,422 @@
 import React, { useState } from 'react';
 
 const SettingsPage = () => {
-    const [settings, setSettings] = useState({
-        theme: 'dark',
-        notifications: true,
-        emailUpdates: false,
-        autoSave: true,
-        language: 'english',
-        fontSize: 'medium',
-        privacy: 'friends',
-        twoFactor: false,
-        soundEffects: true,
-        reduceMotion: false,
-        highContrast: false
+  const [settings, setSettings] = useState({
+    notifications: true,
+    emailUpdates: false,
+    autoSave: true,
+    language: 'english',
+    fontSize: 'medium',
+    twoFactor: false,
+    sound: true,
+    vibration: true
+  });
+
+  const [activeSection, setActiveSection] = useState('account');
+  const [saveStatus, setSaveStatus] = useState('');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  const [userProfile, setUserProfile] = useState({
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1 (555) 123-4567',
+    bio: 'Software developer and tech enthusiast',
+    location: 'New York, USA'
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const [passwordErrors, setPasswordErrors] = useState({});
+
+  // API Functions
+  const changePasswordAPI = async (passwordData) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (passwordData.currentPassword !== 'currentPassword123') {
+          reject({ message: 'Current password is incorrect' });
+        } else if (passwordData.newPassword.length < 6) {
+          reject({ message: 'New password must be at least 6 characters' });
+        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+          reject({ message: 'New passwords do not match' });
+        } else {
+          resolve({ message: 'Password changed successfully' });
+        }
+      }, 1500);
     });
+  };
 
-    const [activeSection, setActiveSection] = useState('general');
-    const [saveStatus] = useState('');
+  const updateProfileAPI = async (profileData) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ message: 'Profile updated successfully', data: profileData });
+      }, 1000);
+    });
+  };
 
-    const handleSettingChange = (key, value) => {
-        setSettings(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    };
+  const saveSettingsAPI = async () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ message: 'Settings saved successfully' });
+      }, 1000);
+    });
+  };
 
-    // Inline CSS as a string to be injected
-    const cssStyles = `
-    @keyframes slideInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+  // Event Handlers
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleProfileChange = (key, value) => {
+    setUserProfile(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handlePasswordChange = (key, value) => {
+    setPasswordForm(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    if (passwordErrors[key]) {
+      setPasswordErrors(prev => ({
+        ...prev,
+        [key]: ''
+      }));
     }
-    
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+  };
+
+  // Validation Functions
+  const validatePasswordForm = () => {
+    const errors = {};
+
+    if (!passwordForm.currentPassword.trim()) {
+      errors.currentPassword = 'Current password is required';
     }
-    
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+
+    if (!passwordForm.newPassword.trim()) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordForm.newPassword.length < 6) {
+      errors.newPassword = 'Password must be at least 6 characters';
     }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
+
+    if (!passwordForm.confirmPassword.trim()) {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
     }
-    
+
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Action Functions
+  const saveSettings = async () => {
+    setSaveStatus('Saving settings...');
+    try {
+      await saveSettingsAPI(settings);
+      setSaveStatus('Settings saved successfully!');
+      setTimeout(() => setSaveStatus(''), 3000);
+      // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      setSaveStatus('Error saving settings. Please try again.');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
+  const resetSettings = () => {
+    setSettings({
+      notifications: true,
+      emailUpdates: false,
+      autoSave: true,
+      language: 'english',
+      fontSize: 'medium',
+      twoFactor: false,
+      sound: true,
+      vibration: true
+    });
+    setSaveStatus('Settings reset to default!');
+    setTimeout(() => setSaveStatus(''), 3000);
+  };
+
+  const saveProfile = async () => {
+    setSaveStatus('Saving profile...');
+    try {
+      const result = await updateProfileAPI(userProfile);
+      setUserProfile(result.data);
+      setIsEditingProfile(false);
+      setSaveStatus('Profile updated successfully!');
+      setTimeout(() => setSaveStatus(''), 3000);
+      // eslint-disable-next-line no-unused-vars
+    } catch (error) {
+      setSaveStatus('Error updating profile. Please try again.');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
+  const changePassword = async () => {
+    if (!validatePasswordForm()) {
+      return;
+    }
+
+    setSaveStatus('Changing password...');
+    try {
+      await changePasswordAPI(passwordForm);
+      setSaveStatus('Password changed successfully!');
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setIsChangingPassword(false);
+      setTimeout(() => setSaveStatus(''), 3000);
+    } catch (error) {
+      setSaveStatus(error.message);
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
+  const cancelPasswordChange = () => {
+    setIsChangingPassword(false);
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setPasswordErrors({});
+  };
+
+  // CSS Styles
+  const cssStyles = `
     .settings-container {
       display: flex;
       min-height: 100vh;
-      background: #f8fafc;
-      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #1a202c;
-      padding: 1px;
+      background-color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333333;
     }
-    
+
+    /* Sidebar Styles */
     .settings-sidebar {
       width: 280px;
-      background: #ffffff;
+      background: #f8fafc;
       border-right: 1px solid #e2e8f0;
-      padding: 30px 20px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
-      animation: slideInLeft 0.4s ease-out;
-      position: fixed;
-      height: 100vh;
-      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
     }
-    
+
+    .sidebar-header {
+      padding: 30px 25px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
     .sidebar-title {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 40px;
-      color: #2d3748;
+      margin-bottom: 20px;
+      color: #1a202c;
+    }
+
+    .user-profile {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    
-    .sidebar-title::before {
-      content: '⚙️';
-      font-size: 24px;
-    }
-    
-    .sidebar-item {
-      padding: 16px 20px;
-      margin: 6px 0;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       align-items: center;
-      font-size: 15px;
-      font-weight: 500;
-      color: #4a5568;
-      border: 1px solid transparent;
-    }
-    
-    .sidebar-item:hover {
-      background: #f7fafc;
-      color: #2d3748;
-      transform: translateX(4px);
-      border-color: #e2e8f0;
-    }
-    
-    .sidebar-item.active {
-      background: linear-gradient(135deg, #667eea 0%, #667eea 100%);
+      justify-content: center;
+      font-size: 20px;
       color: white;
-      transform: translateX(8px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-      border-color: transparent;
     }
-    
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 2px;
+    }
+
+    .user-email {
+      font-size: 14px;
+      color: #718096;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 20px 0;
+    }
+
+    .sidebar-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 15px 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-item:hover {
+      background-color: #edf2f7;
+    }
+
+    .sidebar-item.active {
+      background-color: #ebf8ff;
+      border-left-color: #3182ce;
+    }
+
+    .sidebar-item.active .sidebar-label {
+      color: #3182ce;
+      font-weight: 600;
+    }
+
     .sidebar-icon {
       margin-right: 12px;
       font-size: 18px;
-      width: 20px;
+    }
+
+    .sidebar-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: #4a5568;
+    }
+
+    .active-indicator {
+      position: absolute;
+      right: 20px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #3182ce;
+    }
+
+    .sidebar-footer {
+      padding: 20px 25px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .app-version {
+      font-size: 12px;
+      color: #a0aec0;
       text-align: center;
     }
-    
+
+    /* Content Styles */
     .settings-content {
       flex: 1;
-      background: #ffffff;
-      margin-left: 280px;
-      padding: 40px;
-      animation: slideInRight 0.4s ease-out 0.1s both;
-      min-height: 100vh;
-    }
-    
-    .section-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 30px;
-      color: #2d3748;
       display: flex;
-      align-items: center;
-      gap: 12px;
+      flex-direction: column;
+      background: #ffffff;
     }
-    
+
+    .content-header {
+      padding: 30px 40px 20px 40px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1a202c;
+    }
+
+    .section-description {
+      font-size: 16px;
+      color: #718096;
+      margin: 0;
+    }
+
+    .settings-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 40px;
+    }
+
+    .settings-section {
+      padding: 30px 0;
+    }
+
     .setting-group {
       margin-bottom: 40px;
-      animation: fadeIn 0.5s ease-out;
     }
-    
-    .setting-title {
-      font-size: 20px;
+
+    .setting-group-title {
+      font-size: 18px;
       font-weight: 600;
       margin-bottom: 20px;
       color: #2d3748;
       padding-bottom: 10px;
-      border-bottom: 2px solid #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
     }
-    
+
     .setting-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 20px;
-      background: #f8fafc;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid #e2e8f0;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .setting-item::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 4px;
-      background: linear-gradient(135deg, #667eea 0%, #667eea 100%);
-      transform: scaleY(0);
-      transition: transform 0.3s ease;
-    }
-    
-    .setting-item:hover {
       background: #ffffff;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .setting-item:hover {
       border-color: #cbd5e0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-    
-    .setting-item:hover::before {
-      transform: scaleY(1);
-    }
-    
+
     .setting-info {
       flex: 1;
     }
-    
+
     .setting-label {
-      display: block;
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 6px;
       font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #2d3748;
     }
-    
+
     .setting-description {
-      margin: 0;
-      color: #718096;
       font-size: 14px;
-      line-height: 1.5;
+      color: #718096;
+      line-height: 1.4;
     }
-    
-    .toggle {
+
+    /* Toggle Switch */
+    .toggle-switch {
       position: relative;
       display: inline-block;
-      width: 60px;
-      height: 30px;
+      width: 52px;
+      height: 28px;
     }
-    
-    .toggle input {
+
+    .toggle-switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
-    
-    .slider {
+
+    .toggle-slider {
       position: absolute;
       cursor: pointer;
       top: 0;
@@ -251,517 +427,732 @@ const SettingsPage = () => {
       transition: 0.4s;
       border-radius: 34px;
     }
-    
-    .slider::before {
+
+    .toggle-slider:before {
       position: absolute;
       content: "";
-      height: 22px;
-      width: 22px;
+      height: 20px;
+      width: 20px;
       left: 4px;
       bottom: 4px;
       background-color: white;
       transition: 0.4s;
       border-radius: 50%;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
-    
-    input:checked + .slider {
-      background: linear-gradient(135deg, #667eea 0%, #667eea 100%);
+
+    input:checked + .toggle-slider {
+      background-color: #3182ce;
     }
-    
-    input:checked + .slider::before {
-      transform: translateX(30px);
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
     }
-    
-    .select {
-      padding: 12px 16px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e0;
-      background: white;
-      font-size: 14px;
-      width: 200px;
-      transition: all 0.3s ease;
-      font-family: inherit;
-    }
-    
-    .select:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    .button-group {
-      display: flex;
-      gap: 16px;
-      margin-top: 40px;
-      padding-top: 30px;
-      border-top: 1px solid #e2e8f0;
-    }
-    
-    .button {
-      padding: 14px 28px;
-      border-radius: 10px;
+
+    /* Buttons */
+    .action-button {
+      padding: 10px 20px;
       border: none;
-      font-size: 15px;
+      border-radius: 8px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: inherit;
+      transition: all 0.3s ease;
+      min-width: 120px;
     }
-    
-    .save-button {
-      background: linear-gradient(135deg, #667eea 0%, #667eea 100%);
+
+    .action-button.primary {
+      background: #3182ce;
       color: white;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
-    
-    .reset-button {
-      background: transparent;
-      border: 2px solid #e53e3e;
-      color: #e53e3e;
+
+    .action-button.primary:hover {
+      background: #2c5aa0;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
     }
-    
-    .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+    .action-button.secondary {
+      background: #e2e8f0;
+      color: #4a5568;
     }
-    
-    .save-button:hover {
-      animation: pulse 0.6s ease;
-    }
-    
-    .status-message {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      animation: fadeIn 0.5s ease-out;
-      border: 1px solid;
-    }
-    
-    .status-success {
-      background-color: #f0fff4;
-      color: #2d7840;
-      border-color: #9ae6b4;
-    }
-    
-    .status-saving {
-      background-color: #ebf8ff;
-      color: #2c5aa0;
-      border-color: #90cdf4;
-    }
-    
-    .radio-group {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    
-    .radio-option {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      padding: 12px 20px;
-      border-radius: 8px;
-      border: 2px solid #e2e8f0;
-      transition: all 0.3s ease;
-      background: white;
-    }
-    
-    .radio-option:hover {
-      border-color: #cbd5e0;
+
+    .action-button.secondary:hover {
+      background: #cbd5e0;
       transform: translateY(-1px);
     }
-    
-    .radio-option.selected {
-      border-color: #667eea;
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-      color: #667eea;
+
+    .action-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .action-button:disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Forms */
+    .profile-form, .password-form {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .password-section {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .password-header {
+      margin-bottom: 25px;
+    }
+
+    .password-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1a202c;
+    }
+
+    .password-description {
+      font-size: 14px;
+      color: #718096;
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
       font-weight: 600;
+      margin-bottom: 8px;
+      color: #2d3748;
     }
-    
-    .radio-input {
-      margin-right: 10px;
-      accent-color: #667eea;
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: white;
     }
-    
-    .color-picker {
+
+    .form-input:focus {
+      outline: none;
+      border-color: #3182ce;
+      box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    }
+
+    .form-input.error {
+      border-color: #e53e3e;
+    }
+
+    .form-input.error:focus {
+      border-color: #e53e3e;
+      box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+    }
+
+    .error-message {
+      color: #e53e3e;
+      font-size: 12px;
+      margin-top: 5px;
+      display: block;
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
       display: flex;
       gap: 12px;
-      align-items: center;
+      margin-top: 25px;
     }
-    
-    .color-option {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 3px solid transparent;
-    }
-    
-    .color-option:hover {
-      transform: scale(1.1);
-    }
-    
-    .color-option.selected {
-      border-color: #2d3748;
-      transform: scale(1.1);
-    }
-    
-    .slider-container {
+
+    /* Account Card */
+    .account-card {
       display: flex;
       align-items: center;
-      gap: 16px;
-      width: 250px;
+      padding: 25px;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      gap: 20px;
+      margin-bottom: 30px;
     }
-    
-    .range-slider {
-      flex: 1;
-      height: 6px;
-      border-radius: 3px;
-      background: #e2e8f0;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    
-    .range-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+
+    .account-avatar-large {
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
-      background: #667eea;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: white;
     }
-    
-    .range-slider::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-      background: #5a6fd8;
+
+    .account-details {
+      flex: 1;
     }
-    
-    .slider-value {
-      min-width: 60px;
-      text-align: center;
+
+    .account-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #1a202c;
+    }
+
+    .account-email {
+      font-size: 16px;
+      color: #718096;
+      margin-bottom: 4px;
+    }
+
+    .account-detail {
+      font-size: 14px;
+      color: #a0aec0;
+      margin-bottom: 2px;
+    }
+
+    /* Password Requirements */
+    .password-requirements {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 10px;
+    }
+
+    .requirements-title {
+      font-size: 14px;
       font-weight: 600;
-      color: #4a5568;
-      background: #f1f5f9;
-      padding: 4px 12px;
-      border-radius: 6px;
+      margin-bottom: 8px;
+      color: #2d3748;
     }
-    
+
+    .requirement {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .requirement.valid {
+      color: #38a169;
+    }
+
+    .requirement.valid::before {
+      content: "✓ ";
+      font-weight: bold;
+    }
+
+    /* Footer */
+    .settings-footer {
+      padding: 30px 40px;
+      border-top: 1px solid #e2e8f0;
+      background: #f7fafc;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .save-button, .reset-button {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 160px;
+    }
+
+    .save-button.primary {
+      background: #3182ce;
+      color: white;
+    }
+
+    .save-button.primary:hover {
+      background: #2c5aa0;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(49, 130, 206, 0.4);
+    }
+
+    .reset-button.secondary {
+      background: transparent;
+      border: 2px solid #a0aec0;
+      color: #4a5568;
+    }
+
+    .reset-button.secondary:hover {
+      background: #e2e8f0;
+      transform: translateY(-2px);
+    }
+
+    /* Status Message */
+    .status-message {
+      margin-top: 15px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      text-align: center;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .status-message.success {
+      background-color: #c6f6d5;
+      color: #276749;
+      border: 1px solid #9ae6b4;
+    }
+
+    .status-message.info {
+      background-color: #bee3f8;
+      color: #2c5aa0;
+      border: 1px solid #90cdf4;
+    }
+
+    .status-message.error {
+      background-color: #fed7d7;
+      color: #c53030;
+      border: 1px solid #feb2b2;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive Design */
     @media (max-width: 768px) {
       .settings-container {
         flex-direction: column;
       }
       
       .settings-sidebar {
-        position: static;
         width: 100%;
-        height: auto;
         border-right: none;
         border-bottom: 1px solid #e2e8f0;
       }
       
-      .settings-content {
-        margin-left: 0;
-        padding: 30px 20px;
-      }
-      
-      .sidebar-item {
-        display: inline-flex;
-        margin: 4px;
-        padding: 12px 16px;
+      .content-header,
+      .settings-scrollable,
+      .settings-footer {
+        padding: 20px;
       }
       
       .button-group {
         flex-direction: column;
       }
+      
+      .save-button,
+      .reset-button {
+        width: 100%;
+      }
+      
+      .account-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .form-actions {
+        flex-direction: column;
+      }
     }
   `;
 
-    // Render function
-    return (
-        <>
-            <style>{cssStyles}</style>
-            <div className="settings-container">
-                <div className="settings-sidebar">
-                    <div className="sidebar-title">Settings</div>
-                    {[
-                        { id: 'general', label: 'General', icon: '⚙️' },
-                        { id: 'appearance', label: 'Appearance', icon: '🎨' },
-                        { id: 'notifications', label: 'Notifications', icon: '🔔' },
-                        // { id: 'privacy', label: 'Privacy & Security', icon: '🔒' },
-                        // { id: 'accessibility', label: 'Accessibility', icon: '👁️' },
-                        // { id: 'account', label: 'Account', icon: '👤' }
-                    ].map((section) => (
-                        <div
-                            key={section.id}
-                            className={`sidebar-item ${activeSection === section.id ? 'active' : ''}`}
-                            onClick={() => setActiveSection(section.id)}
-                        >
-                            <span className="sidebar-icon">{section.icon}</span>
-                            {section.label}
-                        </div>
-                    ))}
+  return (
+    <>
+      <style>{cssStyles}</style>
+      <div className="settings-container">
+        <div className="settings-sidebar">
+          <div className="sidebar-header">
+            <h2 className="sidebar-title">Settings</h2>
+            <div className="user-profile">
+              <div className="user-avatar">👤</div>
+              <div className="user-info">
+                <div className="user-name">{userProfile.name}</div>
+                <div className="user-email">{userProfile.email}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sidebar-nav">
+            {[
+              { id: 'notifications', label: 'Notifications', icon: '🔔' },
+              { id: 'privacy', label: 'Privacy & Security', icon: '🔒' },
+              { id: 'account', label: 'Account', icon: '👤' }
+            ].map((section) => (
+              <div
+                key={section.id}
+                className={`sidebar-item ${activeSection === section.id ? 'active' : ''}`}
+                onClick={() => setActiveSection(section.id)}
+              >
+                <span className="sidebar-icon">{section.icon}</span>
+                <span className="sidebar-label">{section.label}</span>
+                {activeSection === section.id && <div className="active-indicator"></div>}
+              </div>
+            ))}
+          </div>
+
+          <div className="sidebar-footer">
+            <div className="app-version">Version 2.1.4</div>
+          </div>
+        </div>
+
+        <div className="settings-content">
+          <div className="content-header">
+            <h1 className="section-title">
+              {activeSection === 'notifications' && 'Notification Settings'}
+              {activeSection === 'privacy' && 'Privacy & Security'}
+              {activeSection === 'account' && 'Account Settings'}
+            </h1>
+            <p className="section-description">
+              {activeSection === 'notifications' && 'Manage how and when you receive notifications'}
+              {activeSection === 'privacy' && 'Control your privacy and security settings'}
+              {activeSection === 'account' && 'Manage your account preferences and profile'}
+            </p>
+          </div>
+
+          <div className="settings-scrollable">
+            {activeSection === 'notifications' && (
+              <div className="settings-section">
+                <div className="setting-group">
+                  <h3 className="setting-group-title">Push Notifications</h3>
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <div className="setting-label">Enable Notifications</div>
+                      <div className="setting-description">Receive push notifications for important updates</div>
+                    </div>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={settings.notifications}
+                        onChange={(e) => handleSettingChange('notifications', e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <div className="setting-label">Email Updates</div>
+                      <div className="setting-description">Receive regular updates via email</div>
+                    </div>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={settings.emailUpdates}
+                        onChange={(e) => handleSettingChange('emailUpdates', e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
                 </div>
 
-                <div className="settings-content">
-                    <div className="section-title">
-                        {/* {activeSection === 'general' && '⚙️ General Settings'}
-                        {activeSection === 'appearance' && '🎨 Appearance'}
-                        {activeSection === 'notifications' && '🔔 Notifications'} */}
-                        {/* {activeSection === 'privacy' && '🔒 Privacy & Security'}
-                        {activeSection === 'accessibility' && '👁️ Accessibility'}
-                        {activeSection === 'account' && '👤 Account Settings'} */}
+                <div className="setting-group">
+                  <h3 className="setting-group-title">Notification Types</h3>
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <div className="setting-label">Sound</div>
+                      <div className="setting-description">Play sound for notifications</div>
+                    </div>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={settings.sound}
+                        onChange={(e) => handleSettingChange('sound', e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <div className="setting-label">Vibration</div>
+                      <div className="setting-description">Vibrate for notifications</div>
+                    </div>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={settings.vibration}
+                        onChange={(e) => handleSettingChange('vibration', e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'privacy' && (
+              <div className="settings-section">
+                <div className="setting-group">
+                  <h3 className="setting-group-title">Security</h3>
+                  <div className="setting-item">
+                    <div className="setting-info">
+                      <div className="setting-label">Two-Factor Authentication</div>
+                      <div className="setting-description">Add an extra layer of security to your account</div>
+                    </div>
+                    <label className="toggle-switch">
+                      <input
+                        type="checkbox"
+                        checked={settings.twoFactor}
+                        onChange={(e) => handleSettingChange('twoFactor', e.target.checked)}
+                      />
+                      <span className="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'account' && (
+              <div className="settings-section">
+                {/* Profile Information Section */}
+                <div className="setting-group">
+                  <h3 className="setting-group-title">Profile Information</h3>
+
+                  {!isEditingProfile ? (
+                    <div className="account-card">
+                      <div className="account-avatar-large">👤</div>
+                      <div className="account-details">
+                        <div className="account-name">{userProfile.name}</div>
+                        <div className="account-email">{userProfile.email}</div>
+                        <div className="account-detail">{userProfile.phone}</div>
+                        <div className="account-detail">{userProfile.location}</div>
+                        <div className="account-detail">{userProfile.bio}</div>
+                      </div>
+                      <button
+                        className="action-button primary"
+                        onClick={() => setIsEditingProfile(true)}
+                      >
+                        Edit Profile
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="profile-form">
+                      <div className="form-group">
+                        <label className="form-label">Full Name</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={userProfile.name}
+                          onChange={(e) => handleProfileChange('name', e.target.value)}
+                          placeholder="Enter your full name"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Email Address</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={userProfile.email}
+                          onChange={(e) => handleProfileChange('email', e.target.value)}
+                          placeholder="Enter your email address"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Phone Number</label>
+                        <input
+                          type="tel"
+                          className="form-input"
+                          value={userProfile.phone}
+                          onChange={(e) => handleProfileChange('phone', e.target.value)}
+                          placeholder="Enter your phone number"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Location</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={userProfile.location}
+                          onChange={(e) => handleProfileChange('location', e.target.value)}
+                          placeholder="Enter your location"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Bio</label>
+                        <textarea
+                          className="form-input form-textarea"
+                          value={userProfile.bio}
+                          onChange={(e) => handleProfileChange('bio', e.target.value)}
+                          placeholder="Tell us about yourself"
+                          rows="3"
+                        />
+                      </div>
+
+                      <div className="form-actions">
+                        <button
+                          className="action-button primary"
+                          onClick={saveProfile}
+                          disabled={saveStatus.includes('Saving')}
+                        >
+                          {saveStatus.includes('Saving') ? 'Saving...' : 'Save Changes'}
+                        </button>
+                        <button
+                          className="action-button secondary"
+                          onClick={() => setIsEditingProfile(false)}
+                          disabled={saveStatus.includes('Saving')}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Change Password Section */}
+                <div className="setting-group">
+                  <h3 className="setting-group-title">Security</h3>
+
+                  <div className="password-section">
+                    <div className="password-header">
+                      <h4 className="password-title">Change Password</h4>
+                      <p className="password-description">Update your password for enhanced security</p>
                     </div>
 
-                    {activeSection === 'general' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Application Preferences</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Auto Save</span>
-                                    <span className="setting-description">Automatically save your work as you type</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.autoSave}
-                                        onChange={(e) => handleSettingChange('autoSave', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            {/* <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Language</span>
-                                    <span className="setting-description">Choose your preferred language</span>
-                                </div>
-                                <select
-                                    className="select"
-                                    value={settings.language}
-                                    onChange={(e) => handleSettingChange('language', e.target.value)}
-                                >
-                                    <option value="english">English</option>
-                                    <option value="spanish">Spanish</option>
-                                    <option value="french">French</option>
-                                    <option value="german">German</option>
-                                    <option value="japanese">Japanese</option>
-                                </select>
-                            </div> */}
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Font Size</span>
-                                    <span className="setting-description">Adjust the text size throughout the application</span>
-                                </div>
-                                <div className="radio-group">
-                                    {['small', 'medium', 'large'].map((size) => (
-                                        <label
-                                            key={size}
-                                            className={`radio-option ${settings.fontSize === size ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                className="radio-input"
-                                                name="fontSize"
-                                                value={size}
-                                                checked={settings.fontSize === size}
-                                                onChange={(e) => handleSettingChange('fontSize', e.target.value)}
-                                            />
-                                            {size.charAt(0).toUpperCase() + size.slice(1)}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                    {!isChangingPassword ? (
+                      <button
+                        className="action-button primary"
+                        onClick={() => setIsChangingPassword(true)}
+                      >
+                        Change Password
+                      </button>
+                    ) : (
+                      <div className="password-form">
+                        <div className="form-group">
+                          <label className="form-label">Current Password</label>
+                          <input
+                            type="password"
+                            className={`form-input ${passwordErrors.currentPassword ? 'error' : ''}`}
+                            value={passwordForm.currentPassword}
+                            onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                            placeholder="Enter your current password"
+                          />
+                          {passwordErrors.currentPassword && (
+                            <span className="error-message">{passwordErrors.currentPassword}</span>
+                          )}
                         </div>
+
+                        <div className="form-group">
+                          <label className="form-label">New Password</label>
+                          <input
+                            type="password"
+                            className={`form-input ${passwordErrors.newPassword ? 'error' : ''}`}
+                            value={passwordForm.newPassword}
+                            onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                            placeholder="Enter your new password"
+                          />
+                          {passwordErrors.newPassword && (
+                            <span className="error-message">{passwordErrors.newPassword}</span>
+                          )}
+
+                          <div className="password-requirements">
+                            <div className="requirements-title">Password Requirements:</div>
+                            <div className={`requirement ${passwordForm.newPassword.length >= 6 ? 'valid' : ''}`}>
+                              At least 6 characters long
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Confirm New Password</label>
+                          <input
+                            type="password"
+                            className={`form-input ${passwordErrors.confirmPassword ? 'error' : ''}`}
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                            placeholder="Confirm your new password"
+                          />
+                          {passwordErrors.confirmPassword && (
+                            <span className="error-message">{passwordErrors.confirmPassword}</span>
+                          )}
+                        </div>
+
+                        <div className="form-actions">
+                          <button
+                            className="action-button primary"
+                            onClick={changePassword}
+                            disabled={saveStatus.includes('Changing')}
+                          >
+                            {saveStatus.includes('Changing') ? 'Changing...' : 'Update Password'}
+                          </button>
+                          <button
+                            className="action-button secondary"
+                            onClick={cancelPasswordChange}
+                            disabled={saveStatus.includes('Changing')}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     )}
-
-                    {activeSection === 'appearance' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Theme & Display</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Theme</span>
-                                    <span className="setting-description">Choose your preferred theme style</span>
-                                </div>
-                                <div className="radio-group">
-                                    {['light', 'dark', 'auto'].map((theme) => (
-                                        <label
-                                            key={theme}
-                                            className={`radio-option ${settings.theme === theme ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                className="radio-input"
-                                                name="theme"
-                                                value={theme}
-                                                checked={settings.theme === theme}
-                                                onChange={(e) => handleSettingChange('theme', e.target.value)}
-                                            />
-                                            {theme.charAt(0).toUpperCase() + theme.slice(1)}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Accent Color</span>
-                                    <span className="setting-description">Choose your primary color theme</span>
-                                </div>
-                                <div className="color-picker">
-                                    {['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'].map((color) => (
-                                        <div
-                                            key={color}
-                                            className={`color-option ${settings.theme === color ? 'selected' : ''}`}
-                                            style={{ backgroundColor: color }}
-                                            onClick={() => handleSettingChange('theme', color)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === 'notifications' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Notification Preferences</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Enable Notifications</span>
-                                    <span className="setting-description">Receive desktop and browser notifications</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.notifications}
-                                        onChange={(e) => handleSettingChange('notifications', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Email Updates</span>
-                                    <span className="setting-description">Receive important updates via email</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.emailUpdates}
-                                        onChange={(e) => handleSettingChange('emailUpdates', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Sound Effects</span>
-                                    <span className="setting-description">Play sounds for notifications</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.soundEffects}
-                                        onChange={(e) => handleSettingChange('soundEffects', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* {activeSection === 'accessibility' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Accessibility Features</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Reduce Motion</span>
-                                    <span className="setting-description">Minimize animations and transitions</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.reduceMotion}
-                                        onChange={(e) => handleSettingChange('reduceMotion', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">High Contrast</span>
-                                    <span className="setting-description">Increase color contrast for better visibility</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.highContrast}
-                                        onChange={(e) => handleSettingChange('highContrast', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    )} */}
-
-                    {/* {activeSection === 'account' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Account Management</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Change Password</span>
-                                    <span className="setting-description">Update your account password</span>
-                                </div>
-                                <button className="button" style={{ padding: '10px 20px', fontSize: '14px' }}>
-                                    Change Password
-                                </button>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Export Data</span>
-                                    <span className="setting-description">Download a copy of your data</span>
-                                </div>
-                                <button className="button" style={{ padding: '10px 20px', fontSize: '14px' }}>
-                                    Export Data
-                                </button>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Delete Account</span>
-                                    <span className="setting-description">Permanently delete your account and all data</span>
-                                </div>
-                                <button className="button reset-button" style={{ padding: '10px 20px', fontSize: '14px' }}>
-                                    Delete Account
-                                </button>
-                            </div>
-                        </div>
-                    )} */}
-
-                    {/* <div className="button-group">
-                        <button className="button save-button" onClick={saveSettings}>
-                            💾 Save Settings
-                        </button>
-                        <button className="button reset-button" onClick={resetSettings}>
-                            🔄 Reset to Default
-                        </button>
-                    </div> */}
-
-                    {saveStatus && (
-                        <div className={`status-message ${saveStatus.includes('Saving') ? 'status-saving' : 'status-success'}`}>
-                            {saveStatus}
-                        </div>
-                    )}
+                  </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          <div className="settings-footer">
+            <div className="button-group">
+              <button
+                className="save-button primary"
+                onClick={saveSettings}
+                disabled={saveStatus.includes('Saving') && !saveStatus.includes('Profile') && !saveStatus.includes('Password')}
+              >
+                {saveStatus.includes('Saving settings') ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                className="reset-button secondary"
+                onClick={resetSettings}
+                disabled={saveStatus.includes('Saving')}
+              >
+                Reset to Default
+              </button>
             </div>
-        </>
-    );
+
+            {saveStatus && (
+              <div className={`status-message ${saveStatus.includes('successfully') ? 'success' :
+                saveStatus.includes('Error') || saveStatus.includes('incorrect') || saveStatus.includes('do not match') ? 'error' : 'info'
+                }`}>
+                {saveStatus}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default SettingsPage;

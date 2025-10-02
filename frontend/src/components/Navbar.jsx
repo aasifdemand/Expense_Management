@@ -112,7 +112,7 @@ const Navbar = ({
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 transition: 'all 0.3s ease',
-                zIndex: (theme) => theme.zIndex.drawer + 1
+                zIndex: (theme) => theme.zIndex.drawer + 1000
             }}
         >
             <Toolbar sx={{

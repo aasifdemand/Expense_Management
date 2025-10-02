@@ -48,7 +48,7 @@ const departmentStructure = {
         "Instantly",
         "Domain Renewal "
     ],
-    "Office Expenses": [
+    "Office-Expenses": [
         "Rent",
         "Electricity Bill",
         "Office Maintenance",
@@ -68,6 +68,9 @@ const departmentStructure = {
         "Remaining Incentives arrears",
         "Internet Bill",
         "Invoice Payments"
+
+
+
     ]
 };
 
@@ -181,7 +184,7 @@ export default function CreateExpenseForm() {
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
                 {/* Header Section */}
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <Typography
+                    {/* <Typography
                         variant="h4"
                         fontWeight="bold"
                         gutterBottom
@@ -194,13 +197,13 @@ export default function CreateExpenseForm() {
                         }}
                     >
                         Create New Expense
-                    </Typography>
-                    <Typography variant="body1" color="primary" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                    </Typography> */}
+                    {/* <Typography variant="body1" color="primary" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                         Add your expense details and upload bill proof
-                    </Typography>
+                    </Typography> */}
                 </Box>
 
-                <Divider sx={{ mb: 4 }} />
+                {/* <Divider sx={{ mb: 4 }} /> */}
 
                 <Box component="form" onSubmit={handleSubmit} noValidate>
                     <Stack spacing={3}>
