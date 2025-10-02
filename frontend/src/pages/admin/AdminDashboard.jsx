@@ -3,24 +3,20 @@ import { Box, Typography, useTheme, Card, CardContent, alpha } from "@mui/materi
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import ReceiptIcon from '@mui/icons-material/Receipt';
 import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import { useState } from "react";
 import TabButtonsWithReport from "../../components/general/TabButtonsWithReport";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
-import DashboardExpensesChart from "../../components/admin/dashboard/DashboardExpensesChart";
+import { useSelector } from "react-redux";
 
 const AdminDashboard = () => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState("budget");
-
+  const { users } = useSelector((state) => state?.auth)
   const {
     allBudgets,
     budgets,
@@ -65,23 +61,15 @@ const AdminDashboard = () => {
     getMonthByNumber: getExpenseMonthByNumber,
     setLimit: setExpenseLimit,
     limit: expenseLimit,
-    selectedMonth: expenseSelectedMonth,
+    // selectedMonth: expenseSelectedMonth,
     setSelectedMonth: setExpenseSelectedMonth,
   } = useExpenses();
 
   // Budget Stats Calculations
   const totalAllocated = allBudgets?.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0) || 0;
-  const totalSpent = allBudgets?.reduce((acc, b) => acc + (b.spentAmount || 0), 0) || 0;
-  const remainingBalance = totalAllocated - totalSpent;
-  const budgetUsagePercentage = totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0;
-
-  // Expense Stats Calculations
   const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
-  const totalReimbursed = allExpenses?.reduce((acc, e) => acc + (e?.isReimbursed ? Number(e.amount) : 0), 0) || 0;
-  const totalPendingReimbursement = totalExpenses - totalReimbursed;
-  const reimbursementPercentage = totalExpenses > 0 ? ((totalReimbursed / totalExpenses) * 100).toFixed(1) : 0;
+  const totalReimbursed = allExpenses?.reduce((acc, e) => acc + Number(e?.fromReimbursement || 0), 0) || 0;
 
-  // Stats Cards Configuration
   const budgetStats = [
     {
       title: "Total Allocated",
@@ -103,7 +91,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Reimbursement",
-      value: `₹${remainingBalance.toLocaleString()}`,
+      value: `₹${totalReimbursed.toLocaleString()}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",
@@ -121,44 +109,7 @@ const AdminDashboard = () => {
     // },
   ];
 
-  // const expenseStats = [
-  //   {
-  //     title: "Total Expenses",
-  //     value: `₹${totalExpenses.toLocaleString()}`,
-  //     color: "#3b82f6",
-  //     icon: <MonetizationOnIcon />,
-  //     subtitle: "Total expenses amount",
-  //     trend: "-2.1%",
-  //     trendColor: "#ef4444"
-  //   },
-  //   {
-  //     title: "Reimbursed",
-  //     value: `₹${totalReimbursed.toLocaleString()}`,
-  //     color: "#10b981",
-  //     icon: <ReceiptIcon />,
-  //     subtitle: `${reimbursementPercentage}% reimbursed`,
-  //     trend: "+18.5%",
-  //     trendColor: "#10b981"
-  //   },
-  //   {
-  //     title: "Pending Reimbursement",
-  //     value: `₹${totalPendingReimbursement.toLocaleString()}`,
-  //     color: "#ef4444",
-  //     icon: <PendingActionsIcon />,
-  //     subtitle: "Awaiting reimbursement",
-  //     trend: "-7.3%",
-  //     trendColor: "#ef4444"
-  //   },
-  //   {
-  //     title: "Expense Count",
-  //     value: allExpenses?.length || 0,
-  //     color: "#8b5cf6",
-  //     icon: <AttachMoneyIcon />,
-  //     subtitle: "Total expenses",
-  //     trend: "+3.8%",
-  //     trendColor: "#10b981"
-  //   },
-  // ];
+
 
   // Enhanced Responsive Stats Card Component
   const StatCard = ({ stat }) => (
@@ -363,7 +314,9 @@ const AdminDashboard = () => {
                   Budget Distribution
                 </Typography>
                 <DashboardBudgetChart
-                  budgets={allBudgets}
+
+                  users={users}
+                  budgets={allExpenses}
                   theme={theme}
                   year={year}
                   selectedMonth={budgetSelectedMonth}
@@ -373,45 +326,7 @@ const AdminDashboard = () => {
             </Card>
           </Box>
 
-          {/* Expense Chart */}
-          <Box sx={{
-            flex: 1,
-            minHeight: { xs: 350, sm: 400 },
-            width: '100%'
-          }}>
-            <Card sx={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-              border: "1px solid rgba(226, 232, 240, 0.8)",
-              height: "100%",
-              width: '100%'
-            }}>
-              <CardContent sx={{
-                p: { xs: 2, sm: 3 },
-                height: '100%'
-              }}>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    mb: { xs: 2, sm: 3 },
-                    fontWeight: 700,
-                    color: "#1e293b",
-                    fontSize: { xs: "1.1rem", sm: "1.3rem" }
-                  }}
-                >
-                  Expense Analysis
-                </Typography>
-                <DashboardExpensesChart
-                  expenses={allExpenses}
-                  theme={theme}
-                  year={year}
-                  selectedMonth={expenseSelectedMonth}
-                  setSelectedMonth={setExpenseSelectedMonth}
-                />
-              </CardContent>
-            </Card>
-          </Box>
+
         </Box>
       </Box>
 

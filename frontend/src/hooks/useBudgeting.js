@@ -16,7 +16,7 @@ export const useBudgeting = () => {
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1); // default current month
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
 
 
   const [page, setPage] = useState(1);
@@ -26,8 +26,7 @@ export const useBudgeting = () => {
     userId: "",
     amount: 0,
     month: currentMonth,
-    year: year,
-
+    year,
   });
 
   const [open, setOpen] = useState(false);
@@ -96,21 +95,55 @@ export const useBudgeting = () => {
   };
 
   const handleAdd = async () => {
-    const resultAction = await dispatch(allocateBudget(formData));
+    console.log("formdata before mapping: ", formData);
+
+    const months = [
+      { value: 1, label: "January" },
+      { value: 2, label: "February" },
+      { value: 3, label: "March" },
+      { value: 4, label: "April" },
+      { value: 5, label: "May" },
+      { value: 6, label: "June" },
+      { value: 7, label: "July" },
+      { value: 8, label: "August" },
+      { value: 9, label: "September" },
+      { value: 10, label: "October" },
+      { value: 11, label: "November" },
+      { value: 12, label: "December" },
+    ];
+
+    // Convert month label to number
+    const monthObj = months.find(m => m.label === formData.month);
+    const monthNumber = monthObj ? monthObj.value : null;
+
+    if (!monthNumber) {
+      console.error("Invalid month:", formData.month);
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      month: monthNumber, // now backend receives 10 instead of "October"
+    };
+
+    console.log("formdata after mapping: ", payload);
+
+    const resultAction = await dispatch(allocateBudget(payload));
 
     if (allocateBudget.fulfilled.match(resultAction)) {
-      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }))
-      await dispatch(fetchExpenses({ page: 1, limit: 20 }))
+      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
+      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
       setFormData({
         userId: "",
         amount: "",
-        month: currentMonth,
+        month: getMonthByNumber(currentMonth),
         year: year,
       });
     } else {
       console.error("Allocation failed:", resultAction);
     }
   };
+
 
   const handleSubmit = async () => {
     if (!selectedBudget) return;

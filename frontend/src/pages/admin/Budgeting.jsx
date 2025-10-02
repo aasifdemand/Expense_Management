@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, Card, CardContent, alpha } from "@mui/material";
+import { Box, Typography, Card, CardContent, alpha } from "@mui/material";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
@@ -9,14 +9,12 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-
-import BudgetChart from "../../components/admin/budgeting/BudgetChart";
 import BudgetForm from "../../components/admin/budgeting/BudgetForm";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
 
 const Budgeting = () => {
-    const theme = useTheme();
+    // const theme = useTheme();
     const dispatch = useDispatch();
 
     const {
@@ -25,7 +23,7 @@ const Budgeting = () => {
         loading,
         meta,
         users,
-        year,
+        // year,
         page,
         setPage,
         formData,
@@ -45,8 +43,8 @@ const Budgeting = () => {
         getMonthByNumber,
         setLimit,
         limit,
-        selectedMonth,
-        setSelectedMonth
+        // selectedMonth,
+        // setSelectedMonth
     } = useBudgeting();
 
     // Budget Stats Calculations

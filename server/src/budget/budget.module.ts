@@ -7,6 +7,8 @@ import { User, userSchema } from 'src/models/user.model';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { redisStore } from 'cache-manager-ioredis-yet';
+import { Department, DepartmentSchema } from "src/models/department.model"
+import { SubDepartment, SubDepartmentSchema } from "src/models/sub-department.model"
 
 @Module({
   imports: [
@@ -18,6 +20,14 @@ import { redisStore } from 'cache-manager-ioredis-yet';
       {
         name: User.name,
         schema: userSchema
+      },
+      {
+        name: Department.name,
+        schema: DepartmentSchema
+      },
+      {
+        name: SubDepartment.name,
+        schema: SubDepartmentSchema
       }
     ]),
     CacheModule.registerAsync({

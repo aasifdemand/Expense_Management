@@ -10,8 +10,11 @@ export class Budget extends Document {
   @Prop({ required: true })
   allocatedAmount: number;
 
-  @Prop({ required: true, default: 0 })
+  @Prop({ default: 0 })
   spentAmount: number;
+
+  @Prop({ default: 0 })
+  remainingAmount: number;
 
   @Prop({ required: true })
   month: number
@@ -19,12 +22,14 @@ export class Budget extends Document {
   @Prop({ required: true })
   year: number
 
-
-
-  @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
-  expenses: Types.ObjectId[];
-
 }
+
 
 export const BudgetSchema =
   SchemaFactory.createForClass(Budget);
+
+
+BudgetSchema.pre("save", function (next) {
+  this.remainingAmount = this.allocatedAmount - this.spentAmount
+  next()
+})

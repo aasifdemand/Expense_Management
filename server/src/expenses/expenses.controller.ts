@@ -63,7 +63,7 @@ export class ExpensesController {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
 
-    return this.expensesService.searchReimbursements(search, Number(page), Number(limit));
+    return this.expensesService.searchExpenses(search, Number(page), Number(limit));
   }
 
 

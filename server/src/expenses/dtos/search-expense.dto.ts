@@ -1,13 +1,11 @@
 import {
     IsString,
     IsNumber,
-    IsEnum,
     IsBoolean,
     IsOptional,
-    Min,
+    IsMongoId,
 } from "class-validator";
 import { Type } from "class-transformer";
-import { Department } from "src/enums/department.enum";
 
 export class SearchExpensesDto {
     @IsOptional()
@@ -28,9 +26,15 @@ export class SearchExpensesDto {
     @IsNumber()
     maxAmount?: number;
 
+
     @IsOptional()
-    @IsEnum(Department)
-    department?: Department;
+    @IsMongoId()
+    department?: string;
+
+
+    @IsOptional()
+    @IsMongoId()
+    subDepartment?: string;
 
     @IsOptional()
     @IsBoolean()
@@ -55,12 +59,10 @@ export class SearchExpensesDto {
     @IsOptional()
     @Type(() => Number)
     @IsNumber()
-    @Min(1)
     page?: number = 1;
 
     @IsOptional()
     @Type(() => Number)
     @IsNumber()
-    @Min(1)
     limit?: number = 20;
 }

@@ -1,49 +1,53 @@
 import {
     IsString,
     IsNumber,
-    IsEnum,
     IsBoolean,
     IsOptional,
+    IsMongoId,
 } from "class-validator";
-import { Department } from "src/enums/department.enum";
 import { PartialType } from "@nestjs/mapped-types";
 import { Type } from "class-transformer";
 
 export class CreateExpenseDto {
-    @IsString()
-    paidTo: string
 
+
+    @IsString()
+    paidTo: string;
 
     @Type(() => Number)
     @IsNumber()
     amount: number;
 
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    reimbursedamount?: number;
 
     @Type(() => Number)
     @IsNumber()
-    year: number;
+    @IsOptional()
+    allocatedAmount?: number;
 
+    @IsMongoId()
+    department: string;
 
-    @Type(() => Number)
-    @IsNumber()
-    month: number;
+    @IsMongoId()
+    @IsOptional()
+    subDepartment?: string;
 
-    @IsEnum(Department)
-    department: Department;
-
+    @IsString()
+    @IsOptional()
+    paymentMode?: string;
 
     @IsBoolean()
     @Type(() => Boolean)
     @IsOptional()
     isReimbursed?: boolean;
 
-
     @IsBoolean()
     @Type(() => Boolean)
     @IsOptional()
     isApproved?: boolean;
-
-
 }
 
 export class UpdateExpenseDto extends PartialType(CreateExpenseDto) { }

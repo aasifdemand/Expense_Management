@@ -8,6 +8,8 @@ export enum UserRole {
 }
 
 
+
+
 @Schema({ timestamps: true })
 export class User extends Document {
 
@@ -24,15 +26,29 @@ export class User extends Document {
   twoFactorSecret?: string;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
-  expenses: Types.ObjectId[];
+  expenses?: Types.ObjectId[];
 
 
-  @Prop({ default: "Banglaore" })
+  @Prop({ default: "Bangalore" })
   userLoc?: string
 
   @Prop({ type: [{ type: Types.ObjectId, ref: "Budget" }] })
   allocatedBudgets: Types.ObjectId[];
 
+  @Prop({ type: [{ type: Types.ObjectId, ref: "Reimbursement" }], default: [] })
+  reimbursements: Types.ObjectId[]
+
+  @Prop({ default: 0 })
+  spentAmount: number;
+
+  @Prop({ default: 0 })
+  reimbursedAmount: number;
+
+  @Prop({ default: 0 })
+  allocatedAmount: number;
+
+  @Prop({ default: 0 })
+  budgetLeft: 0
 }
 
 

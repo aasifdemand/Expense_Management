@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, useTheme, Card, CardContent, alpha } from "@mui/material";
+import { Box, Typography, Card, CardContent, alpha } from "@mui/material";
 import { useExpenses } from "../../hooks/useExpenses";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 
@@ -11,7 +11,7 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import BusinessIcon from "@mui/icons-material/Business";
 
 const Expenses = () => {
-  const theme = useTheme();
+  // const theme = useTheme();
 
   const {
     expenses,
@@ -35,23 +35,23 @@ const Expenses = () => {
   const totalExpenses =
     (expenses || []).reduce((acc, expense) => acc + Number(expense.amount), 0) || 0;
 
-  const totalReimbursed =
-    (expenses || [])
-      .filter((item) => item?.isReimbursed)
-      .reduce((acc, item) => acc + Number(item.amount), 0) || 0;
+  // const totalReimbursed =
+  //   (expenses || [])
+  //     .filter((item) => item?.isReimbursed)
+  //     .reduce((acc, item) => acc + Number(item.amount), 0) || 0;
 
-  const totalPendingReimbursement = totalExpenses - totalReimbursed;
+  // const totalPendingReimbursement = totalExpenses - totalReimbursed;
 
-  const reimbursementPercentage =
-    totalExpenses > 0
-      ? ((totalReimbursed / totalExpenses) * 100).toFixed(1)
-      : 0;
+  // const reimbursementPercentage =
+  //   totalExpenses > 0
+  //     ? ((totalReimbursed / totalExpenses) * 100).toFixed(1)
+  //     : 0;
 
-  // ✅ Mock calculations for new categories (replace with actual data when available)
-  const salesExpenses = totalExpenses * 0.35; // 35% of total
-  const dataExpenses = totalExpenses * 0.25; // 25% of total
-  const itExpenses = totalExpenses * 0.20; // 20% of total
-  const officeExpenses = totalExpenses * 0.20; // 20% of total
+
+  const salesExpenses = totalExpenses * 0.35;
+  const dataExpenses = totalExpenses * 0.25;
+  const itExpenses = totalExpenses * 0.20;
+  const officeExpenses = totalExpenses * 0.20;
 
   // ✅ Stats Array with 5 cards as requested
   const expenseStats = [

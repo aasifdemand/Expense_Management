@@ -5,6 +5,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ExpensesModule } from './expenses/expenses.module';
 import { BudgetModule } from './budget/budget.module';
 import { NotificationsGateway } from './gateways/notifications/notifications.gateway';
+import { DepartmentModule } from './department/department.module';
+import { ReimbursementModule } from './reimbursement/reimbursement.module';
 
 
 
@@ -23,7 +25,9 @@ import { NotificationsGateway } from './gateways/notifications/notifications.gat
     }),
     AuthModule,
     ExpensesModule,
-    BudgetModule
+    BudgetModule,
+    DepartmentModule,
+    ReimbursementModule
   ],
   controllers: [],
   providers: [NotificationsGateway],

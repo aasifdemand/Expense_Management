@@ -12,6 +12,8 @@ import { Budget, BudgetSchema } from 'src/models/budget.model';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { Notification, NotificationSchema } from 'src/models/notifications.model';
 import { NotificationsService } from 'src/services/notifications.service';
+import { Department, DepartmentSchema } from 'src/models/department.model';
+import { SubDepartment, SubDepartmentSchema } from 'src/models/sub-department.model';
 
 @Module({
   imports: [
@@ -34,6 +36,14 @@ import { NotificationsService } from 'src/services/notifications.service';
       {
         name: Notification.name,
         schema: NotificationSchema
+      },
+      {
+        name: Department.name,
+        schema: DepartmentSchema
+      },
+      {
+        name: SubDepartment.name,
+        schema: SubDepartmentSchema
       }
     ]),
     CacheModule.registerAsync({

@@ -10,20 +10,22 @@ import { AllocateBudgetDto, UpdateAllocatedBudgetDto } from './dto/allocate-budg
 import { SearchBudgetAllocationsDto } from './dto/search-budgets.dto';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Department } from 'src/models/department.model';
+import { SubDepartment } from 'src/models/sub-department.model';
 
 @Injectable()
 export class BudgetService {
     constructor(
         @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
         @InjectModel(User.name) private readonly userModel: Model<User>,
+        @InjectModel(Department.name) private readonly departmentModel: Model<Budget>,
+        @InjectModel(SubDepartment.name) private readonly subDepartmentModel: Model<User>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
-    // -----------------------------
-    // Allocate Budget
-    // -----------------------------
+
     async allocateBudget(data: AllocateBudgetDto) {
-        const { month, year, amount, userId } = data;
+        const { amount, userId } = data;
 
         const user = await this.userModel.findById(userId);
         if (!user) throw new NotFoundException("User not found");
@@ -32,11 +34,14 @@ export class BudgetService {
             user: userId,
             allocatedAmount: amount,
             spentAmount: 0,
-            month,
-            year,
+            remainingAmount: amount,
+            month: Number(new Date().getMonth() + 1),
+            year: Number(new Date().getFullYear()),
         });
 
         user.allocatedBudgets.push(budget._id as Types.ObjectId);
+        user.allocatedAmount += amount;
+        user.budgetLeft += amount
         await user.save();
 
         const populatedBudget = await this.budgetModel
@@ -81,6 +86,7 @@ export class BudgetService {
                 .skip(skip)
                 .limit(safeLimit)
                 .populate({ path: "user", select: "name _id" })
+
                 .lean();
 
             await this.cacheManager.set(cacheKeyPage, budgets, 3000);
@@ -255,7 +261,7 @@ export class BudgetService {
 
         const updatedBudget = await this.budgetModel.findByIdAndUpdate(
             id,
-            { $set: { allocatedAmount: data.amount, month: data.month, year: data.year, user: newUserId } },
+            { $set: { allocatedAmount: data.amount, user: newUserId } },
             { new: true },
         ).populate({ path: "user", select: "name _id" });
 
