@@ -145,8 +145,8 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
             elevation={1}
             sx={{
                 p: 3,
-                mb: 3,
-                borderRadius: 2,
+                mb: 1,
+                borderRadius: 1,
                 background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
                 width: "100%",
             }}
@@ -164,10 +164,10 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                 {/* Tabs Section */}
                 <Box sx={{ flex: { xs: "1 1 100%", md: "0 0 40%" } }}>
                     <Typography
-                        variant="h6"
-                        sx={{ mb: 2, color: "text.primary", fontWeight: "600" }}
+                        variant="h5"
+                        sx={{ mb: 2, color: "text.primary", fontWeight: "700" }}
                     >
-                        Financial Reports
+                        Recents
                     </Typography>
                     <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                         <Button
@@ -179,7 +179,7 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                                 py: 1,
                                 textTransform: "none",
                                 fontWeight: "600",
-                                fontSize: "0.875rem",
+                                fontSize: "0.975rem",
                                 boxShadow: activeTab === "budget" ? 2 : 0,
                                 minWidth: "100px",
                             }}
@@ -196,7 +196,7 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                                 py: 1,
                                 textTransform: "none",
                                 fontWeight: "600",
-                                fontSize: "0.875rem",
+                                fontSize: "0.975rem",
                                 boxShadow: activeTab === "expense" ? 2 : 0,
                                 minWidth: "100px",
                             }}
@@ -227,7 +227,7 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                             flexDirection: { xs: "column", sm: "row" },
                         }}
                     >
-                        <TextField
+                        {/* <TextField
                             label={
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                                     <CalendarToday sx={{ fontSize: 16 }} />
@@ -264,9 +264,9 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                                 "& .MuiOutlinedInput-root": { borderRadius: "8px", paddingY: 1 },
                             }}
                             size="small"
-                        />
+                        /> */}
                     </Box>
-                    <Button
+                    {/* <Button
                         variant="contained"
                         color="success"
                         startIcon={<Download />}
@@ -286,10 +286,10 @@ const TabButtonsWithReport = ({ activeTab, setActiveTab, budgets, expenses }) =>
                         disabled={!startDate || !endDate}
                     >
                         Generate Report
-                    </Button>
+                    </Button> */}
                 </Box>
             </Box>
-        </Paper>
+        </Paper >
     );
 };
 

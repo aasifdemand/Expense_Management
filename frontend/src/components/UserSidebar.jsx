@@ -14,12 +14,9 @@ import {
 
 import {
     Dashboard as DashboardIcon,
-    Receipt as ExpensesIcon,
-    People as UsersIcon,
     Settings as SettingsIcon,
     Logout as LogoutIcon,
     Autorenew,
-    Assessment as ReportsIcon,
 } from "@mui/icons-material";
 
 import { useState, useEffect } from "react";
@@ -43,14 +40,11 @@ const UserSidebar = ({
     const [activeItem, setActiveItem] = useState("");
     const [hoveredItem, setHoveredItem] = useState(null);
 
+    // Menu items with their respective icons and paths
     const menuItems = [
         { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
-
         { text: "Budgeting", icon: <PieChartIcon />, path: "/user/budgeting" },
-        { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses", },
-        // { text: "Reimbursement", icon: <ExpensesIcon />, path: "/admin/expenses" },
-        // { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
-        // { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
+        { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses" },
         { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
     ];
 
@@ -68,7 +62,7 @@ const UserSidebar = ({
         await dispatch(logout(csrf))
     };
 
-    // Logo Component - Full logo display (same as AdminSidebar)
+    // Logo Component - Same as AdminSidebar
     const Logo = () => (
         <Box
             sx={{
@@ -88,13 +82,12 @@ const UserSidebar = ({
                     justifyContent: 'center',
                     overflow: 'hidden',
                     borderRadius: 2,
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)',
-                    border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    border: `1px solid rgba(0,0,0,0.05)`,
                     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                     padding: '4px',
                 }}
             >
-                {/* Try PNG first, then SVG, then fallback */}
                 <img
                     src="/image.png"
                     alt="Company Logo"
@@ -104,13 +97,10 @@ const UserSidebar = ({
                         objectFit: 'contain',
                     }}
                     onError={(e) => {
-                        // Fallback to SVG if PNG fails
                         e.target.src = "/image.svg";
-                        e.target.onError = () => {
-                            // Final fallback to vite.svg
+                        e.target.onerror = () => {
                             e.target.src = "/vite.svg";
-                            e.target.onError = () => {
-                                // Ultimate fallback - show text
+                            e.target.onerror = () => {
                                 e.target.style.display = 'none';
                                 const fallback = e.target.parentElement.querySelector('.logo-fallback');
                                 if (fallback) fallback.style.display = 'flex';
@@ -118,7 +108,6 @@ const UserSidebar = ({
                         };
                     }}
                 />
-                {/* Fallback display */}
                 <Box
                     className="logo-fallback"
                     sx={{
@@ -147,26 +136,14 @@ const UserSidebar = ({
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)'
-                : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-            color: theme.palette.text.primary,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            background: '#ffffff',
+            color: '#333333',
+            transition: 'all 0.3s ease',
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, #667eea, #764ba2, #f093fb)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 3s ease infinite',
-            }
+            boxShadow: '0 0 20px rgba(0, 0, 0, 0.1)',
         }}>
-            {/* Header with Full Logo Only (same as AdminSidebar) */}
+            {/* Header with Full Logo */}
             <Box sx={{
                 p: isSmallMobile ? 1.5 : 2,
                 display: 'flex',
@@ -174,6 +151,8 @@ const UserSidebar = ({
                 justifyContent: 'center',
                 position: 'relative',
                 minHeight: isSmallMobile ? '70px' : '90px',
+                background: 'rgba(255, 255, 255, 0.9)',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
             }}>
                 <Logo />
             </Box>
@@ -181,123 +160,130 @@ const UserSidebar = ({
             <Divider sx={{
                 my: 1,
                 mx: isSmallMobile ? 1 : 2,
-                background: theme.palette.mode === 'dark'
-                    ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
-                    : 'linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent)'
+                background: 'rgba(0, 0, 0, 0.05)',
             }} />
 
             {/* Navigation Menu */}
             <List sx={{
                 flex: 1,
-                px: isSmallMobile ? 0.5 : 1.5,
+                px: isSmallMobile ? 1 : 2,
                 py: 1
             }}>
-                {menuItems.map((item) => (
-                    <ListItem
-                        key={item.path}
-                        onClick={() => handleMenuItemClick(item.path)}
-                        onMouseEnter={() => setHoveredItem(item.path)}
-                        onMouseLeave={() => setHoveredItem(null)}
-                        sx={{
-                            borderRadius: 3,
-                            mb: 1,
-                            mx: isSmallMobile ? 0 : 0.5,
-                            px: isSmallMobile ? 1.5 : 2,
-                            py: isSmallMobile ? 1 : 1.25,
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            position: 'relative',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                            background: activeItem === item.path
-                                ? theme.palette.mode === 'dark'
-                                    ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)'
-                                    : 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)'
-                                : 'transparent',
-                            border: activeItem === item.path
-                                ? `1px solid ${theme.palette.mode === 'dark' ? 'rgba(102, 126, 234, 0.3)' : 'rgba(102, 126, 234, 0.2)'}`
-                                : '1px solid transparent',
-                            transform: hoveredItem === item.path ? 'translateX(8px)' : 'translateX(0)',
-                            '&::before': activeItem === item.path ? {
-                                content: '""',
-                                position: 'absolute',
-                                left: 0,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                width: 4,
-                                height: '60%',
-                                background: 'linear-gradient(180deg, #667eea 0%, #764ba2 100%)',
-                                borderRadius: '0 2px 2px 0'
-                            } : {},
-                            '&:hover': {
-                                background: theme.palette.mode === 'dark'
-                                    ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)'
-                                    : 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%)',
-                                borderColor: theme.palette.mode === 'dark'
-                                    ? 'rgba(102, 126, 234, 0.4)'
-                                    : 'rgba(102, 126, 234, 0.2)',
-                            }
-                        }}
-                    >
-                        <ListItemIcon
+                {menuItems.map((item) => {
+                    const isActive = activeItem === item.path;
+                    const isHovered = hoveredItem === item.path;
+
+                    return (
+                        <ListItem
+                            key={item.path}
+                            onClick={() => handleMenuItemClick(item.path)}
+                            onMouseEnter={() => setHoveredItem(item.path)}
+                            onMouseLeave={() => setHoveredItem(null)}
                             sx={{
-                                color: activeItem === item.path ? 'primary.main' : 'text.secondary',
-                                minWidth: isSmallMobile ? 32 : 40,
-                                transition: 'all 0.3s ease',
-                                transform: hoveredItem === item.path ? 'scale(1.1)' : 'scale(1)'
+                                borderRadius: 2,
+                                mb: 1,
+                                mx: isSmallMobile ? 0 : 0.5,
+                                px: isSmallMobile ? 1.5 : 2,
+                                py: isSmallMobile ? 1 : 1.25,
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                cursor: 'pointer',
+                                background: isActive
+                                    ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                                    : isHovered
+                                        ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                                        : 'transparent',
+                                border: isActive
+                                    ? '1px solid #3b82f6'
+                                    : '1px solid transparent',
+                                transform: isHovered ? 'translateX(8px) scale(1.02)' : 'translateX(0) scale(1)',
+                                boxShadow: isActive
+                                    ? '0 4px 15px rgba(59, 130, 246, 0.3)'
+                                    : isHovered
+                                        ? '0 4px 15px rgba(59, 130, 246, 0.2)'
+                                        : 'none',
+                                '&::before': isActive ? {
+                                    content: '""',
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    width: 4,
+                                    height: '60%',
+                                    background: '#1e40af',
+                                    borderRadius: '0 2px 2px 0'
+                                } : {},
+                                '&:hover': {
+                                    boxShadow: '0 6px 20px rgba(59, 130, 246, 0.25)',
+                                }
                             }}
                         >
-                            {item.icon}
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1
-                                }}>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            fontWeight: activeItem === item.path ? 600 : 400,
-                                            color: activeItem === item.path ? 'primary.main' : 'text.primary',
-                                            fontSize: isSmallMobile ? '0.8rem' : '0.875rem'
-                                        }}
-                                    >
-                                        {item.text}
-                                    </Typography>
-                                    {item.notification > 0 && (
-                                        <Chip
-                                            label={item.notification}
-                                            size="small"
-                                            color="error"
+                            <ListItemIcon
+                                sx={{
+                                    color: isActive || isHovered ? 'white' : '#6b7280',
+                                    minWidth: isSmallMobile ? 32 : 40,
+                                    transition: 'all 0.3s ease',
+                                    transform: isHovered ? 'scale(1.1)' : 'scale(1)'
+                                }}
+                            >
+                                {item.icon}
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        <Typography
+                                            variant="body2"
                                             sx={{
-                                                height: 20,
-                                                fontSize: '0.7rem',
-                                                minWidth: 20,
-                                                '& .MuiChip-label': { px: 0.5 }
+                                                fontWeight: isActive ? 600 : 500,
+                                                color: isActive || isHovered ? 'white' : '#374151',
+                                                fontSize: isSmallMobile ? '0.8rem' : '0.875rem',
+                                                transition: 'all 0.3s ease',
+                                                letterSpacing: '0.2px',
                                             }}
-                                        />
-                                    )}
-                                    {item.badge && (
-                                        <Chip
-                                            label={item.badge}
-                                            size="small"
-                                            color="primary"
-                                            sx={{
-                                                height: 18,
-                                                fontSize: '0.6rem',
-                                                minWidth: 30
-                                            }}
-                                        />
-                                    )}
-                                </Box>
-                            }
-                        />
-                    </ListItem>
-                ))}
+                                        >
+                                            {item.text}
+                                        </Typography>
+                                        {item.notification > 0 && (
+                                            <Chip
+                                                label={item.notification}
+                                                size="small"
+                                                sx={{
+                                                    height: 20,
+                                                    fontSize: '0.7rem',
+                                                    minWidth: 20,
+                                                    backgroundColor: isActive || isHovered ? 'rgba(255, 255, 255, 0.2)' : '#ef4444',
+                                                    color: isActive || isHovered ? 'white' : 'white',
+                                                    '& .MuiChip-label': { px: 0.5 }
+                                                }}
+                                            />
+                                        )}
+                                        {item.badge && (
+                                            <Chip
+                                                label={item.badge}
+                                                size="small"
+                                                sx={{
+                                                    height: 18,
+                                                    fontSize: '0.6rem',
+                                                    minWidth: 30,
+                                                    backgroundColor: isActive || isHovered ? 'rgba(255, 255, 255, 0.2)' : '#3b82f6',
+                                                    color: isActive || isHovered ? 'white' : 'white',
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+                                }
+                            />
+                        </ListItem>
+                    );
+                })}
             </List>
 
-            {/* Logout Button - Fixed */}
+            {/* Logout Button */}
             <Box sx={{
                 p: isSmallMobile ? 1.5 : 2.5,
                 pt: 0
@@ -309,23 +295,21 @@ const UserSidebar = ({
                     onMouseEnter={() => setHoveredItem('logout')}
                     onMouseLeave={() => setHoveredItem(null)}
                     sx={{
-                        borderRadius: 3,
+                        borderRadius: 2,
                         px: isSmallMobile ? 1.5 : 2,
                         py: isSmallMobile ? 1 : 1.5,
-                        background: theme.palette.mode === 'dark'
-                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.2) 100%)'
-                            : 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.1) 100%)',
-                        border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'}`,
-                        color: 'error.main',
+                        background: hoveredItem === 'logout'
+                            ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                            : 'rgba(239, 68, 68, 0.1)',
+                        border: `1px solid ${hoveredItem === 'logout' ? '#ef4444' : 'rgba(239, 68, 68, 0.2)'}`,
+                        color: hoveredItem === 'logout' ? 'white' : '#ef4444',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        transform: hoveredItem === 'logout' ? 'translateX(8px)' : 'translateX(0)',
+                        transform: hoveredItem === 'logout' ? 'translateX(8px) scale(1.02)' : 'translateX(0) scale(1)',
+                        boxShadow: hoveredItem === 'logout'
+                            ? '0 4px 15px rgba(239, 68, 68, 0.3)'
+                            : 'none',
                         '&:hover': {
-                            background: theme.palette.mode === 'dark'
-                                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.3) 100%)'
-                                : 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.2) 100%)',
-                            borderColor: theme.palette.mode === 'dark'
-                                ? 'rgba(239, 68, 68, 0.5)'
-                                : 'rgba(239, 68, 68, 0.3)',
+                            boxShadow: '0 6px 20px rgba(239, 68, 68, 0.25)',
                         },
                         '&:disabled': {
                             opacity: 0.6,
@@ -339,13 +323,14 @@ const UserSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        <LogoutIcon />
+                        {logoutLoader ? <Autorenew sx={{ animation: 'spin 1s linear infinite' }} /> : <LogoutIcon />}
                     </ListItemIcon>
                     <ListItemText
                         primary={logoutLoader ? "Logout" : "Logout"}
                         primaryTypographyProps={{
                             fontWeight: 600,
-                            fontSize: isSmallMobile ? '0.85rem' : '0.95rem'
+                            fontSize: isSmallMobile ? '0.85rem' : '0.95rem',
+                            color: 'inherit'
                         }}
                     />
                 </ListItem>
@@ -356,10 +341,6 @@ const UserSidebar = ({
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
-                }
-                @keyframes shimmer {
-                    0% { background-position: -200% 0; }
-                    100% { background-position: 200% 0; }
                 }
             `}</style>
         </Box>
@@ -406,9 +387,7 @@ const UserSidebar = ({
                         boxSizing: 'border-box',
                         width: 300,
                         border: 'none',
-                        boxShadow: theme.palette.mode === 'dark'
-                            ? '4px 0 20px rgba(0, 0, 0, 0.3)'
-                            : '4px 0 20px rgba(0, 0, 0, 0.08)',
+                        boxShadow: '4px 0 20px rgba(0, 0, 0, 0.1)',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         position: 'fixed',
                         height: '100vh',

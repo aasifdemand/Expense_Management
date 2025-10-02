@@ -1,32 +1,32 @@
 import React, { useState } from 'react';
 
 const SettingsPage = () => {
-    const [settings, setSettings] = useState({
-        theme: 'dark',
-        notifications: true,
-        emailUpdates: false,
-        autoSave: true,
-        language: 'english',
-        fontSize: 'medium',
-        privacy: 'friends',
-        twoFactor: false,
-        soundEffects: true,
-        reduceMotion: false,
-        highContrast: false
-    });
+  const [settings, setSettings] = useState({
+    theme: 'dark',
+    notifications: true,
+    emailUpdates: false,
+    autoSave: true,
+    language: 'english',
+    fontSize: 'medium',
+    privacy: 'friends',
+    twoFactor: false,
+    soundEffects: true,
+    reduceMotion: false,
+    highContrast: false
+  });
 
-    const [activeSection, setActiveSection] = useState('general');
-    const [saveStatus] = useState('');
+  const [activeSection, setActiveSection] = useState('general');
+  const [saveStatus] = useState('');
 
-    const handleSettingChange = (key, value) => {
-        setSettings(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    };
+  const handleSettingChange = (key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-    // Inline CSS as a string to be injected
-    const cssStyles = `
+  // Inline CSS as a string to be injected
+  const cssStyles = `
     @keyframes slideInLeft {
       from {
         opacity: 0;
@@ -486,60 +486,60 @@ const SettingsPage = () => {
     }
   `;
 
-    // Render function
-    return (
-        <>
-            <style>{cssStyles}</style>
-            <div className="settings-container">
-                <div className="settings-sidebar">
-                    <div className="sidebar-title">Settings</div>
-                    {[
-                        { id: 'general', label: 'General', icon: '⚙️' },
-                        { id: 'appearance', label: 'Appearance', icon: '🎨' },
-                        { id: 'notifications', label: 'Notifications', icon: '🔔' },
-                        // { id: 'privacy', label: 'Privacy & Security', icon: '🔒' },
-                        // { id: 'accessibility', label: 'Accessibility', icon: '👁️' },
-                        // { id: 'account', label: 'Account', icon: '👤' }
-                    ].map((section) => (
-                        <div
-                            key={section.id}
-                            className={`sidebar-item ${activeSection === section.id ? 'active' : ''}`}
-                            onClick={() => setActiveSection(section.id)}
-                        >
-                            <span className="sidebar-icon">{section.icon}</span>
-                            {section.label}
-                        </div>
-                    ))}
-                </div>
+  // Render function
+  return (
+    <>
+      <style>{cssStyles}</style>
+      <div className="settings-container">
+        <div className="settings-sidebar">
+          <div className="sidebar-title">Settings</div>
+          {[
+            { id: 'general', label: 'General', icon: '⚙️' },
+            { id: 'appearance', label: 'Appearance', icon: '🎨' },
+            { id: 'notifications', label: 'Notifications', icon: '🔔' },
+            // { id: 'privacy', label: 'Privacy & Security', icon: '🔒' },
+            // { id: 'accessibility', label: 'Accessibility', icon: '👁️' },
+            // { id: 'account', label: 'Account', icon: '👤' }
+          ].map((section) => (
+            <div
+              key={section.id}
+              className={`sidebar-item ${activeSection === section.id ? 'active' : ''}`}
+              onClick={() => setActiveSection(section.id)}
+            >
+              <span className="sidebar-icon">{section.icon}</span>
+              {section.label}
+            </div>
+          ))}
+        </div>
 
-                <div className="settings-content">
-                    <div className="section-title">
-                        {/* {activeSection === 'general' && '⚙️ General Settings'}
+        <div className="settings-content">
+          <div className="section-title">
+            {/* {activeSection === 'general' && '⚙️ General Settings'}
                         {activeSection === 'appearance' && '🎨 Appearance'}
                         {activeSection === 'notifications' && '🔔 Notifications'} */}
-                        {/* {activeSection === 'privacy' && '🔒 Privacy & Security'}
+            {/* {activeSection === 'privacy' && '🔒 Privacy & Security'}
                         {activeSection === 'accessibility' && '👁️ Accessibility'}
                         {activeSection === 'account' && '👤 Account Settings'} */}
-                    </div>
+          </div>
 
-                    {activeSection === 'general' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Application Preferences</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Auto Save</span>
-                                    <span className="setting-description">Automatically save your work as you type</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.autoSave}
-                                        onChange={(e) => handleSettingChange('autoSave', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            {/* <div className="setting-item">
+          {activeSection === 'general' && (
+            <div className="setting-group">
+              <div className="setting-title">Application Preferences</div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Auto Save</span>
+                  <span className="setting-description">Automatically save your work as you type</span>
+                </div>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.autoSave}
+                    onChange={(e) => handleSettingChange('autoSave', e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+              {/* <div className="setting-item">
                                 <div className="setting-info">
                                     <span className="setting-label">Language</span>
                                     <span className="setting-description">Choose your preferred language</span>
@@ -556,128 +556,128 @@ const SettingsPage = () => {
                                     <option value="japanese">Japanese</option>
                                 </select>
                             </div> */}
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Font Size</span>
-                                    <span className="setting-description">Adjust the text size throughout the application</span>
-                                </div>
-                                <div className="radio-group">
-                                    {['small', 'medium', 'large'].map((size) => (
-                                        <label
-                                            key={size}
-                                            className={`radio-option ${settings.fontSize === size ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                className="radio-input"
-                                                name="fontSize"
-                                                value={size}
-                                                checked={settings.fontSize === size}
-                                                onChange={(e) => handleSettingChange('fontSize', e.target.value)}
-                                            />
-                                            {size.charAt(0).toUpperCase() + size.slice(1)}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Font Size</span>
+                  <span className="setting-description">Adjust the text size throughout the application</span>
+                </div>
+                <div className="radio-group">
+                  {['small', 'medium', 'large'].map((size) => (
+                    <label
+                      key={size}
+                      className={`radio-option ${settings.fontSize === size ? 'selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio-input"
+                        name="fontSize"
+                        value={size}
+                        checked={settings.fontSize === size}
+                        onChange={(e) => handleSettingChange('fontSize', e.target.value)}
+                      />
+                      {size.charAt(0).toUpperCase() + size.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-                    {activeSection === 'appearance' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Theme & Display</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Theme</span>
-                                    <span className="setting-description">Choose your preferred theme style</span>
-                                </div>
-                                <div className="radio-group">
-                                    {['light', 'dark', 'auto'].map((theme) => (
-                                        <label
-                                            key={theme}
-                                            className={`radio-option ${settings.theme === theme ? 'selected' : ''}`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                className="radio-input"
-                                                name="theme"
-                                                value={theme}
-                                                checked={settings.theme === theme}
-                                                onChange={(e) => handleSettingChange('theme', e.target.value)}
-                                            />
-                                            {theme.charAt(0).toUpperCase() + theme.slice(1)}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Accent Color</span>
-                                    <span className="setting-description">Choose your primary color theme</span>
-                                </div>
-                                <div className="color-picker">
-                                    {['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'].map((color) => (
-                                        <div
-                                            key={color}
-                                            className={`color-option ${settings.theme === color ? 'selected' : ''}`}
-                                            style={{ backgroundColor: color }}
-                                            onClick={() => handleSettingChange('theme', color)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+          {activeSection === 'appearance' && (
+            <div className="setting-group">
+              <div className="setting-title">Theme & Display</div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Theme</span>
+                  <span className="setting-description">Choose your preferred theme style</span>
+                </div>
+                <div className="radio-group">
+                  {['light', 'dark', 'auto'].map((theme) => (
+                    <label
+                      key={theme}
+                      className={`radio-option ${settings.theme === theme ? 'selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        className="radio-input"
+                        name="theme"
+                        value={theme}
+                        checked={settings.theme === theme}
+                        onChange={(e) => handleSettingChange('theme', e.target.value)}
+                      />
+                      {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Accent Color</span>
+                  <span className="setting-description">Choose your primary color theme</span>
+                </div>
+                <div className="color-picker">
+                  {['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'].map((color) => (
+                    <div
+                      key={color}
+                      className={`color-option ${settings.theme === color ? 'selected' : ''}`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => handleSettingChange('theme', color)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-                    {activeSection === 'notifications' && (
-                        <div className="setting-group">
-                            <div className="setting-title">Notification Preferences</div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Enable Notifications</span>
-                                    <span className="setting-description">Receive desktop and browser notifications</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.notifications}
-                                        onChange={(e) => handleSettingChange('notifications', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Email Updates</span>
-                                    <span className="setting-description">Receive important updates via email</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.emailUpdates}
-                                        onChange={(e) => handleSettingChange('emailUpdates', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                            <div className="setting-item">
-                                <div className="setting-info">
-                                    <span className="setting-label">Sound Effects</span>
-                                    <span className="setting-description">Play sounds for notifications</span>
-                                </div>
-                                <label className="toggle">
-                                    <input
-                                        type="checkbox"
-                                        checked={settings.soundEffects}
-                                        onChange={(e) => handleSettingChange('soundEffects', e.target.checked)}
-                                    />
-                                    <span className="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                    )}
+          {activeSection === 'notifications' && (
+            <div className="setting-group">
+              <div className="setting-title">Notification Preferences</div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Enable Notifications</span>
+                  <span className="setting-description">Receive desktop and browser notifications</span>
+                </div>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.notifications}
+                    onChange={(e) => handleSettingChange('notifications', e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Email Updates</span>
+                  <span className="setting-description">Receive important updates via email</span>
+                </div>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.emailUpdates}
+                    onChange={(e) => handleSettingChange('emailUpdates', e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+              <div className="setting-item">
+                <div className="setting-info">
+                  <span className="setting-label">Sound Effects</span>
+                  <span className="setting-description">Play sounds for notifications</span>
+                </div>
+                <label className="toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.soundEffects}
+                    onChange={(e) => handleSettingChange('soundEffects', e.target.checked)}
+                  />
+                  <span className="slider"></span>
+                </label>
+              </div>
+            </div>
+          )}
 
-                    {/* {activeSection === 'accessibility' && (
+          {/* {activeSection === 'accessibility' && (
                         <div className="setting-group">
                             <div className="setting-title">Accessibility Features</div>
                             <div className="setting-item">
@@ -711,7 +711,7 @@ const SettingsPage = () => {
                         </div>
                     )} */}
 
-                    {/* {activeSection === 'account' && (
+          {/* {activeSection === 'account' && (
                         <div className="setting-group">
                             <div className="setting-title">Account Management</div>
                             <div className="setting-item">
@@ -744,7 +744,7 @@ const SettingsPage = () => {
                         </div>
                     )} */}
 
-                    {/* <div className="button-group">
+          {/* <div className="button-group">
                         <button className="button save-button" onClick={saveSettings}>
                             💾 Save Settings
                         </button>
@@ -753,15 +753,15 @@ const SettingsPage = () => {
                         </button>
                     </div> */}
 
-                    {saveStatus && (
-                        <div className={`status-message ${saveStatus.includes('Saving') ? 'status-saving' : 'status-success'}`}>
-                            {saveStatus}
-                        </div>
-                    )}
-                </div>
+          {saveStatus && (
+            <div className={`status-message ${saveStatus.includes('Saving') ? 'status-saving' : 'status-success'}`}>
+              {saveStatus}
             </div>
-        </>
-    );
+          )}
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default SettingsPage;
