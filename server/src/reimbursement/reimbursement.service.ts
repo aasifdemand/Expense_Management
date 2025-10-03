@@ -140,7 +140,11 @@ export class ReimbursementService {
 
 
 
-    async superadminUpdateReimbursement(rId: string, isReimbursed: boolean, superadmin: any) {
+    async superadminUpdateReimbursement(
+        rId: string,
+        isReimbursed: boolean,
+        superadmin: any
+    ) {
         if (superadmin?.role !== UserRole.SUPERADMIN) {
             throw new UnauthorizedException("Only Superadmin can perform this action");
         }
@@ -152,35 +156,41 @@ export class ReimbursementService {
 
         // Only update when marking as reimbursed
         if (isReimbursed) {
-            // Update linked expense
+            // ✅ Update linked expense reimbursement tracker (not the actual expense amount)
             if (reimbursementDoc.expense) {
                 const expense = await this.expenseModel.findById(reimbursementDoc.expense);
                 if (!expense) throw new NotFoundException("Linked expense not found");
 
-                // Deduct the reimbursed amount
-                expense.fromReimbursement = Number(expense.fromReimbursement) - Number(reimbursementDoc.amount);
+                // Decrease pending reimbursement on expense
+                expense.fromReimbursement =
+                    Number(expense.fromReimbursement || 0) - Number(reimbursementDoc.amount);
 
                 if (expense.fromReimbursement < 0) {
-                    throw new BadRequestException("Expense reimbursement amount cannot go negative");
+                    throw new BadRequestException(
+                        "Expense reimbursement amount cannot go negative"
+                    );
                 }
 
                 await expense.save();
             }
 
-            // Update linked user
+            // ✅ Update linked user's reimbursed balance
             const user = await this.userModel.findById(reimbursementDoc.requestedBy);
             if (!user) throw new NotFoundException("User not found");
 
             if (user.reimbursedAmount === undefined) user.reimbursedAmount = 0;
-            user.reimbursedAmount = Number(user.reimbursedAmount) - Number(reimbursementDoc.amount);
+            user.reimbursedAmount =
+                Number(user.reimbursedAmount) - Number(reimbursementDoc.amount);
 
             if (user.reimbursedAmount < 0) {
-                throw new BadRequestException("User reimbursed amount cannot go negative");
+                throw new BadRequestException(
+                    "User reimbursed amount cannot go negative"
+                );
             }
 
             await user.save();
 
-            // Finally mark reimbursement as completed
+            // ✅ Mark reimbursement as completed
             reimbursementDoc.isReimbursed = true;
         }
 

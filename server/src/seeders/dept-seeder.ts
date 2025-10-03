@@ -8,14 +8,14 @@ dotenv.config();
 
 async function runSeeder() {
     try {
-        await connect(process.env.MONGO_URI || "mongodb+srv://aasifdemand:demand12345@cluster0.pkim2nz.mongodb.net/EXPENSES?retryWrites=true&w=majority&appName=Cluster0");
+        await connect("mongodb+srv://aasifdemand:demand12345@cluster0.pkim2nz.mongodb.net/EXPENSES?retryWrites=true&w=majority&appName=Cluster0");
         console.log("🟢 Connected to MongoDB");
 
         const DepartmentModel = model<Department & Document>("Department", DepartmentSchema);
         const SubDepartmentModel = model<SubDepartment & Document>("SubDepartment", SubDepartmentSchema);
 
         // --- Departments ---
-        const departments = ["Sales", "Office", "Data", "IT (EndBounce)"];
+        const departments = ["Sales", "Office", "Data", "IT"];
 
         const deptMap: Record<string, Types.ObjectId> = {};
 
@@ -85,7 +85,7 @@ async function runSeeder() {
                 "Domain",
                 "Others"
             ],
-            "IT (EndBounce)": [
+            "IT": [
                 "Servers",
                 "Domain",
                 "Zoho",

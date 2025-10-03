@@ -8,8 +8,8 @@ export class SubDepartment extends Document {
     @Prop({ required: true })
     name: string;
 
-    @Prop({ type: Types.ObjectId, ref: Department.name, required: true })
-    department: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: Department.name })
+    department?: Types.ObjectId;
 }
 
 export const SubDepartmentSchema = SchemaFactory.createForClass(SubDepartment);

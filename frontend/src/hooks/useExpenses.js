@@ -117,11 +117,16 @@ export const useExpenses = () => {
   };
   const handleClose = () => setOpen(false);
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+
   const handleAdd = async () => {
     const response = await dispatch(addExpense(formData));
     if (addExpense.fulfilled.match(response)) {
-      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
-      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
+      await Promise.all([
+        dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
+        dispatch(fetchExpenses({ page: 1, limit: 20 })),
+      ]);
+
       setFormData({
         userId: "",
         amount: "",
@@ -132,13 +137,18 @@ export const useExpenses = () => {
       });
     }
   };
+
+
   const handleSubmit = async () => {
     if (!selectedExpense) return;
     try {
       const resultAction = await dispatch(updateExpense({ id: selectedExpense._id, updates: formData }));
       if (updateExpense.fulfilled.match(resultAction)) {
-        await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
-        await dispatch(fetchExpenses({ page: 1, limit: 20 }));
+        await Promise.all([
+          dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
+          dispatch(fetchExpenses({ page: 1, limit: 20 })),
+        ]);
+
       }
       setOpen(false);
     } catch (err) {
