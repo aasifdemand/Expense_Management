@@ -37,13 +37,12 @@ export class ExpensesService {
 
 
 
-
     async handleCreateExpense(
         data: CreateExpenseDto,
         userId: string,
         file?: Express.Multer.File
     ) {
-        const { amount, department, paidTo, isReimbursed, subDepartment, paymentMode } = data;
+        const { amount, department, description, isReimbursed, subDepartment, paymentMode } = data;
 
         // Fetch user with budget info
         const user = await this.userModal
@@ -51,28 +50,34 @@ export class ExpensesService {
             .select("name _id expenses spentAmount reimbursedAmount allocatedAmount budgetLeft");
         if (!user) throw new NotFoundException("User not found!!");
 
+        // Handle file upload
         let proof: string | undefined;
         if (file) {
-            const uploaded = await this.mediaService.uploadFile(
-                file.buffer,
-                file.originalname,
-                "/expenses"
-            );
+            const uploaded = await this.mediaService.uploadFile(file.buffer, file.originalname, "/expenses");
             proof = uploaded.url;
         }
 
+        // Determine allocation vs reimbursement
         let fromAllocation = 0;
         let fromReimbursement = 0;
 
-        // ✅ Split amount between allocation vs reimbursement
-        if (amount <= user.budgetLeft) {
+        // Find the current month and year
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        // Find user's budget for this month/year
+        const budget = await this.budgetModel.findOne({ user: userId, month, year });
+        if (!budget) throw new NotFoundException("Budget not found for this user and month");
+
+        if (amount <= budget.remainingAmount) {
             fromAllocation = amount;
         } else {
-            fromAllocation = Math.max(0, user.budgetLeft);
+            fromAllocation = Math.max(0, budget.remainingAmount);
             fromReimbursement = amount - fromAllocation;
         }
 
-        // ✅ Validate department
+        // Validate department
         const deptExists = await this.departmentModel.findById(department);
         if (!deptExists) throw new NotFoundException("Department not found!");
 
@@ -83,26 +88,26 @@ export class ExpensesService {
             subDeptId = subDeptExists._id as Types.ObjectId;
         }
 
-        // ✅ Create new expense
+        // Create new expense
         const newExpense = new this.expenseModal({
             amount,
             fromAllocation,
             fromReimbursement,
             department: new Types.ObjectId(deptExists._id as string),
-            subDepartment: new Types.ObjectId(subDeptId),
+            subDepartment: subDeptId ? new Types.ObjectId(subDeptId) : undefined,
             user: new Types.ObjectId(user._id as string),
             isReimbursed,
             proof,
-            paidTo,
-            year: new Date().getFullYear(),
-            month: new Date().getMonth() + 1,
+            description,
+            year,
+            month,
             paymentMode,
-            budget: null,
+            budget: budget._id, // link budget
         });
 
         const expense = await newExpense.save();
 
-        // ✅ Update user financials
+        // Update user's expenses & financials
         await this.userModal.findByIdAndUpdate(userId, {
             $push: { expenses: expense._id },
             $inc: {
@@ -112,11 +117,19 @@ export class ExpensesService {
             },
         });
 
-        // ✅ Clear cache
+        // ✅ Update budget spentAmount
+        await this.budgetModel.findByIdAndUpdate(budget._id, {
+            $inc: {
+                spentAmount: amount,
+                remainingAmount: -amount,
+            },
+        });
+
+        // Clear caches
         await Promise.all([
             this.cacheManager.del(this.EXPENSE_BY_ID_KEY(expense._id as string)),
-            this.cacheManager.del(`expenses:all:${1}:${20}`),
-            this.cacheManager.del(`expenses:user:${userId}:${1}:${20}`),
+            this.cacheManager.del(`expenses:all:1:20`),
+            this.cacheManager.del(`expenses:user:${userId}:1:20`),
             this.cacheManager.del("expenses:search:*"),
         ]);
 
@@ -124,7 +137,8 @@ export class ExpensesService {
             message: "Created the new Expense successfully",
             expense: {
                 ...expense.toObject(),
-                user: { id: user._id, name: user.name },
+                user: { _id: user._id, name: user.name },
+                budget: { _id: budget._id, allocatedAmount: budget.allocatedAmount, spentAmount: budget.spentAmount + amount, remainingAmount: budget.remainingAmount - amount },
             },
         };
     }
@@ -143,9 +157,7 @@ export class ExpensesService {
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) return { message: "Search expenses fetched from cache", ...(cached as any) };
 
-        // --- Build match stage
         const matchStage: Record<string, any> = {};
-        if (filters.paidTo) matchStage.paidTo = { $regex: new RegExp(filters.paidTo, "i") };
         if (filters.month !== undefined) matchStage.month = filters.month;
         if (filters.year !== undefined) matchStage.year = filters.year;
         if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
@@ -154,25 +166,23 @@ export class ExpensesService {
             if (filters.maxAmount !== undefined) matchStage.amount.$lte = filters.maxAmount;
         }
 
-
-        // Filter by department/subDepartment ObjectId before lookup
         if (filters.department) {
             try {
                 matchStage.department = new Types.ObjectId(filters.department);
-            } catch (err: any) {
+            } catch (err) {
                 console.warn("Invalid department ID:", filters.department, err);
             }
         }
+
         if (filters.subDepartment) {
             try {
                 matchStage.subDepartment = new Types.ObjectId(filters.subDepartment);
-            } catch (err: any) {
+            } catch (err) {
                 console.warn("Invalid subDepartment ID:", filters.subDepartment, err);
             }
         }
 
-        // --- Aggregation pipeline
-        const pipeline: PipelineStage[] = [
+        const basePipeline: PipelineStage[] = [
             { $match: matchStage },
             {
                 $lookup: {
@@ -183,8 +193,6 @@ export class ExpensesService {
                 }
             },
             { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-
-            // Lookup for department and subDepartment
             {
                 $lookup: {
                     from: "departments",
@@ -205,15 +213,34 @@ export class ExpensesService {
             { $unwind: { path: "$subDepartment", preserveNullAndEmptyArrays: true } },
         ];
 
-
-        console.log("match stage: ", matchStage);
-
-        // Filter by userName if provided
+        // Search by username if provided
         if (filters.userName) {
-            pipeline.push({ $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } } });
+            basePipeline.push({
+                $match: { "user.name": { $regex: new RegExp(filters.userName, "i") } }
+            });
         }
 
-        // --- Stats aggregation (sum before pagination)
+        // Project only required fields
+        const projectionStage: PipelineStage = {
+            $project: {
+                _id: 1,
+                paidTo: 1,
+                amount: 1,
+                fromAllocation: 1,
+                fromReimbursement: 1,
+                month: 1,
+                year: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                user: { _id: "$user._id", name: "$user.name" },
+                department: { _id: "$department._id", name: "$department.name" },
+                subDepartment: { _id: "$subDepartment._id", name: "$subDepartment.name" },
+            }
+        };
+
+        const pipeline = [...basePipeline, projectionStage];
+
+        // --- Stats aggregation
         const statsPipeline = [
             ...pipeline,
             {
@@ -228,30 +255,63 @@ export class ExpensesService {
         const statsResult = await this.expenseModal.aggregate(statsPipeline);
         const stats = statsResult[0] || { totalSpent: 0, totalFromAllocation: 0, totalFromReimbursement: 0 };
 
-        // --- Pagination and sorting
+        // Pagination + sorting for filtered data
         pipeline.push({ $sort: { createdAt: -1 } });
         pipeline.push({ $skip: skip });
         pipeline.push({ $limit: safeLimit });
 
         const data = await this.expenseModal.aggregate(pipeline);
 
-        // Count total matching documents (without pagination)
-        const totalDocsPipeline = [
+        // Count total matching documents
+        const totalResult = await this.expenseModal.aggregate([
             { $match: matchStage },
-            {
-                $count: "total"
-            }
-        ];
-        const totalResult = await this.expenseModal.aggregate(totalDocsPipeline);
+            { $count: "total" }
+        ]);
         const total = totalResult[0]?.total || 0;
+
+        // ✅ Fetch all expenses (allExpenses) without filters or pagination
+        const allExpensesPipeline: PipelineStage[] = [
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "department",
+                    foreignField: "_id",
+                    as: "department"
+                }
+            },
+            { $unwind: { path: "$department", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "subdepartments",
+                    localField: "subDepartment",
+                    foreignField: "_id",
+                    as: "subDepartment"
+                }
+            },
+            { $unwind: { path: "$subDepartment", preserveNullAndEmptyArrays: true } },
+            projectionStage,
+            { $sort: { createdAt: -1 } }
+        ];
+        const allExpenses = await this.expenseModal.aggregate(allExpensesPipeline);
 
         return {
             message: "Search completed",
             data,
             stats,
+            allExpenses,
             meta: { total, page: safePage, limit: safeLimit }
         };
     }
+
 
 
 
@@ -278,8 +338,8 @@ export class ExpensesService {
                 .skip(skip)
                 .limit(safeLimit)
                 .populate({ path: "user", select: "name _id" })
-                .populate({ path: "department", select: "name" })
-                .populate({ path: "subDepartment", select: "name" })
+                .populate({ path: "department", select: "name _id" })
+                .populate({ path: "subDepartment", select: "name _id" })
                 .lean(),
             this.expenseModal.countDocuments(),
         ]);
@@ -289,43 +349,23 @@ export class ExpensesService {
             .find()
             .sort({ createdAt: -1 })
             .populate({ path: "user", select: "name _id" })
+            .populate({ path: "department", select: "name _id" })
+            .populate({ path: "subDepartment", select: "name _id" })
             .lean();
 
         // --- Stats based on full dataset ---
-        // Convert potentially-string or missing numeric fields to double with fallback 0
         const statsPipeline: PipelineStage[] = [
             {
                 $group: {
                     _id: null,
                     totalSpent: {
-                        $sum: {
-                            $convert: {
-                                input: "$amount",
-                                to: "double",
-                                onError: 0,
-                                onNull: 0,
-                            },
-                        },
+                        $sum: { $convert: { input: "$amount", to: "double", onError: 0, onNull: 0 } },
                     },
                     totalFromAllocation: {
-                        $sum: {
-                            $convert: {
-                                input: "$fromAllocation",
-                                to: "double",
-                                onError: 0,
-                                onNull: 0,
-                            },
-                        },
+                        $sum: { $convert: { input: "$fromAllocation", to: "double", onError: 0, onNull: 0 } },
                     },
                     totalFromReimbursement: {
-                        $sum: {
-                            $convert: {
-                                input: "$fromReimbursement",
-                                to: "double",
-                                onError: 0,
-                                onNull: 0,
-                            },
-                        },
+                        $sum: { $convert: { input: "$fromReimbursement", to: "double", onError: 0, onNull: 0 } },
                     },
                 },
             },
@@ -337,9 +377,9 @@ export class ExpensesService {
         const result = {
             message: "Fetched expenses successfully",
             meta: { total, page: safePage, limit: safeLimit },
-            stats,          // totalSpent, totalFromAllocation, totalFromReimbursement (numbers)
-            data: expenses, // paginated
-            allExpenses,    // full dataset
+            stats,
+            data: expenses,   // paginated
+            allExpenses,      // full dataset
         };
 
         await this.cacheManager.set(cacheKey, result, 60_000);

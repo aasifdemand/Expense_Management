@@ -4,8 +4,8 @@ import { Document, Types } from "mongoose";
 
 @Schema({ timestamps: true })
 export class Expense extends Document {
-  @Prop({ required: true })
-  paidTo: string;
+  @Prop({ default: "" })
+  description?: string;
 
   @Prop({ required: true })
   amount: number;

@@ -2,10 +2,26 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
 
+export enum BudgetType {
+  NORMAL = "Normal",
+  REIMBURSED = "Reimbursement"
+}
+
 @Schema({ timestamps: true })
 export class Budget extends Document {
   @Prop({ type: Types.ObjectId, ref: "User", required: true })
   user: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: "Expense", })
+  expense?: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: BudgetType,
+    default: BudgetType.NORMAL
+  })
+  type: BudgetType;
+
 
   @Prop({ required: true })
   allocatedAmount: number;

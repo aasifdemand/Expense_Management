@@ -25,15 +25,15 @@ export const addExpense = createAsyncThunk(
     "expenses/addExpense",
     async (data, { getState, rejectWithValue }) => {
         try {
-            const { paidTo, amount, department, date, proof, subDepartment, paymentMode, budget } = data;
+            const { description, amount, department, proof, subDepartment, paymentMode, budget } = data;
             const formData = new FormData();
-            formData.append("paidTo", paidTo);
+            formData.append("description", description);
             formData.append("amount", amount);
             formData.append("department", department);
             formData.append("subDepartment", subDepartment)
             formData.append("paymentMode", paymentMode)
-            formData.append("month", String(new Date(date).getMonth() + 1));
-            formData.append("year", String(new Date(date).getFullYear()));
+            // formData.append("month", String(new Date(date).getMonth() + 1));
+            // formData.append("year", String(new Date(date).getFullYear()));
             if (budget) formData.append("budgetId", budget)
             if (proof) formData.append("proof", proof);
 
@@ -88,6 +88,8 @@ export const fetchExpenses = createAsyncThunk(
             });
             if (!response.ok) throw new Error("Failed to fetch expenses");
             const data = await response.json();
+
+
             return {
                 data: data?.data || [],
                 allExpenses: data?.allExpenses || [],
@@ -130,7 +132,7 @@ export const fetchExpensesForUser = createAsyncThunk(
 export const searchExpenses = createAsyncThunk(
     "expenses/search",
     async (
-        { userName = "", department = "", isReimbursed, isApproved, minAmount, maxAmount, month = "", year = "", page = 1, limit = 10 },
+        { userName = "", department = "", subDepartment = "", isReimbursed, isApproved, minAmount, maxAmount, month = "", year = "", page = 1, limit = 10 },
         { getState, rejectWithValue }
     ) => {
         try {
@@ -138,6 +140,7 @@ export const searchExpenses = createAsyncThunk(
             const query = new URLSearchParams({
                 ...(userName && { userName }),
                 ...(department && { department }),
+                ...(subDepartment && { subDepartment }),
                 ...(isReimbursed !== undefined && { isReimbursed: String(isReimbursed) }),
                 ...(isApproved !== undefined && { isApproved: String(isApproved) }),
                 ...(minAmount !== undefined && { minAmount: String(minAmount) }),

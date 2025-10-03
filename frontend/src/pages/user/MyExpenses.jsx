@@ -46,6 +46,7 @@ export default function MyExpenses() {
     }, [dispatch, search, filterMonth, filterYear])
 
 
+    // console.log("user expenses: ", userExpenses);
 
 
 

@@ -10,13 +10,11 @@ import {
     Pagination,
     Typography,
     Avatar,
-    Stack,
     Modal,
     Paper,
     Select,
     MenuItem,
     InputLabel,
-    FormControl,
     Popover,
 } from "@mui/material";
 import {
@@ -24,7 +22,6 @@ import {
     StyledTextField,
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
-import { useSelector } from "react-redux";
 import { useState } from "react";
 
 const BudgetTable = ({
@@ -35,22 +32,17 @@ const BudgetTable = ({
     setPage,
     search,
     setSearch,
-    handleOpen, // optional
     limit = 5,
     setLimit,
     showPagination = false,
 }) => {
-    const { user } = useSelector((state) => state?.auth);
 
     const [isOpen, setIsOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedBudgetId, setSelectedBudgetId] = useState(null);
 
-    const handleOpenModal = (row) => {
-        setSelectedBudget(row);
-        setIsOpen(true);
-    };
+
 
     const handleCloseModal = () => {
         setIsOpen(false);

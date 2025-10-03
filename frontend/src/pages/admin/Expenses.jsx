@@ -14,6 +14,7 @@ const Expenses = () => {
   // const theme = useTheme();
 
   const {
+    allExpenses,
     expenses,
     loading,
     meta,
@@ -33,7 +34,7 @@ const Expenses = () => {
 
   // ✅ Calculations
   const totalExpenses =
-    (expenses || []).reduce((acc, expense) => acc + Number(expense.amount), 0) || 0;
+    (allExpenses || []).reduce((acc, expense) => acc + Number(expense.amount), 0) || 0;
 
   // const totalReimbursed =
   //   (expenses || [])
@@ -47,11 +48,14 @@ const Expenses = () => {
   //     ? ((totalReimbursed / totalExpenses) * 100).toFixed(1)
   //     : 0;
 
+  const salesExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Sales")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 
-  const salesExpenses = totalExpenses * 0.35;
-  const dataExpenses = totalExpenses * 0.25;
-  const itExpenses = totalExpenses * 0.20;
-  const officeExpenses = totalExpenses * 0.20;
+
+  const dataExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Data")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
+
+  const itExpenses = allExpenses?.filter((sale) => sale?.department?.name === "IT (EndBounce)")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
+
+  const officeExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Office")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 
   // ✅ Stats Array with 5 cards as requested
   const expenseStats = [

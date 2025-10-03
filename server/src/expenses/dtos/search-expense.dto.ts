@@ -12,9 +12,9 @@ export class SearchExpensesDto {
     @IsString()
     userName?: string;
 
-    @IsOptional()
-    @IsString()
-    paidTo?: string;
+    // @IsOptional()
+    // @IsString()
+    // paidTo?: string;
 
     @IsOptional()
     @Type(() => Number)
