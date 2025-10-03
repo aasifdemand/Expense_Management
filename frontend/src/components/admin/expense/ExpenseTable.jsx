@@ -30,11 +30,11 @@ import {
     StyledSelect,
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
-import { months } from "../../../utils/months";
+// import { months } from "../../../utils/months";
 import { useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { updateExpense } from "../../../store/expenseSlice";
-import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useState } from "react";
+import { useExpenses } from "../../../hooks/useExpenses";
 
 const ExpenseTable = ({
     expenses,
@@ -44,136 +44,32 @@ const ExpenseTable = ({
     setPage,
     search,
     setSearch,
-    filterMonth,
-    setFilterMonth,
-    filterYear,
-    setFilterYear,
-    handleOpen,
+    // filterMonth,
+    // setFilterMonth,
+    // filterYear,
+    // setFilterYear,
+    // handleOpen,
+
     setLimit,
     limit,
 }) => {
     const { pathname } = useLocation();
-    const dispatch = useDispatch();
+
     const { role } = useSelector((state) => state?.auth);
     const [selectedExpense, setSelectedExpense] = useState(null);
     const [viewModalOpen, setViewModalOpen] = useState(false);
-    const [departmentFilter, setDepartmentFilter] = useState("");
-    const [subDepartmentFilter, setSubDepartmentFilter] = useState("");
-    const [availableSubDepartments, setAvailableSubDepartments] = useState([]);
 
-    // Check if current page is dashboard
-    const isDashboard = pathname === "/admin/dashboard";
+    const { currentDepartment, setCurrentDepartment, currentSubDepartment, setCurrentSubDepartment } = useExpenses()
+
     const isBudgetingPage = pathname.includes("/budgeting");
     const isExpensesPage = pathname.includes("/expenses");
 
     // Show view details only on budgeting and expenses pages, not on dashboard
     const showViewDetails = isBudgetingPage || isExpensesPage;
 
-    // Department and Sub-department options
-    const departments = [
-        { value: "", label: "All Departments" },
-        { value: "sales", label: "Sales" },
-        { value: "data", label: "Data" },
-        { value: "it", label: "IT (EndBounce)" },
-        { value: "office", label: "Office Expenses" },
-        { value: "others", label: "Others" },
-    ];
+    const { departments, subDepartments } = useSelector((state) => state.department)
 
-    const subDepartmentsData = {
-        sales: [
-            { value: "", label: "All Sub-Departments" },
-            { value: "g-suite", label: "G-Suite" },
-            { value: "instantly", label: "Instantly" },
-            { value: "domain", label: "Domain" },
-            { value: "contabo", label: "Contabo" },
-            { value: "linkedin", label: "Linkedin" },
-            { value: "vendor-g-suite", label: "Vendor G-Suite" },
-            { value: "vendor-outlook", label: "Vendor Outlook" },
-            { value: "vpn", label: "VPN" },
-            { value: "zoom-calling", label: "Zoom Calling" },
-            { value: "ai-ark", label: "Ai Ark" },
-            { value: "others", label: "Others" },
-        ],
-        data: [
-            { value: "", label: "All Sub-Departments" },
-            { value: "apollo", label: "Apollo" },
-            { value: "linkedin", label: "Linkedin" },
-            { value: "email-verifier", label: "Email Verifier" },
-            { value: "zoominfo", label: "Zoominfo" },
-            { value: "vpn", label: "VPN" },
-            { value: "ai-ark", label: "Ai Ark" },
-            { value: "domain", label: "Domain" },
-            { value: "others", label: "Others" },
-        ],
-        it: [
-            { value: "", label: "All Sub-Departments" },
-            { value: "servers", label: "Servers" },
-            { value: "domain", label: "Domain" },
-            { value: "zoho", label: "Zoho" },
-            { value: "instantly", label: "Instantly" },
-            { value: "real-cloud", label: "Real Cloud" },
-            { value: "others", label: "Others" },
-        ],
-        office: [
-            { value: "", label: "All Sub-Departments" },
-            { value: "apna", label: "APNA" },
-            { value: "naukri", label: "Naukri" },
-            { value: "milk-bill-tea", label: "Milk Bill/Tea etc." },
-            { value: "cake", label: "Cake" },
-            { value: "electricity-bill", label: "Electricity Bill" },
-            { value: "swiggy-blinkit", label: "Swiggy/Blinkit" },
-            { value: "office-rent", label: "Office Rent" },
-            { value: "office-maintenance", label: "Office Maintenance" },
-            { value: "stationary", label: "Stationary" },
-            { value: "courier-charges", label: "Courier Charges" },
-            { value: "salaries", label: "Salaries" },
-            { value: "salary-arrears", label: "Salary Arrears" },
-            { value: "incentive", label: "Incentive" },
-            { value: "incentive-arrears", label: "Incentive Arrears" },
-            { value: "internet-bill", label: "Internet Bill" },
-            { value: "office-repairs-beautification", label: "Office Repairs & Beautification" },
-            { value: "chairs-purchase", label: "Chairs Purchase" },
-            { value: "goodies-bonuses-bonanza", label: "Goodies/Bonuses/Bonanza" },
-            { value: "event-exp", label: "Event Exp" },
-            { value: "cricket", label: "Cricket" },
-            { value: "trainings", label: "Trainings" },
-            { value: "employee-insurance", label: "Employee Insurance" },
-            { value: "id-cards", label: "ID Cards" },
-            { value: "laptop", label: "Laptop" },
-            { value: "desktop", label: "Desktop" },
-            { value: "system-peripherals", label: "System Peripherals" },
-            { value: "others", label: "Others" },
-        ],
-        others: [
-            { value: "", label: "All Sub-Departments" },
-            { value: "miscellaneous", label: "Miscellaneous" },
-            { value: "general", label: "General" },
-        ]
-    };
 
-    // Update sub-departments when department changes
-    useEffect(() => {
-        if (departmentFilter && subDepartmentsData[departmentFilter]) {
-            setAvailableSubDepartments(subDepartmentsData[departmentFilter]);
-        } else {
-            setAvailableSubDepartments([{ value: "", label: "All Sub-Departments" }]);
-        }
-        // Reset sub-department filter when department changes
-        setSubDepartmentFilter("");
-    }, [departmentFilter]);
-
-    const handleReimburse = async (expense) => {
-        try {
-            await dispatch(
-                updateExpense({
-                    id: expense?._id,
-                    updates: { isReimbursed: !expense?.isReimbursed },
-                })
-            );
-        } catch (err) {
-            console.log("error: ", err);
-        }
-    };
 
     const handleViewDetails = (expense) => {
         setSelectedExpense(expense);
@@ -184,6 +80,9 @@ const ExpenseTable = ({
         setViewModalOpen(false);
         setSelectedExpense(null);
     };
+
+
+
 
     const getFileIcon = (fileName) => {
         if (!fileName) return <InsertDriveFile />;
@@ -263,79 +162,76 @@ const ExpenseTable = ({
         }
     };
 
-    const isSuperAdminRoute =
-        (pathname === "/admin/expenses" || pathname === "/admin/dashboard") &&
-        role === "superadmin";
+    // const isSuperAdminRoute =
+    //     (pathname === "/admin/expenses" || pathname === "/admin/dashboard") &&
+    //     role === "superadmin";
 
     return (
         <>
             <SectionCard>
-                {/* Filters */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 2,
-                        p: 3,
-                    }}
-                >
-                    <StyledTextField
-                        placeholder="🔍 Search By Payee..."
-                        size="medium"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        sx={{ flex: "1 1 250px", minWidth: "250px" }}
-                    />
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 3, alignItems: "center" }}>
 
-                    <Stack direction="row" spacing={2} flexWrap="wrap">
-                        <StyledFormControl size="medium" sx={{ minWidth: "180px" }}>
-                            <InputLabel>Department</InputLabel>
-                            <StyledSelect
-                                value={departmentFilter}
-                                onChange={(e) => setDepartmentFilter(e.target.value)}
-                                label="Department"
-                            >
-                                {departments.map((dept) => (
-                                    <MenuItem key={dept.value} value={dept.value}>
-                                        {dept.label}
-                                    </MenuItem>
-                                ))}
-                            </StyledSelect>
-                        </StyledFormControl>
 
-                        <StyledFormControl size="medium" sx={{ minWidth: "200px" }}>
-                            <InputLabel>Sub-Department</InputLabel>
-                            <StyledSelect
-                                value={subDepartmentFilter}
-                                onChange={(e) => setSubDepartmentFilter(e.target.value)}
-                                label="Sub-Department"
-                                disabled={!departmentFilter}
-                            >
-                                {availableSubDepartments.map((subDept) => (
-                                    <MenuItem key={subDept.value} value={subDept.value}>
-                                        {subDept.label}
-                                    </MenuItem>
-                                ))}
-                            </StyledSelect>
-                        </StyledFormControl>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
+                        {/* Department */}
+                        {
+                            role === "superadmin" && <>
+                                <StyledTextField
+                                    placeholder="Search By Name..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    sx={{ flex: "1 1 300px", minWidth: "300px" }}
+                                />
+                                <StyledFormControl sx={{ flex: "1 1 200px", minWidth: 180 }}>
+                                    <InputLabel>Department</InputLabel>
+                                    <StyledSelect
+                                        value={currentDepartment?._id || ""}
+                                        onChange={(e) => {
+                                            const dept = departments.find((d) => d._id === e.target.value);
+                                            setCurrentDepartment(dept || null);
+                                            setCurrentSubDepartment(null);
+                                        }}
+                                        label="Department"
+                                    >
+                                        <MenuItem value=""><em>All Departments</em></MenuItem>
+                                        {departments.map((dept) => (
+                                            <MenuItem key={dept._id} value={dept._id}>{dept.name}</MenuItem>
+                                        ))}
+                                    </StyledSelect>
+                                </StyledFormControl>
 
-                        <StyledFormControl size="medium" sx={{ minWidth: "120px" }}>
+                                {/* Sub-Department */}
+                                <StyledFormControl sx={{ flex: "1 1 220px", minWidth: 200 }}>
+                                    <InputLabel>Sub-Department</InputLabel>
+                                    <StyledSelect
+                                        value={currentSubDepartment?._id || ""}
+                                        onChange={(e) => {
+                                            const sub = subDepartments.find((s) => s._id === e.target.value);
+                                            setCurrentSubDepartment(sub || null);
+                                        }}
+                                        label="Sub-Department"
+                                        disabled={!currentDepartment}
+                                    >
+                                        <MenuItem value=""><em>All Sub-Departments</em></MenuItem>
+                                        {subDepartments.map((sub) => (
+                                            <MenuItem key={sub._id} value={sub._id}>{sub.name}</MenuItem>
+                                        ))}
+                                    </StyledSelect>
+                                </StyledFormControl>
+                            </>
+                        }
+
+                        {/* Rows per page */}
+                        <StyledFormControl sx={{ flex: "0 1 150px", minWidth: 120 }}>
                             <InputLabel>Rows per page</InputLabel>
-                            <Select
-                                value={limit}
-                                onChange={(e) => setLimit(Number(e.target.value))}
-                                label="Rows per page"
-                            >
-                                <MenuItem value={5}>5</MenuItem>
-                                <MenuItem value={10}>10</MenuItem>
-                                <MenuItem value={20}>20</MenuItem>
-                                <MenuItem value={50}>50</MenuItem>
+                            <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
+                                {[5, 10, 20, 50].map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
                             </Select>
                         </StyledFormControl>
                     </Stack>
                 </Box>
+
+
 
                 <Divider />
 
@@ -343,14 +239,9 @@ const ExpenseTable = ({
                     <Table>
                         <TableHead>
                             <TableRow>
-                                {isSuperAdminRoute && (
-                                    <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                        User
-                                    </TableCell>
-                                )}
-                                <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
-                                    Paid To
-                                </TableCell>
+                                {role === "superadmin" && <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
+                                    User
+                                </TableCell>}
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                     Amount
                                 </TableCell>
@@ -363,9 +254,16 @@ const ExpenseTable = ({
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                     Date
                                 </TableCell>
+                                <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
+                                    Description
+                                </TableCell>
                                 {showViewDetails && (
                                     <TableCell
-                                        sx={{ fontWeight: "bold", fontSize: "1rem", textAlign: "center" }}
+                                        sx={{
+                                            fontWeight: "bold",
+                                            fontSize: "1rem",
+                                            textAlign: "center"
+                                        }}
                                     >
                                         View Details
                                     </TableCell>
@@ -375,7 +273,10 @@ const ExpenseTable = ({
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={showViewDetails ? 7 : 6} align="center">
+                                    <TableCell
+                                        colSpan={showViewDetails ? 7 : 6}
+                                        align="center"
+                                    >
                                         <Typography>Loading...</Typography>
                                     </TableCell>
                                 </TableRow>
@@ -389,8 +290,8 @@ const ExpenseTable = ({
                                             "&:hover": { backgroundColor: "action.hover" },
                                         }}
                                     >
-                                        {isSuperAdminRoute && (
-                                            <TableCell>
+                                        {
+                                            role === "superadmin" && <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
                                                     <Avatar sx={{ bgcolor: "secondary.main" }}>
                                                         {row?.user?.name?.charAt(0).toUpperCase()}
@@ -400,13 +301,11 @@ const ExpenseTable = ({
                                                     </Typography>
                                                 </Box>
                                             </TableCell>
-                                        )}
-
-                                        <TableCell>{row?.paidTo}</TableCell>
-                                        <TableCell sx={{ fontWeight: "bold" }}>
+                                        }
+                                        <TableCell sx={{ fontWeight: "bold" }} align="left">
                                             ₹{row?.amount?.toLocaleString()}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell align="left">
                                             <Typography
                                                 sx={{
                                                     textTransform: 'capitalize',
@@ -416,7 +315,7 @@ const ExpenseTable = ({
                                                 {row?.department?.name || "-"}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell align="left">
                                             <Typography
                                                 sx={{
                                                     textTransform: 'capitalize',
@@ -426,7 +325,7 @@ const ExpenseTable = ({
                                                 {row?.subDepartment?.name || "-"}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell align="left">
                                             {row?.createdAt
                                                 ? new Date(row.createdAt).toLocaleString("en-US", {
                                                     year: "numeric",
@@ -438,6 +337,9 @@ const ExpenseTable = ({
                                                     timeZone: "Asia/Kolkata",
                                                 })
                                                 : "-"}
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            {row?.description || "-"}
                                         </TableCell>
                                         {showViewDetails && (
                                             <TableCell align="center">
@@ -455,7 +357,10 @@ const ExpenseTable = ({
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={showViewDetails ? 7 : 6} align="center">
+                                    <TableCell
+                                        colSpan={showViewDetails ? 7 : 6}
+                                        align="center"
+                                    >
                                         <Typography>No expenses found</Typography>
                                     </TableCell>
                                 </TableRow>

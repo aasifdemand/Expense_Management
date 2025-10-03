@@ -12,7 +12,8 @@ export class CreateExpenseDto {
 
 
     @IsString()
-    paidTo: string;
+    @IsOptional()
+    description?: string;
 
     @Type(() => Number)
     @IsNumber()

@@ -12,11 +12,11 @@ import {
 } from "../../../styles/budgeting.styles";
 import { Add as AddIcon } from "@mui/icons-material";
 
-const types = [
-    { value: "Normal", label: "Normal" },
-    { value: "Reimbursement", label: "Reimbursement" },
+// const types = [
+//     { value: "Normal", label: "Normal" },
+//     { value: "Reimbursement", label: "Reimbursement" },
 
-];
+// ];
 
 const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loading }) => {
     return (
@@ -49,7 +49,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     sx={{ flex: "1 1 200px" }}
                 />
 
-                <StyledFormControl sx={{ flex: "1 1 200px" }}>
+                {/* <StyledFormControl sx={{ flex: "1 1 200px" }}>
                     <InputLabel>Types</InputLabel>
                     <StyledSelect
                         name="Types"
@@ -63,7 +63,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                             </MenuItem>
                         ))}
                     </StyledSelect>
-                </StyledFormControl>
+                </StyledFormControl> */}
 
 
                 <PrimaryButton

@@ -65,6 +65,10 @@ const AdminDashboard = () => {
     setSelectedMonth: setExpenseSelectedMonth,
   } = useExpenses();
 
+
+  console.log("allExpenses: ", allExpenses);
+
+
   // Budget Stats Calculations
   const totalAllocated = allBudgets?.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0) || 0;
   const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
@@ -345,6 +349,8 @@ const AdminDashboard = () => {
         {activeTab === "budget" && (
           <>
             <BudgetTable
+
+              showPagination
               limit={budgetLimit}
               setLimit={setBudgetLimit}
               budgets={budgets}
@@ -373,6 +379,7 @@ const AdminDashboard = () => {
 
         {activeTab === "expense" && (
           <ExpenseTable
+
             limit={expenseLimit}
             setLimit={setExpenseLimit}
             expenses={expenses}
