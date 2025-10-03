@@ -8,7 +8,7 @@ const UserDashboard = () => {
     const [newUser, setNewUser] = useState({
         name: '',
         email: '',
-        role: 'user',
+        password: '',
         department: ''
     });
     const [searchTerm, setSearchTerm] = useState('');
@@ -17,17 +17,25 @@ const UserDashboard = () => {
         searchFocus: false,
         rows: {}
     });
+    const [resetPasswordModal, setResetPasswordModal] = useState({
+        isOpen: false,
+        userId: null,
+        userName: '',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
 
     // Sample data initialization
     useEffect(() => {
         // Simulate API call delay
         setTimeout(() => {
             const sampleUsers = [
-                { name: 'John Smith', email: 'john@company.com', role: 'admin', department: 'IT', status: 'active', joinDate: '2023-01-15' },
-                { name: 'Sarah Johnson', email: 'sarah@company.com', role: 'user', department: 'Marketing', status: 'active', joinDate: '2023-02-20' },
-                { name: 'Michael Brown', email: 'michael@company.com', role: 'manager', department: 'Sales', status: 'active', joinDate: '2022-11-05' },
-                { name: 'Emily Davis', email: 'emily@company.com', role: 'user', department: 'HR', status: 'active', joinDate: '2023-03-10' },
-                { name: 'Robert Wilson', email: 'robert@company.com', role: 'admin', department: 'Finance', status: 'active', joinDate: '2022-09-18' }
+                { id: 1, name: 'John Smith', email: 'john@company.com', department: 'IT', status: 'active', joinDate: '2023-01-15' },
+                { id: 2, name: 'Sarah Johnson', email: 'sarah@company.com', department: 'Marketing', status: 'active', joinDate: '2023-02-20' },
+                { id: 3, name: 'Michael Brown', email: 'michael@company.com', department: 'Sales', status: 'active', joinDate: '2022-11-05' },
+                { id: 4, name: 'Emily Davis', email: 'emily@company.com', department: 'HR', status: 'active', joinDate: '2023-03-10' },
+                { id: 5, name: 'Robert Wilson', email: 'robert@company.com', department: 'Finance', status: 'active', joinDate: '2022-09-18' }
             ];
 
             setUsers(sampleUsers);
@@ -54,7 +62,7 @@ const UserDashboard = () => {
     const handleAddUser = (e) => {
         e.preventDefault();
         const newUserObj = {
-            id: users.length > 0 ? Math.max(...users.map(u => u)) + 1 : 1,
+            id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
             ...newUser,
             status: 'active',
             joinDate: new Date().toISOString().split('T')[0]
@@ -63,13 +71,73 @@ const UserDashboard = () => {
         const updatedUsers = [...users, newUserObj];
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
-        setNewUser({ name: '', email: '', role: 'user', department: '' });
+        setNewUser({ name: '', email: '', password: '', department: '' });
+
+        // Show success message
+        alert('User added successfully!');
     };
 
     // Handle input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewUser({ ...newUser, [name]: value });
+    };
+
+    // Handle reset password modal input changes
+    const handleResetPasswordInputChange = (e) => {
+        const { name, value } = e.target;
+        setResetPasswordModal(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Open reset password modal
+    const openResetPasswordModal = (user) => {
+        setResetPasswordModal({
+            isOpen: true,
+            userId: user.id,
+            userName: user.name,
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
+    };
+
+    // Close reset password modal
+    const closeResetPasswordModal = () => {
+        setResetPasswordModal({
+            isOpen: false,
+            userId: null,
+            userName: '',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
+    };
+
+    // Handle reset password submission
+    const handleResetPassword = (e) => {
+        e.preventDefault();
+
+        // Validate passwords
+        if (resetPasswordModal.newPassword !== resetPasswordModal.confirmPassword) {
+            alert('New password and confirm password do not match!');
+            return;
+        }
+
+        if (resetPasswordModal.newPassword.length < 6) {
+            alert('Password must be at least 6 characters long!');
+            return;
+        }
+
+        // Simulate password reset
+        console.log('Password reset for user:', resetPasswordModal.userId);
+        console.log('New password:', resetPasswordModal.newPassword);
+
+        // Show success message
+        alert('Password reset successfully!');
+        closeResetPasswordModal();
     };
 
     // Handle hover effects
@@ -91,20 +159,19 @@ const UserDashboard = () => {
     const styles = {
         dashboard: {
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-            // backgroundColor: '#f8fafc',
             minHeight: '100vh',
             width: '100%',
             padding: '0',
             color: '#1e293b',
             lineHeight: '1.6',
-            overflow: 'hidden'
+            overflow: 'hidden',
         },
-        // mainContent: {
-        //     maxWidth: '1400px',
-        //     margin: '0 auto',
-        //     padding: '30px 20px',
-        //     overflow: 'visible'
-        // },
+        mainContent: {
+            maxWidth: '1400px',
+            margin: '0 auto',
+            padding: '30px 20px',
+            overflow: 'visible'
+        },
         addUserSection: {
             background: 'white',
             borderRadius: '16px',
@@ -156,21 +223,6 @@ const UserDashboard = () => {
             borderColor: '#3b82f6',
             backgroundColor: 'white',
             boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
-        },
-        select: {
-            padding: '14px 16px',
-            borderRadius: '10px',
-            border: '2px solid #e2e8f0',
-            fontSize: '1rem',
-            backgroundColor: '#f8fafc',
-            transition: 'all 0.3s ease',
-            width: '100%',
-            boxSizing: 'border-box',
-            appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23374151'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 16px center',
-            backgroundSize: '16px'
         },
         addButton: {
             padding: '16px 32px',
@@ -292,50 +344,131 @@ const UserDashboard = () => {
             backgroundColor: '#dcfce7',
             color: '#166534'
         },
-        roleBadge: {
+        resetPasswordButton: {
             padding: '8px 16px',
             borderRadius: '8px',
+            border: '2px solid #3b82f6',
+            background: 'transparent',
+            color: '#3b82f6',
             fontSize: '0.9rem',
             fontWeight: '600',
-            textTransform: 'capitalize',
-            display: 'inline-block'
-        },
-        loading: {
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
             display: 'flex',
-            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
+        },
+        resetPasswordButtonHover: {
+            background: '#3b82f6',
+            color: 'white',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+        },
+        // Modal Styles
+        modalOverlay: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '50vh',
-            textAlign: 'center'
+            zIndex: 1000,
+            padding: '20px'
         },
-        spinner: {
-            width: '50px',
-            height: '50px',
-            border: '4px solid #e2e8f0',
-            borderTop: '4px solid #3b82f6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
+        modalContent: {
+            background: 'white',
+            borderRadius: '16px',
+            padding: '35px',
+            maxWidth: '500px',
+            width: '100%',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+            border: '1px solid #e2e8f0'
         },
-        loadingText: {
-            fontSize: '1.2rem',
+        modalHeader: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '25px'
+        },
+        modalTitle: {
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            color: '#1e293b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+        },
+        closeButton: {
+            background: 'none',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
             color: '#64748b',
-            fontWeight: '500'
+            padding: '5px',
+            borderRadius: '5px',
+            transition: 'all 0.3s ease'
         },
-        emptyState: {
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: '#64748b'
+        closeButtonHover: {
+            backgroundColor: '#f1f5f9',
+            color: '#374151'
         },
-        idBadge: {
-            padding: '6px 12px',
-            borderRadius: '6px',
-            backgroundColor: '#f3f4f6',
-            color: '#374151',
-            fontSize: '0.8rem',
+        modalForm: {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+        },
+        modalButtonGroup: {
+            display: 'flex',
+            gap: '15px',
+            marginTop: '10px'
+        },
+        cancelButton: {
+            padding: '12px 24px',
+            borderRadius: '8px',
+            border: '2px solid #e2e8f0',
+            background: 'transparent',
+            color: '#64748b',
+            fontSize: '1rem',
             fontWeight: '600',
-            display: 'inline-block',
-            marginBottom: '8px'
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            flex: 1
+        },
+        cancelButtonHover: {
+            backgroundColor: '#f8fafc',
+            borderColor: '#cbd5e1'
+        },
+        submitButton: {
+            padding: '12px 24px',
+            borderRadius: '8px',
+            border: 'none',
+            background: '#3b82f6',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            flex: 1
+        },
+        submitButtonHover: {
+            background: '#2563eb',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+        },
+        userInfo: {
+            background: '#f8fafc',
+            padding: '15px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            border: '1px solid #e2e8f0'
+        },
+        userInfoText: {
+            margin: '5px 0',
+            color: '#374151',
+            fontSize: '0.95rem'
         },
         animation: `
             @keyframes spin {
@@ -351,30 +484,8 @@ const UserDashboard = () => {
             .fade-in {
                 animation: fadeIn 0.6s ease-out;
             }
-            
-            /* Hide scrollbars */
-            ::-webkit-scrollbar {
-                display: none;
-            }
-            * {
-                scrollbar-width: none;
-                -ms-overflow-style: none;
-            }
         `
     };
-
-    // Render loading state
-    if (loading) {
-        // return (
-        //     <div style={styles.dashboard}>
-        //         <style>{styles.animation}</style>
-        //         <div style={styles.loading}>
-        //             <div style={styles.spinner}></div>
-        //             <div style={styles.loadingText}>Loading User Dashboard...</div>
-        //         </div>
-        //     </div>
-        // );
-    }
 
     return (
         <div style={styles.dashboard}>
@@ -429,21 +540,21 @@ const UserDashboard = () => {
 
                             <div style={styles.formGroup}>
                                 <label style={styles.label}>
-                                    <span>🎯</span>
-                                    Role
+                                    <span>🔒</span>
+                                    Password
                                 </label>
-                                <select
-                                    name="role"
-                                    style={{ ...styles.select, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
-                                    value={newUser.role}
+                                <input
+                                    type="password"
+                                    name="password"
+                                    style={{ ...styles.input, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
+                                    value={newUser.password}
                                     onChange={handleInputChange}
                                     onFocus={() => handleMouseEnter('searchFocus')}
                                     onBlur={() => handleMouseLeave('searchFocus')}
-                                >
-                                    <option value="user">User</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="manager">Manager</option>
-                                </select>
+                                    required
+                                    placeholder="Enter password"
+                                    minLength="6"
+                                />
                             </div>
 
                             <div style={styles.formGroup}>
@@ -484,7 +595,7 @@ const UserDashboard = () => {
                 <section style={styles.usersSection} className="fade-in">
                     <div style={styles.searchHeader}>
                         <h2 style={styles.searchTitle}>
-                            <span>📊</span>
+                            <span>👥</span>
                             User Management
                         </h2>
 
@@ -516,10 +627,9 @@ const UserDashboard = () => {
                                 <thead>
                                     <tr>
                                         <th style={styles.tableHeader}>User Information</th>
-                                        <th style={styles.tableHeader}>Contact</th>
-                                        <th style={styles.tableHeader}>Role</th>
-                                        <th style={styles.tableHeader}>Department</th>
+                                        <th style={styles.tableHeader}>Contact & Department</th>
                                         <th style={styles.tableHeader}>Status</th>
+                                        <th style={styles.tableHeader}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -539,23 +649,12 @@ const UserDashboard = () => {
                                                 </div>
                                             </td>
                                             <td style={styles.tableCell}>
-                                                <div style={{ color: '#3b82f6', fontWeight: '600' }}>{user.email}</div>
-                                            </td>
-                                            <td style={styles.tableCell}>
-                                                <span style={{
-                                                    ...styles.roleBadge,
-                                                    backgroundColor: user.role === 'admin' ? '#dbeafe' :
-                                                        user.role === 'manager' ? '#fef3c7' : '#f3f4f6',
-                                                    color: user.role === 'admin' ? '#1e40af' :
-                                                        user.role === 'manager' ? '#92400e' : '#374151'
-                                                }}>
-                                                    {user.role}
-                                                </span>
-                                            </td>
-                                            <td style={styles.tableCell}>
-                                                <span style={{ fontWeight: '500', color: '#475569' }}>
+                                                <div style={{ color: '#3b82f6', fontWeight: '600', marginBottom: '5px' }}>
+                                                    {user.email}
+                                                </div>
+                                                <div style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>
                                                     {user.department}
-                                                </span>
+                                                </div>
                                             </td>
                                             <td style={styles.tableCell}>
                                                 <span style={{
@@ -565,6 +664,18 @@ const UserDashboard = () => {
                                                     Active
                                                 </span>
                                             </td>
+                                            <td style={styles.tableCell}>
+                                                <button
+                                                    style={{
+                                                        ...styles.resetPasswordButton,
+                                                        ...(hoverStates.rows[user.id] ? styles.resetPasswordButtonHover : {})
+                                                    }}
+                                                    onClick={() => openResetPasswordModal(user)}
+                                                >
+                                                    <span>🔄</span>
+                                                    Reset Password
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -573,6 +684,111 @@ const UserDashboard = () => {
                     </div>
                 </section>
             </main>
+
+            {/* Reset Password Modal */}
+            {resetPasswordModal.isOpen && (
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modalContent} className="fade-in">
+                        <div style={styles.modalHeader}>
+                            <h2 style={styles.modalTitle}>
+                                <span>🔒</span>
+                                Reset Password
+                            </h2>
+                            <button
+                                style={styles.closeButton}
+                                onClick={closeResetPasswordModal}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div style={styles.userInfo}>
+                            <div style={{ ...styles.userInfoText, fontWeight: '600' }}>
+                                User: {resetPasswordModal.userName}
+                            </div>
+                            <div style={styles.userInfoText}>
+                                Please enter the new password for this user
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleResetPassword} style={styles.modalForm}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>
+                                    <span>🔑</span>
+                                    New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    style={{ ...styles.input, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
+                                    value={resetPasswordModal.newPassword}
+                                    onChange={handleResetPasswordInputChange}
+                                    onFocus={() => handleMouseEnter('searchFocus')}
+                                    onBlur={() => handleMouseLeave('searchFocus')}
+                                    required
+                                    placeholder="Enter new password"
+                                    minLength="6"
+                                />
+                            </div>
+
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>
+                                    <span>✅</span>
+                                    Confirm New Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    style={{ ...styles.input, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
+                                    value={resetPasswordModal.confirmPassword}
+                                    onChange={handleResetPasswordInputChange}
+                                    onFocus={() => handleMouseEnter('searchFocus')}
+                                    onBlur={() => handleMouseLeave('searchFocus')}
+                                    required
+                                    placeholder="Confirm new password"
+                                    minLength="6"
+                                />
+                            </div>
+
+                            <div style={styles.modalButtonGroup}>
+                                <button
+                                    type="button"
+                                    style={styles.cancelButton}
+                                    onClick={closeResetPasswordModal}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.backgroundColor = '#f8fafc';
+                                        e.target.style.borderColor = '#cbd5e1';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.backgroundColor = 'transparent';
+                                        e.target.style.borderColor = '#e2e8f0';
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    style={styles.submitButton}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = '#2563eb';
+                                        e.target.style.transform = 'translateY(-2px)';
+                                        e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = '#3b82f6';
+                                        e.target.style.transform = 'translateY(0)';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    Reset Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

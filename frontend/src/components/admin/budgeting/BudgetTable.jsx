@@ -10,15 +10,15 @@ import {
     Pagination,
     Typography,
     Avatar,
-    IconButton,
     Stack,
     Modal,
     Paper,
     Select,
     MenuItem,
     InputLabel,
+    FormControl,
+    Popover,
 } from "@mui/material";
-import { Visibility } from "@mui/icons-material";
 import {
     SectionCard,
     StyledTextField,
@@ -44,6 +44,8 @@ const BudgetTable = ({
 
     const [isOpen, setIsOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState(null);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [selectedBudgetId, setSelectedBudgetId] = useState(null);
 
     const handleOpenModal = (row) => {
         setSelectedBudget(row);
@@ -54,6 +56,67 @@ const BudgetTable = ({
         setIsOpen(false);
         setSelectedBudget(null);
     };
+
+    // Handle budget type click to show dropdown
+    const handleBudgetTypeClick = (event, budgetId) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedBudgetId(budgetId);
+    };
+
+    // Handle budget type change
+    const handleBudgetTypeChange = (newType) => {
+        if (selectedBudgetId) {
+            // You can implement the API call here to update the budget type
+            console.log(`Updating budget ${selectedBudgetId} to type: ${newType}`);
+            // Example: updateBudgetType(selectedBudgetId, newType);
+        }
+        setAnchorEl(null);
+        setSelectedBudgetId(null);
+    };
+
+    const handleClosePopover = () => {
+        setAnchorEl(null);
+        setSelectedBudgetId(null);
+    };
+
+    const getBudgetTypeStyle = (type) => {
+        const baseStyle = {
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            display: 'inline-block',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                opacity: 0.9,
+                transform: 'scale(1.05)',
+            }
+        };
+
+        if (type === 'normal') {
+            return {
+                ...baseStyle,
+                backgroundColor: '#e8f5e9',
+                color: '#2e7d32',
+                border: '1px solid #c8e6c9',
+            };
+        } else {
+            return {
+                ...baseStyle,
+                backgroundColor: '#e3f2fd',
+                color: '#1565c0',
+                border: '1px solid #bbdefb',
+            };
+        }
+    };
+
+    const getBudgetTypeDisplay = (type) => {
+        return type === 'normal' ? 'Normal' : 'Reimbursed';
+    };
+
+    const open = Boolean(anchorEl);
+    const popoverId = open ? 'budget-type-popover' : undefined;
 
     return (
         <SectionCard>
@@ -103,7 +166,7 @@ const BudgetTable = ({
                             <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Allocated Amount</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
-                            <TableCell />
+                            <TableCell sx={{ fontWeight: "bold" }}>Budget Type</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -142,10 +205,13 @@ const BudgetTable = ({
                                             })
                                             : "-"}
                                     </TableCell>
-                                    <TableCell align="center">
-                                        <IconButton onClick={() => handleOpenModal(row)} color="primary">
-                                            <Visibility />
-                                        </IconButton>
+                                    <TableCell>
+                                        <Box
+                                            sx={getBudgetTypeStyle(row?.budgetType || 'normal')}
+                                            onClick={(e) => handleBudgetTypeClick(e, row._id)}
+                                        >
+                                            {getBudgetTypeDisplay(row?.budgetType || 'normal')}
+                                        </Box>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -159,6 +225,62 @@ const BudgetTable = ({
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Budget Type Popover */}
+            <Popover
+                id={popoverId}
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClosePopover}
+                anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                }}
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left',
+                }}
+                sx={{
+                    '& .MuiPopover-paper': {
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                        minWidth: '120px',
+                    }
+                }}
+            >
+                <Box sx={{ p: 0.5 }}>
+                    <Box
+                        sx={{
+                            p: 1.5,
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            '&:hover': {
+                                backgroundColor: '#f5f7fa',
+                            },
+                            color: '#2e7d32',
+                            fontWeight: 500,
+                        }}
+                        onClick={() => handleBudgetTypeChange('normal')}
+                    >
+                        Normal
+                    </Box>
+                    <Box
+                        sx={{
+                            p: 1.5,
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            '&:hover': {
+                                backgroundColor: '#f5f7fa',
+                            },
+                            color: '#1565c0',
+                            fontWeight: 500,
+                        }}
+                        onClick={() => handleBudgetTypeChange('reimbursed')}
+                    >
+                        Reimbursed
+                    </Box>
+                </Box>
+            </Popover>
 
             {/* Pagination */}
             {showPagination && meta?.total > 0 && setPage && (
@@ -176,7 +298,7 @@ const BudgetTable = ({
                 </Box>
             )}
 
-            {/* Modal */}
+            {/* Modal - Optional: You can remove this if not needed */}
             <Modal open={isOpen} onClose={handleCloseModal}>
                 <Paper
                     sx={{
@@ -200,6 +322,9 @@ const BudgetTable = ({
                             </Typography>
                             <Typography>
                                 <strong>Allocated:</strong> ₹{selectedBudget?.allocatedAmount?.toLocaleString()}
+                            </Typography>
+                            <Typography>
+                                <strong>Budget Type:</strong> {getBudgetTypeDisplay(selectedBudget?.budgetType || "normal")}
                             </Typography>
                             <Typography>
                                 <strong>Date:</strong>{" "}
