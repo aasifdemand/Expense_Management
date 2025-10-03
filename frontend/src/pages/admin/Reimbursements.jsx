@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Box,
     Typography,
@@ -10,377 +10,53 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    alpha,
+    Alert,
+    Snackbar,
     Avatar,
     IconButton,
-    alpha,
-    CircularProgress,
-    Alert,
-    Snackbar
+    Chip,
+    Tooltip
 } from "@mui/material";
-import { CheckCircle, Refresh } from "@mui/icons-material";
+import { useBudgeting } from '../../hooks/useBudgeting';
+import { useExpenses } from '../../hooks/useExpenses';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchReimbursements, markAsReimbursed } from '../../store/reimbursementSlice';
+import { DoneAll } from '@mui/icons-material';
+
 
 const ReimbursementManagement = () => {
-    // State for reimbursement data
-    const [reimbursements, setReimbursements] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+
+    const dispatch = useDispatch()
+    const { reimbursements, } = useSelector((state) => state.reimbursement)
+
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [refreshing, setRefreshing] = useState(false);
+    const { allBudgets } = useBudgeting()
+    const { allExpenses } = useExpenses()
 
-    // API endpoints (replace with your actual endpoints)
-    const API_BASE_URL = 'https://your-api-domain.com/api';
-    const ENDPOINTS = {
-        USERS: `${API_BASE_URL}/users`,
-        REIMBURSEMENTS: `${API_BASE_URL}/reimbursements`,
-        MARK_REIMBURSED: (id) => `${API_BASE_URL}/reimbursements/${id}/mark-reimbursed`
-    };
+    const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)
+    const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0)
+    const totalReimbursed = allExpenses?.reduce((acc, b) => acc + Number(b?.fromReimbursement), 0)
 
-    // Fetch users from API
-    const fetchUsers = async () => {
-        try {
-            const response = await fetch(ENDPOINTS.USERS, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch users');
-            }
 
-            const data = await response.json();
-            return data.users || data.data || [];
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            setError('Failed to load users data');
-            return [];
-        }
-    };
-
-    // Fetch reimbursements from API
-    const fetchReimbursements = async () => {
-        try {
-            const response = await fetch(ENDPOINTS.REIMBURSEMENTS, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch reimbursements');
-            }
-
-            const data = await response.json();
-            return data.reimbursements || data.data || [];
-        } catch (error) {
-            console.error('Error fetching reimbursements:', error);
-            setError('Failed to load reimbursement data');
-            return [];
-        }
-    };
-
-    // Mark reimbursement as reimbursed
-    const markAsReimbursed = async (reimbursementId) => {
-        try {
-            setRefreshing(true);
-            const response = await fetch(ENDPOINTS.MARK_REIMBURSED(reimbursementId), {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    paidDate: new Date().toISOString()
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to mark as reimbursed');
-            }
-
-            const result = await response.json();
-
-            // Update local state
-            setReimbursements(prev =>
-                prev.map(item =>
-                    item.id === reimbursementId || item._id === reimbursementId
-                        ? {
-                            ...item,
-                            isReimbursed: true,
-                            status: 'Paid',
-                            paidDate: new Date().toISOString().split('T')[0]
-                        }
-                        : item
-                )
-            );
-
-            setSuccess('Reimbursement marked as paid successfully!');
-            return true;
-        } catch (error) {
-            console.error('Error marking as reimbursed:', error);
-            setError('Failed to update reimbursement status');
-            return false;
-        } finally {
-            setRefreshing(false);
-        }
-    };
-
-    // Initialize data on component mount
     useEffect(() => {
-        const initializeData = async () => {
-            setIsLoading(true);
-            try {
-                const [usersData, reimbursementsData] = await Promise.all([
-                    fetchUsers(),
-                    fetchReimbursements()
-                ]);
+        dispatch(fetchReimbursements())
+    }, [dispatch])
 
-                setUsers(usersData);
-                setReimbursements(reimbursementsData);
-            } catch (error) {
-                console.error('Error initializing data:', error);
-                setError('Failed to load data');
+    const handleMarkReimbursed = async (id) => {
+        const res = await dispatch(markAsReimbursed({ id, isReimbursed: true }))
 
-                // Fallback to sample data if API fails
-                const fallbackUsers = [
-                    {
-                        id: 'user1',
-                        name: 'Priya Sharma',
-                        email: 'priya.sharma@company.com',
-                        department: 'Sales',
-                        avatar: 'https://i.pravatar.cc/150?img=1',
-                        allocatedBudget: 50000
-                    },
-                    {
-                        id: 'user2',
-                        name: 'Rahul Verma',
-                        email: 'rahul.verma@company.com',
-                        department: 'Marketing',
-                        avatar: 'https://i.pravatar.cc/150?img=2',
-                        allocatedBudget: 75000
-                    },
-                    {
-                        id: 'user3',
-                        name: 'Anjali Patel',
-                        email: 'anjali.patel@company.com',
-                        department: 'Engineering',
-                        avatar: 'https://i.pravatar.cc/150?img=3',
-                        allocatedBudget: 100000
-                    }
-                ];
-
-                const fallbackData = [
-                    {
-                        id: 1,
-                        title: 'Client Dinner Meeting',
-                        category: 'Food',
-                        amount: 3500,
-                        date: '2023-10-15',
-                        status: 'Approved',
-                        description: 'Dinner with potential clients from ABC Corp',
-                        receipt: 'receipt_1.jpg',
-                        userId: 'user1',
-                        paidDate: null,
-                        isReimbursed: false
-                    },
-                    {
-                        id: 2,
-                        title: 'Taxi to Client Office',
-                        category: 'Travel',
-                        amount: 1200,
-                        date: '2023-10-12',
-                        status: 'Pending',
-                        description: 'Round trip taxi fare for client meeting',
-                        receipt: 'receipt_2.jpg',
-                        userId: 'user1',
-                        paidDate: null,
-                        isReimbursed: false
-                    },
-                    {
-                        id: 3,
-                        title: 'Team Lunch',
-                        category: 'Food',
-                        amount: 4200,
-                        date: '2023-10-10',
-                        status: 'Paid',
-                        description: 'Monthly team lunch at restaurant',
-                        receipt: 'receipt_3.jpg',
-                        userId: 'user2',
-                        paidDate: '2023-10-18',
-                        isReimbursed: true
-                    },
-                    {
-                        id: 4,
-                        title: 'Office Supplies',
-                        category: 'Supplies',
-                        amount: 2500,
-                        date: '2023-10-05',
-                        status: 'Approved',
-                        description: 'Purchase of stationery and printer ink',
-                        receipt: 'receipt_4.jpg',
-                        userId: 'user3',
-                        paidDate: null,
-                        isReimbursed: false
-                    },
-                    {
-                        id: 5,
-                        title: 'Conference Registration',
-                        category: 'Training',
-                        amount: 8000,
-                        date: '2023-09-28',
-                        status: 'Pending',
-                        description: 'Registration fee for Tech Conference 2023',
-                        receipt: 'receipt_5.jpg',
-                        userId: 'user2',
-                        paidDate: null,
-                        isReimbursed: false
-                    }
-                ];
-
-                setUsers(fallbackUsers);
-                setReimbursements(fallbackData);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        initializeData();
-
-        // Set up real-time updates (polling every 30 seconds)
-        const interval = setInterval(async () => {
-            const [usersData, reimbursementsData] = await Promise.all([
-                fetchUsers(),
-                fetchReimbursements()
-            ]);
-            setUsers(usersData);
-            setReimbursements(reimbursementsData);
-        }, 30000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    // Handle refresh
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        try {
-            const [usersData, reimbursementsData] = await Promise.all([
-                fetchUsers(),
-                fetchReimbursements()
-            ]);
-            setUsers(usersData);
-            setReimbursements(reimbursementsData);
-            setSuccess('Data refreshed successfully!');
-        } catch (error) {
-            setError('Failed to refresh data');
-        } finally {
-            setRefreshing(false);
+        if (markAsReimbursed.fulfilled.match(res)) {
+            dispatch(fetchReimbursements())
         }
-    };
-
-    // Calculate user-specific statistics
-    const calculateUserStats = () => {
-        const stats = {};
-
-        users.forEach(user => {
-            const userReimbursements = reimbursements.filter(item =>
-                item.userId === user.id || item.userId === user._id || item.user?._id === user.id || item.user?.id === user.id
-            );
-            const totalExpenses = userReimbursements.reduce((sum, item) => sum + (item.amount || 0), 0);
-            const toBeReimbursed = userReimbursements
-                .filter(item => !item.isReimbursed && (item.status === 'Approved' || item.status === 'Paid'))
-                .reduce((sum, item) => sum + (item.amount || 0), 0);
-            const totalAllocated = user.allocatedBudget || user.totalBudget || 0;
-            const paidAmount = userReimbursements
-                .filter(item => item.isReimbursed)
-                .reduce((sum, item) => sum + (item.amount || 0), 0);
-
-            const userId = user.id || user._id;
-            stats[userId] = {
-                totalAllocated,
-                totalExpenses,
-                toBeReimbursed,
-                paidAmount,
-                remainingBalance: totalAllocated - totalExpenses,
-                totalClaims: userReimbursements.length,
-                paidClaims: userReimbursements.filter(item => item.isReimbursed).length
-            };
-        });
-
-        return stats;
-    };
-
-    // Handle mark as reimbursed
-    const handleMarkAsReimbursed = async (reimbursementId) => {
-        const success = await markAsReimbursed(reimbursementId);
-        if (success) {
-            // Success message is already set in the markAsReimbursed function
-        }
-    };
-
-    // Format currency
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR'
-        }).format(amount || 0);
-    };
-
-    // Format date
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        try {
-            const options = {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            };
-            return new Date(dateString).toLocaleDateString('en-US', options);
-        } catch (error) {
-            return '-';
-        }
-    };
-
-    // Get user info by ID
-    const getUserInfo = (userId) => {
-        const user = users.find(u =>
-            u.id === userId || u._id === userId || u.id === userId?.id || u._id === userId?._id
-        );
-        return user || {
-            id: userId,
-            name: 'Unknown User',
-            department: 'N/A',
-            avatar: `https://i.pravatar.cc/150?u=${userId}`,
-            allocatedBudget: 0
-        };
-    };
-
-    // Calculate overall statistics for all users
-    const userStats = calculateUserStats();
-
-    // Get the first user as default for stats display (maintains your original structure)
-    const defaultUser = users[0] || { id: 'default', allocatedBudget: 0 };
-    const defaultStats = userStats[defaultUser.id] || {
-        totalAllocated: 0,
-        totalExpenses: 0,
-        toBeReimbursed: 0,
-        paidAmount: 0,
-        remainingBalance: 0,
-        totalClaims: 0,
-        paidClaims: 0
-    };
+    }
 
     const reimbursementStats = [
         {
             title: "Total Allocated",
-            value: `₹${defaultStats.totalAllocated.toLocaleString()}`,
+            value: `₹${totalAllocated}`,
             color: "#3b82f6",
             subtitle: "Total budget allocation",
             trend: "+5.2%",
@@ -388,7 +64,7 @@ const ReimbursementManagement = () => {
         },
         {
             title: "Total Expenses",
-            value: `₹${defaultStats.totalExpenses.toLocaleString()}`,
+            value: `₹${totalExpenses}`,
             color: "#10b981",
             subtitle: "Total expenses incurred",
             trend: "+12.3%",
@@ -396,7 +72,7 @@ const ReimbursementManagement = () => {
         },
         {
             title: "To Be Reimbursed",
-            value: `₹${defaultStats.toBeReimbursed.toLocaleString()}`,
+            value: `₹${totalReimbursed}`,
             color: "#ef4444",
             subtitle: "Pending reimbursement amount",
             trend: "-8.7%",
@@ -519,24 +195,27 @@ const ReimbursementManagement = () => {
         </Card>
     );
 
-    if (isLoading) {
-        return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    minHeight: '100vh',
-                    backgroundColor: '#f5f7fb',
-                }}
-            >
-                <Typography variant="h6">Loading Reimbursement System...</Typography>
-            </Box>
-        );
-    }
+    // if (isLoading) {
+    //     return (
+    //         <Box
+    //             sx={{
+    //                 display: 'flex',
+    //                 justifyContent: 'center',
+    //                 alignItems: 'center',
+    //                 minHeight: '100vh',
+    //                 backgroundColor: '#f5f7fb',
+    //             }}
+    //         >
+    //             <Typography variant="h6">Loading Reimbursement System...</Typography>
+    //         </Box>
+    //     );
+    // }
 
     // Show all reimbursements for all users
-    const allReimbursements = reimbursements;
+    console.log(reimbursements);
+
+
+
 
     return (
         <Box
@@ -605,9 +284,7 @@ const ReimbursementManagement = () => {
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b" }}>
                                     User
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b" }}>
-                                    Paid To
-                                </TableCell>
+
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b" }}>
                                     Amount Allocated
                                 </TableCell>
@@ -620,119 +297,98 @@ const ReimbursementManagement = () => {
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b" }}>
                                     Date
                                 </TableCell>
+                                <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b" }}>
+                                    Description
+                                </TableCell>
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem", color: "#1e293b", textAlign: "center" }}>
                                     Status
                                 </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {allReimbursements.length > 0 ? (
-                                allReimbursements.map((item) => {
-                                    const userInfo = getUserInfo(item.userId || item.user?._id || item.user?.id);
-                                    const userStat = userStats[userInfo.id] || {
-                                        totalAllocated: 0,
-                                        totalExpenses: 0,
-                                        toBeReimbursed: 0
-                                    };
-
+                            {
+                                reimbursements?.map((item) => {
                                     return (
-                                        <TableRow
-                                            key={item.id || item._id}
-                                            hover
-                                            sx={{
-                                                transition: "all 0.2s",
-                                                "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.02)" },
-                                            }}
-                                        >
+                                        <TableRow key={item?._id}>
                                             <TableCell>
                                                 <Box display="flex" alignItems="center" gap={2}>
-                                                    <Avatar
-                                                        src={userInfo.avatar}
-                                                        alt={userInfo.name}
-                                                        sx={{ bgcolor: "secondary.main", width: 40, height: 40 }}
-                                                    >
-                                                        {userInfo.name?.charAt(0).toUpperCase()}
+                                                    <Avatar sx={{ bgcolor: "primary.main" }}>
+                                                        {item?.requestedBy?.name?.charAt(0).toUpperCase()}
                                                     </Avatar>
-                                                    <Box>
-                                                        <Typography fontWeight={500} sx={{ color: "#1e293b" }}>
-                                                            {userInfo.name}
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                                                            {userInfo.department}
-                                                        </Typography>
-                                                    </Box>
+                                                    <Typography fontWeight={500}>
+                                                        {item?.requestedBy?.name}
+                                                    </Typography>
                                                 </Box>
                                             </TableCell>
-                                            <TableCell sx={{ color: "#1e293b", fontWeight: 500 }}>
-                                                {item.title}
+                                            <TableCell>
+                                                <Typography fontWeight={500}>
+                                                    {item?.expense?.fromAllocation}
+                                                </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ fontWeight: "bold", color: "#1e293b" }}>
-                                                {formatCurrency(userStat.totalAllocated)}
+                                            <TableCell>
+                                                <Typography fontWeight={500}>
+                                                    {item?.expense?.amount}
+                                                </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ fontWeight: "bold", color: "#1e293b" }}>
-                                                {formatCurrency(userStat.totalExpenses)}
+                                            <TableCell>
+                                                <Typography fontWeight={500}>
+                                                    {item?.expense?.fromReimbursement}
+                                                </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ fontWeight: "bold", color: "#ef4444" }}>
-                                                {formatCurrency(userStat.toBeReimbursed)}
+                                            <TableCell>
+                                                {item?.createdAt
+                                                    ? new Date(item.createdAt).toLocaleString("en-US", {
+                                                        year: "numeric",
+                                                        month: "short",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                        hour12: true,
+                                                        timeZone: "Asia/Kolkata",
+                                                    })
+                                                    : "-"}
                                             </TableCell>
-                                            <TableCell sx={{ color: "#6b7280" }}>
-                                                {formatDate(item.date)}
+                                            <TableCell>
+                                                {item?.expense?.description}
                                             </TableCell>
                                             <TableCell align="center">
-                                                {item.isReimbursed ? (
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                                        <CheckCircle sx={{ color: "#10b981", fontSize: 20 }} />
-                                                        <Typography variant="body2" sx={{ color: "#10b981", fontWeight: 600 }}>
-                                                            Reimbursed
-                                                        </Typography>
-                                                    </Box>
-                                                ) : (
+                                                <Tooltip title={item?.isReimbursed ? "Reimbursed" : "Mark as reimbursed"}>
                                                     <IconButton
-                                                        onClick={() => handleMarkAsReimbursed(item.id || item._id)}
-                                                        color="primary"
-                                                        disabled={refreshing || item.status !== 'Approved'}
+                                                        color={item?.isReimbursed ? "success" : "default"}
+                                                        onClick={() => !item?.isReimbursed && handleMarkReimbursed(item._id)}
                                                         sx={{
+                                                            backgroundColor: item?.isReimbursed ? 'success.light' : 'transparent',
+                                                            border: item?.isReimbursed ? 'none' : '1px solid',
+                                                            borderColor: 'grey.300',
+                                                            borderRadius: 2,
+                                                            width: 40,
+                                                            height: 40,
                                                             '&:hover': {
-                                                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                                                            },
-                                                            '&:disabled': {
-                                                                opacity: 0.5
+                                                                backgroundColor: item?.isReimbursed ? 'success.main' : 'primary.main',
+                                                                color: 'white',
                                                             }
                                                         }}
                                                     >
-                                                        <CheckCircle />
+                                                        <DoneAll />
                                                     </IconButton>
-                                                )}
+                                                </Tooltip>
                                             </TableCell>
                                         </TableRow>
-                                    );
+                                    )
                                 })
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <Box sx={{ textAlign: 'center' }}>
-                                            <Typography variant="h6" color="text.secondary">
-                                                No reimbursement claims found
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                There are no reimbursement claims in the system.
-                                            </Typography>
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            )}
+                            }
                         </TableBody>
                     </Table>
                 </TableContainer>
 
                 {/* Pagination Info */}
-                {allReimbursements.length > 0 && (
+                {/* {allReimbursements.length > 0 && (
                     <Box sx={{ p: 3, borderTop: '1px solid rgba(0, 0, 0, 0.12)' }}>
                         <Typography variant="body2" color="text.secondary">
                             Showing 1–{allReimbursements.length} of {allReimbursements.length} entries
                         </Typography>
                     </Box>
-                )}
+                )} */}
             </Card>
         </Box>
     );

@@ -15,6 +15,7 @@ import { Budget } from 'src/models/budget.model';
 import { SearchExpensesDto } from './dtos/search-expense.dto';
 import { Department } from 'src/models/department.model';
 import { SubDepartment } from 'src/models/sub-department.model';
+import { Reimbursement } from 'src/models/reimbursements.model';
 
 
 @Injectable()
@@ -26,6 +27,7 @@ export class ExpensesService {
         @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
         @InjectModel(Department.name) private readonly departmentModel: Model<Department>,
         @InjectModel(SubDepartment.name) private readonly subDepartmentModel: Model<SubDepartment>,
+        @InjectModel(Reimbursement.name) private readonly reimbursementModel: Model<Reimbursement>,
         private readonly mediaService: ImagekitService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         // private readonly notificationService: NotificationsService
@@ -36,7 +38,6 @@ export class ExpensesService {
     private EXPENSE_BY_ID_KEY = (id: string) => `expenses:${id}`;
 
 
-
     async handleCreateExpense(
         data: CreateExpenseDto,
         userId: string,
@@ -44,37 +45,42 @@ export class ExpensesService {
     ) {
         const { amount, department, description, isReimbursed, subDepartment, paymentMode } = data;
 
-        // Fetch user with budget info
+        // Fetch user
         const user = await this.userModal
             .findById(userId)
             .select("name _id expenses spentAmount reimbursedAmount allocatedAmount budgetLeft");
         if (!user) throw new NotFoundException("User not found!!");
 
-        // Handle file upload
+        // File upload
         let proof: string | undefined;
         if (file) {
             const uploaded = await this.mediaService.uploadFile(file.buffer, file.originalname, "/expenses");
             proof = uploaded.url;
         }
 
-        // Determine allocation vs reimbursement
-        let fromAllocation = 0;
-        let fromReimbursement = 0;
-
-        // Find the current month and year
+        // Current month/year
         const now = new Date();
         const month = now.getMonth() + 1;
         const year = now.getFullYear();
 
-        // Find user's budget for this month/year
+        // Budget lookup
         const budget = await this.budgetModel.findOne({ user: userId, month, year });
-        if (!budget) throw new NotFoundException("Budget not found for this user and month");
 
-        if (amount <= budget.remainingAmount) {
-            fromAllocation = amount;
+        // Allocation / reimbursement split
+        let fromAllocation = 0;
+        let fromReimbursement = 0;
+
+        if (budget) {
+            if (amount <= budget.remainingAmount) {
+                fromAllocation = amount;
+            } else {
+                fromAllocation = Math.max(0, budget.remainingAmount);
+                fromReimbursement = amount - fromAllocation;
+            }
         } else {
-            fromAllocation = Math.max(0, budget.remainingAmount);
-            fromReimbursement = amount - fromAllocation;
+            // 🚨 No budget → whole amount goes to reimbursement
+            fromAllocation = 0;
+            fromReimbursement = amount;
         }
 
         // Validate department
@@ -88,7 +94,7 @@ export class ExpensesService {
             subDeptId = subDeptExists._id as Types.ObjectId;
         }
 
-        // Create new expense
+        // Create expense
         const newExpense = new this.expenseModal({
             amount,
             fromAllocation,
@@ -102,28 +108,41 @@ export class ExpensesService {
             year,
             month,
             paymentMode,
-            budget: budget._id, // link budget
+            budget: budget ? budget._id : null, // link only if exists
         });
 
         const expense = await newExpense.save();
 
-        // Update user's expenses & financials
+
+        let reimbursement: Reimbursement | null = null;
+        if (fromReimbursement > 0) {
+            reimbursement = await this.reimbursementModel.create({
+                expense: expense._id,
+                requestedBy: user._id,
+                amount: fromReimbursement,
+                isReimbursed: false,
+            });
+        }
+
+        // Update user financials
         await this.userModal.findByIdAndUpdate(userId, {
-            $push: { expenses: expense._id },
+            $push: { expenses: expense._id, reimbursements: reimbursement && reimbursement._id },
             $inc: {
                 spentAmount: amount,
                 reimbursedAmount: fromReimbursement,
-                budgetLeft: -amount,
+                budgetLeft: -fromAllocation,
             },
         });
 
-        // ✅ Update budget spentAmount
-        await this.budgetModel.findByIdAndUpdate(budget._id, {
-            $inc: {
-                spentAmount: amount,
-                remainingAmount: -amount,
-            },
-        });
+        // Update budget only if it exists
+        if (budget && fromAllocation > 0) {
+            await this.budgetModel.findByIdAndUpdate(budget._id, {
+                $inc: {
+                    spentAmount: fromAllocation,
+                    remainingAmount: -fromAllocation,
+                },
+            });
+        }
 
         // Clear caches
         await Promise.all([
@@ -138,10 +157,25 @@ export class ExpensesService {
             expense: {
                 ...expense.toObject(),
                 user: { _id: user._id, name: user.name },
-                budget: { _id: budget._id, allocatedAmount: budget.allocatedAmount, spentAmount: budget.spentAmount + amount, remainingAmount: budget.remainingAmount - amount },
+                budget: budget
+                    ? {
+                        _id: budget._id,
+                        allocatedAmount: budget.allocatedAmount,
+                        spentAmount: budget.spentAmount + fromAllocation,
+                        remainingAmount: budget.remainingAmount - fromAllocation,
+                    }
+                    : null,
+                reimbursement: reimbursement
+                    ? {
+                        _id: reimbursement._id,
+                        amount: reimbursement.amount,
+                        isReimbursed: reimbursement.isReimbursed,
+                    }
+                    : null,
             },
         };
     }
+
 
 
 
