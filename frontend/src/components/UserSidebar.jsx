@@ -45,7 +45,7 @@ const UserSidebar = ({
         { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
         { text: "Budgeting", icon: <PieChartIcon />, path: "/user/budgeting" },
         { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses" },
-        { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
+        // { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
     ];
 
     useEffect(() => {
@@ -323,10 +323,10 @@ const UserSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        {logoutLoader ? <Autorenew sx={{ animation: 'spin 1s linear infinite' }} /> : <LogoutIcon />}
+                        : <LogoutIcon />
                     </ListItemIcon>
                     <ListItemText
-                        primary={logoutLoader ? "Logout" : "Logout"}
+                        primary={"Logout"}
                         primaryTypographyProps={{
                             fontWeight: 600,
                             fontSize: isSmallMobile ? '0.85rem' : '0.95rem',

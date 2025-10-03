@@ -18,7 +18,6 @@ import {
     People as UsersIcon,
     Settings as SettingsIcon,
     Logout as LogoutIcon,
-    Autorenew,
     Assessment as ReportsIcon,
     MonetizationOn,
     AccountBalanceWallet,
@@ -48,8 +47,8 @@ const AdminSidebar = ({
         { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
         { text: "Budgeting", icon: <MonetizationOn />, path: "/admin/budget" },
         { text: "Expenses", icon: <ExpensesIcon />, path: "/admin/expenses" },
-        { text: "Reimbursement", icon: <AccountBalanceWallet />, path: "/admin/reimbursements" },
         { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
+        { text: "Reimbursement", icon: <AccountBalanceWallet />, path: "/admin/reimbursements" },
         { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
         { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" }
     ];
@@ -329,10 +328,10 @@ const AdminSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        {logoutLoader ? <Autorenew sx={{ animation: 'spin 1s linear infinite' }} /> : <LogoutIcon />}
+                        <LogoutIcon />
                     </ListItemIcon>
                     <ListItemText
-                        primary={logoutLoader ? "Logging out..." : "Logout"}
+                        primary={"Logout"}
                         primaryTypographyProps={{
                             fontWeight: 600,
                             fontSize: isSmallMobile ? '0.85rem' : '0.95rem',

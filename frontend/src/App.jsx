@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import UserLayout from "./layouts/UserLayout";
 import UserDashboard from "./pages/user/UserDashboard"
 import MyExpenses from "./pages/user/MyExpenses";
-import UserSettings from "./pages/user/UserSettings";
+// import UserSettings from "./pages/user/UserSettings";
 import Budgeting from "./pages/admin/Budgeting";
 import { useEffect } from "react";
 import { fetchAllUsers, fetchUser } from "./store/authSlice";
@@ -75,9 +75,9 @@ const App = () => {
         <Route path="add" element={
           isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
         } />
-        <Route path="settings" element={
+        {/* <Route path="settings" element={
           isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
-        } />
+        } /> */}
       </Route>
 
 
