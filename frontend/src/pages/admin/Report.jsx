@@ -272,7 +272,6 @@ const Reports = () => {
             margin: 0,
             width: '100%',
             boxSizing: 'border-box',
-            backgroundColor: '#f8fafc'
         },
         content: {
             display: 'flex',
@@ -696,28 +695,6 @@ const Reports = () => {
     return (
         <div style={styles.container} className={`${animationClass} responsive-container`}>
             <div style={styles.content}>
-                {/* Quick Stats Overview */}
-                <div style={styles.statsContainer}>
-                    <div style={styles.statCard}>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>Total Reports</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '8px 0' }}>{reports.length}</div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>All Time</div>
-                    </div>
-                    <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>Total Amount</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '8px 0' }}>
-                            ₹{reports.reduce((sum, report) => sum + report.totalAmount, 0).toLocaleString()}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Across all reports</div>
-                    </div>
-                    <div style={{ ...styles.statCard, background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
-                        <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>Reimbursement Reports</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', margin: '8px 0' }}>
-                            {reports.filter(r => r.type === 'reimbursement').length}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Specialized reports</div>
-                    </div>
-                </div>
 
                 {/* Report Generator Section */}
                 <div style={styles.card} className="hover-lift">
