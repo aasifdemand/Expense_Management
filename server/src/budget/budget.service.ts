@@ -40,8 +40,8 @@ export class BudgetService {
         });
 
         user.allocatedBudgets.push(budget._id as Types.ObjectId);
-        user.allocatedAmount += amount;
-        user.budgetLeft += amount
+        user.allocatedAmount += Number(amount);
+        user.budgetLeft += Number(amount)
         await user.save();
 
         const populatedBudget = await this.budgetModel

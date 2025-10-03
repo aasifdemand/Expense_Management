@@ -23,6 +23,7 @@ import {
     StyledFormControl,
 } from "../../../styles/budgeting.styles";
 import { useState } from "react";
+import { useSelector } from "react-redux";
 
 const BudgetTable = ({
     budgets,
@@ -37,6 +38,7 @@ const BudgetTable = ({
     showPagination = false,
 }) => {
 
+    const { role } = useSelector((state) => state?.auth)
     const [isOpen, setIsOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -123,13 +125,15 @@ const BudgetTable = ({
                     p: 3,
                 }}
             >
-                <StyledTextField
-                    placeholder="Search By Name..."
-                    size="medium"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    sx={{ flex: "1 1 250px", minWidth: "250px" }}
-                />
+                {
+                    role === "superadmin" && <StyledTextField
+                        placeholder="Search By Name..."
+                        size="medium"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        sx={{ flex: "1 1 250px", minWidth: "250px" }}
+                    />
+                }
 
                 {setLimit && showPagination && (
                     <StyledFormControl size="medium" sx={{ minWidth: "120px" }}>
