@@ -21,6 +21,11 @@ import { v4 as uuidv4 } from 'uuid';
 export class AuthService {
     constructor(@InjectModel(User.name) private readonly userModel: Model<User>) { }
 
+
+
+
+
+
     async auth(data: AuthDto, session: Record<string, any>, deviceName: string) {
         const user = await this.userModel.findOne({ name: data.name });
         if (!user) throw new UnauthorizedException('User not found');
@@ -28,59 +33,108 @@ export class AuthService {
         const passwordMatches = await argon2.verify(user.password, data.password);
         if (!passwordMatches) throw new UnauthorizedException('Invalid password');
 
-        const deviceId = uuidv4(); // generate new device ID
-        const existingSession = user.sessions.find(s => s.deviceId === deviceId);
+        let deviceId = session.deviceId;
+        let existingDevice = user.sessions?.find(s => s.deviceId === deviceId);
+
+        // If no deviceId in session, try to find by deviceName
+        if (!existingDevice && deviceName) {
+            existingDevice = user.sessions?.find(s => s.deviceName === deviceName);
+            if (existingDevice) {
+                deviceId = existingDevice.deviceId;
+            }
+        }
 
         let qrCodeDataUrl: string | null = null;
 
-        // Only generate QR if new device
-        if (!existingSession) {
-            const secret = speakeasy.generateSecret({
-                name: `ExpenseManagement (${user.name})`,
-            });
-            user.twoFactorSecret = secret.base32;
-            qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+        // CASE 1: EXISTING VERIFIED DEVICE
+        if (existingDevice && existingDevice.twoFactorVerified) {
+            // Device is already verified - no QR needed, just update last login
+            existingDevice.lastLogin = new Date();
+            await user.save();
+
+            session.deviceId = existingDevice.deviceId;
+            session.userId = user._id;
+            session.twoFactorSecret = user.twoFactorSecret;
+            session.twoFactorPending = false;
+            session.twoFactorVerified = true;
+            session.authenticated = true;
+            session.user = user;
+
+            await new Promise((resolve, reject) =>
+                session.save(err => (err ? reject(err) : resolve(true)))
+            );
+
+            return {
+                qr: null,
+                deviceId,
+                session: {
+                    role: user.role,
+                    twoFactorPending: false,
+                    twoFactorVerified: true,
+                    authenticated: true,
+                },
+            };
         }
 
-        // Save/update session in user document
-        const now = new Date();
-        user.sessions.push({
-            deviceId,
-            lastLogin: now,
-            deviceName,
-            twoFactorVerified: false,
-        });
+        // CASE 2: EXISTING BUT UNVERIFIED DEVICE OR NEW DEVICE
+        if (existingDevice && !existingDevice.twoFactorVerified) {
+            // Existing device but not verified - use existing secret, no QR
+            deviceId = existingDevice.deviceId;
+        } else {
+            // NEW DEVICE - generate new device ID
+            deviceId = uuidv4();
+
+            // Generate QR only if user doesn't have 2FA setup yet
+            if (!user.twoFactorSecret) {
+                const secret = speakeasy.generateSecret({
+                    name: `ExpenseManagement:${user.name}`,
+                    issuer: 'ExpenseManagement',
+                });
+                user.twoFactorSecret = secret.base32;
+                qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+            } else {
+                // User has 2FA setup - no QR for new devices after initial setup
+                qrCodeDataUrl = null;
+            }
+
+            // Add new device session
+            user.sessions.push({
+                deviceId,
+                lastLogin: new Date(),
+                deviceName,
+                twoFactorVerified: false,
+            });
+        }
+
         await user.save();
 
-        // save deviceId in session for later verification
+        // Set session for current login attempt
         session.deviceId = deviceId;
         session.userId = user._id;
         session.twoFactorSecret = user.twoFactorSecret;
         session.twoFactorPending = true;
         session.twoFactorVerified = false;
         session.authenticated = false;
+        session.user = user;
 
         await new Promise((resolve, reject) =>
             session.save(err => (err ? reject(err) : resolve(true)))
         );
 
         return {
-            qr: qrCodeDataUrl,
+            qr: qrCodeDataUrl, // QR only shown for first-time 2FA setup
             deviceId,
             session: {
-                role: user?.role,
-                twoFactorPending: session.twoFactorPending,
-                twoFactorVerified: session.twoFactorVerified,
-                authenticated: session.authenticated,
+                role: user.role,
+                twoFactorPending: true,
+                twoFactorVerified: false,
+                authenticated: false,
             },
         };
     }
 
 
-
-
     async verifyTwoFactorCode(token: string, session: Record<string, any>) {
-        // --- Validate session integrity ---
         if (!session?.userId || !session?.twoFactorSecret) {
             throw new UnauthorizedException('Session expired or invalid');
         }
@@ -88,36 +142,35 @@ export class AuthService {
         const user = await this.userModel.findById(session.userId);
         if (!user) throw new UnauthorizedException('User not found');
 
-        if (!user.twoFactorSecret) {
-            throw new UnauthorizedException('2FA not initialized for this user');
+        if (!token || typeof token !== 'string' || token.trim().length !== 6) {
+            throw new BadRequestException('Invalid OTP - must be 6 digits');
         }
 
-        // --- Validate token type ---
-        if (!token || typeof token !== 'string' || token.trim().length < 6) {
-            throw new BadRequestException('Invalid or missing OTP');
-        }
 
-        // --- Verify token using speakeasy ---
+        const cleanToken = token.trim().replace(/\s/g, '');
+
+
         const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
+            secret: session.twoFactorSecret,
             encoding: 'base32',
-            token,
-            window: 1, // allows ±30s drift
+            token: cleanToken,
+            window: 1,
         });
 
         if (!verified) {
             throw new UnauthorizedException('Incorrect or expired OTP');
         }
 
-        // --- Mark device session as verified ---
+
         const deviceId = session.deviceId;
         if (deviceId) {
             const deviceSession = user.sessions?.find(s => s.deviceId === deviceId);
+
             if (deviceSession) {
                 deviceSession.twoFactorVerified = true;
                 deviceSession.lastLogin = new Date();
             } else {
-                // If device session not found, register it
+                // Create new device session if somehow missing
                 user.sessions.push({
                     deviceId,
                     deviceName: 'Unknown',
@@ -125,28 +178,34 @@ export class AuthService {
                     lastLogin: new Date(),
                 });
             }
+
+            // Ensure user's twoFactorSecret matches what we have in session
+            if (!user.twoFactorSecret) {
+                user.twoFactorSecret = session.twoFactorSecret;
+            }
+
             await user.save();
         }
 
-        // --- Update session object ---
+        // ✅ Update session
         session.twoFactorPending = false;
         session.twoFactorVerified = true;
         session.authenticated = true;
 
-        await new Promise((resolve, reject) => session.save(err => (err ? reject(err) : resolve(true))));
+        await new Promise((resolve, reject) =>
+            session.save(err => (err ? reject(err) : resolve(true)))
+        );
 
         return {
             message: '2FA verification successful',
             verified: true,
             session: {
-                twoFactorPending: session.twoFactorPending,
-                twoFactorVerified: session.twoFactorVerified,
-                authenticated: session.authenticated,
+                twoFactorPending: false,
+                twoFactorVerified: true,
+                authenticated: true,
             },
         };
     }
-
-
 
 
     async getSessionData(session: Record<string, any>) {
@@ -189,13 +248,6 @@ export class AuthService {
             authenticated: session.authenticated,
         };
     }
-
-
-
-
-
-
-
 
 
     clearSession(session: Record<string, any>) {
@@ -260,11 +312,13 @@ export class AuthService {
         };
     }
 
+
     async resetUserPassword(userId: string, password: any) {
         if (!Types.ObjectId.isValid(userId)) {
             throw new BadRequestException('Invalid user ID');
         }
 
+        console.log("userId: ", userId);
 
         console.log("password: ", password);
 
