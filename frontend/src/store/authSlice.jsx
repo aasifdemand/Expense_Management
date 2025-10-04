@@ -67,6 +67,65 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
+// Create new user
+export const createUser = createAsyncThunk(
+  "auth/create-user",
+  async (userData, { getState, rejectWithValue }) => {
+    try {
+      const csrf = getState().auth.csrf;
+      const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/users/create`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrf,
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create user");
+      }
+
+      const data = await response.json();
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Reset user password
+export const resetUserPassword = createAsyncThunk(
+  "auth/reset-user-password",
+  async ({ userId, password }, { getState, rejectWithValue }) => {
+    try {
+      const csrf = getState().auth.csrf;
+      const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/reset/${userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrf,
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reset password");
+      }
+
+      const data = await response.json();
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
 // Fetch single user (session)
 export const fetchUser = createAsyncThunk(
   "auth/fetch-user",
@@ -184,6 +243,35 @@ const authSlice = createSlice({
         state.loading = false
         state.error = action.payload
       })
+    builder
+      .addCase(createUser.pending, (state) => {
+        state.userLoading = true;
+        state.userError = null;
+      })
+      .addCase(createUser.fulfilled, (state, action) => {
+        state.userLoading = false;
+        state.users.push(action.payload);
+        persistToLocalStorage(state);
+      })
+      .addCase(createUser.rejected, (state, action) => {
+        state.userLoading = false;
+        state.userError = action.payload;
+      })
+      .addCase(resetUserPassword.pending, (state) => {
+        state.userLoading = true;
+        state.userError = null;
+      })
+      .addCase(resetUserPassword.fulfilled, (state, action) => {
+        state.userLoading = false;
+        // Optionally update the user in state if needed
+        const idx = state.users.findIndex(u => u.id === action.payload.id);
+        if (idx !== -1) state.users[idx] = action.payload;
+        persistToLocalStorage(state);
+      })
+      .addCase(resetUserPassword.rejected, (state, action) => {
+        state.userLoading = false;
+        state.userError = action.payload;
+      });
   },
 });
 

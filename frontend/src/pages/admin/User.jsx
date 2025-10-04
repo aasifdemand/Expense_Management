@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { createUser, fetchAllUsers } from '../../store/authSlice';
 
 const UserDashboard = () => {
     // State management
-    const [users, setUsers] = useState([]);
-    const [filteredUsers, setFilteredUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch()
+    const { users } = useSelector((state) => state.auth)
     const [newUser, setNewUser] = useState({
         name: '',
-        email: '',
         password: '',
         department: ''
     });
-    const [searchTerm, setSearchTerm] = useState('');
+
     const [hoverStates, setHoverStates] = useState({
         addUser: false,
         searchFocus: false,
@@ -26,54 +26,14 @@ const UserDashboard = () => {
         confirmPassword: ''
     });
 
-    // Sample data initialization
-    useEffect(() => {
-        // Simulate API call delay
-        setTimeout(() => {
-            const sampleUsers = [
-                { id: 1, name: 'John Smith', email: 'john@company.com', department: 'IT', status: 'active', joinDate: '2023-01-15' },
-                { id: 2, name: 'Sarah Johnson', email: 'sarah@company.com', department: 'Marketing', status: 'active', joinDate: '2023-02-20' },
-                { id: 3, name: 'Michael Brown', email: 'michael@company.com', department: 'Sales', status: 'active', joinDate: '2022-11-05' },
-                { id: 4, name: 'Emily Davis', email: 'emily@company.com', department: 'HR', status: 'active', joinDate: '2023-03-10' },
-                { id: 5, name: 'Robert Wilson', email: 'robert@company.com', department: 'Finance', status: 'active', joinDate: '2022-09-18' }
-            ];
-
-            setUsers(sampleUsers);
-            setFilteredUsers(sampleUsers);
-            setLoading(false);
-        }, 1000);
-    }, []);
-
-    // Filter users based on search term
-    useEffect(() => {
-        if (searchTerm) {
-            const filtered = users.filter(user =>
-                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.department.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            setFilteredUsers(filtered);
-        } else {
-            setFilteredUsers(users);
-        }
-    }, [searchTerm, users]);
-
     // Handle adding a new user
-    const handleAddUser = (e) => {
+    const handleAddUser = async (e) => {
         e.preventDefault();
-        const newUserObj = {
-            id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-            ...newUser,
-            status: 'active',
-            joinDate: new Date().toISOString().split('T')[0]
-        };
+        const res = await dispatch(createUser(newUser))
 
-        const updatedUsers = [...users, newUserObj];
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        setNewUser({ name: '', email: '', password: '', department: '' });
-
-        // Show success message
+        if (createUser.fulfilled.match(res)) {
+            dispatch(fetchAllUsers())
+        }
         alert('User added successfully!');
     };
 
@@ -84,25 +44,25 @@ const UserDashboard = () => {
     };
 
     // Handle reset password modal input changes
-    const handleResetPasswordInputChange = (e) => {
-        const { name, value } = e.target;
-        setResetPasswordModal(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+    // const handleResetPasswordInputChange = (e) => {
+    //     const { name, value } = e.target;
+    //     setResetPasswordModal(prev => ({
+    //         ...prev,
+    //         [name]: value
+    //     }));
+    // };
 
-    // Open reset password modal
-    const openResetPasswordModal = (user) => {
-        setResetPasswordModal({
-            isOpen: true,
-            userId: user.id,
-            userName: user.name,
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: ''
-        });
-    };
+    // // Open reset password modal
+    // const openResetPasswordModal = (user) => {
+    //     setResetPasswordModal({
+    //         isOpen: true,
+    //         userId: user._id, // Fixed: using _id instead of id
+    //         userName: user.name,
+    //         currentPassword: '',
+    //         newPassword: '',
+    //         confirmPassword: ''
+    //     });
+    // };
 
     // Close reset password modal
     const closeResetPasswordModal = () => {
@@ -116,29 +76,35 @@ const UserDashboard = () => {
         });
     };
 
-    // Handle reset password submission
-    const handleResetPassword = (e) => {
-        e.preventDefault();
+    // Handle reset password submission - FIXED: Added preventDefault
+    // const handleResetPassword = async (e) => {
+    //     e.preventDefault(); // Prevent form submission and page reload
 
-        // Validate passwords
-        if (resetPasswordModal.newPassword !== resetPasswordModal.confirmPassword) {
-            alert('New password and confirm password do not match!');
-            return;
-        }
+    //     // Validate passwords
+    //     if (resetPasswordModal.newPassword !== resetPasswordModal.confirmPassword) {
+    //         alert('New password and confirm password do not match!');
+    //         return;
+    //     }
 
-        if (resetPasswordModal.newPassword.length < 6) {
-            alert('Password must be at least 6 characters long!');
-            return;
-        }
+    //     if (resetPasswordModal.newPassword.length < 6) {
+    //         alert('Password must be at least 6 characters long!');
+    //         return;
+    //     }
 
-        // Simulate password reset
-        console.log('Password reset for user:', resetPasswordModal.userId);
-        console.log('New password:', resetPasswordModal.newPassword);
 
-        // Show success message
-        alert('Password reset successfully!');
-        closeResetPasswordModal();
-    };
+    //     const res = await dispatch(resetUserPassword({
+    //         userId: resetPasswordModal.userId,
+    //         password: resetPasswordModal.newPassword
+    //     }))
+
+    //     if (resetUserPassword.fulfilled.match(res)) {
+    //         closeResetPasswordModal();
+    //         alert("Password has been updated successfully!");
+    //     } else {
+    //         alert("Failed to update password. Please try again.");
+    //     }
+
+    // };
 
     // Handle hover effects
     const handleMouseEnter = (element, id) => {
@@ -155,7 +121,7 @@ const UserDashboard = () => {
         }));
     };
 
-    // CSS styles
+    // CSS styles (keep your existing styles)
     const styles = {
         dashboard: {
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -496,7 +462,6 @@ const UserDashboard = () => {
                 {/* Add New User Section */}
                 <section style={styles.addUserSection} className="fade-in">
                     <h2 style={styles.sectionTitle}>
-                        <span>👤</span>
                         Add New User
                     </h2>
 
@@ -517,24 +482,6 @@ const UserDashboard = () => {
                                     onBlur={() => handleMouseLeave('searchFocus')}
                                     required
                                     placeholder="Enter full name"
-                                />
-                            </div>
-
-                            <div style={styles.formGroup}>
-                                <label style={styles.label}>
-                                    <span>📧</span>
-                                    Email Address
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    style={{ ...styles.input, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
-                                    value={newUser.email}
-                                    onChange={handleInputChange}
-                                    onFocus={() => handleMouseEnter('searchFocus')}
-                                    onBlur={() => handleMouseLeave('searchFocus')}
-                                    required
-                                    placeholder="Enter email address"
                                 />
                             </div>
 
@@ -593,30 +540,8 @@ const UserDashboard = () => {
 
                 {/* Users List Section */}
                 <section style={styles.usersSection} className="fade-in">
-                    <div style={styles.searchHeader}>
-                        <h2 style={styles.searchTitle}>
-                            <span>👥</span>
-                            User Management
-                        </h2>
-
-                        <div style={styles.searchContainer}>
-                            <input
-                                type="text"
-                                placeholder="🔍 Search users by name, email, or department..."
-                                style={{ ...styles.searchBox, ...(hoverStates.searchFocus ? styles.inputFocus : {}) }}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                onFocus={() => handleMouseEnter('searchFocus')}
-                                onBlur={() => handleMouseLeave('searchFocus')}
-                            />
-                            <div style={styles.userCount}>
-                                {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
-                            </div>
-                        </div>
-                    </div>
-
                     <div style={styles.tableContainer}>
-                        {filteredUsers.length === 0 ? (
+                        {users?.length === 0 ? (
                             <div style={styles.emptyState}>
                                 <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔍</div>
                                 <h3 style={{ color: '#475569', marginBottom: '10px' }}>No users found</h3>
@@ -629,53 +554,46 @@ const UserDashboard = () => {
                                         <th style={styles.tableHeader}>User Information</th>
                                         <th style={styles.tableHeader}>Contact & Department</th>
                                         <th style={styles.tableHeader}>Status</th>
-                                        <th style={styles.tableHeader}>Actions</th>
+                                        {/* <th style={styles.tableHeader}>Actions</th> */}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map(user => (
+                                    {users?.map(user => (
                                         <tr
-                                            key={user.id}
-                                            style={{ ...styles.tableRow, ...(hoverStates.rows[user.id] ? styles.tableRowHover : {}) }}
-                                            onMouseEnter={() => handleMouseEnter('rows', user.id)}
-                                            onMouseLeave={() => handleMouseLeave('rows', user.id)}
+                                            key={user?._id}
+                                            onMouseEnter={() => handleMouseEnter('rows', user?._id)}
+                                            onMouseLeave={() => handleMouseLeave('rows', user?._id)}
                                         >
                                             <td style={styles.tableCell}>
                                                 <div style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.05rem' }}>
-                                                    {user.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-                                                    Joined: {user.joinDate}
+                                                    {user?.name}
                                                 </div>
                                             </td>
                                             <td style={styles.tableCell}>
                                                 <div style={{ color: '#3b82f6', fontWeight: '600', marginBottom: '5px' }}>
-                                                    {user.email}
+                                                    {user?.email}
                                                 </div>
                                                 <div style={{ fontSize: '0.9rem', color: '#475569', fontWeight: '500' }}>
-                                                    {user.department}
+                                                    {user?.department}
                                                 </div>
                                             </td>
                                             <td style={styles.tableCell}>
-                                                <span style={{
-                                                    ...styles.statusBadge,
-                                                    ...styles.statusActive
-                                                }}>
+                                                <span style={{ ...styles.statusBadge, ...styles.statusActive }}>
                                                     Active
                                                 </span>
                                             </td>
-                                            <td style={styles.tableCell}>
+                                            {/* <td style={styles.tableCell}>
                                                 <button
                                                     style={{
                                                         ...styles.resetPasswordButton,
-                                                        ...(hoverStates.rows[user.id] ? styles.resetPasswordButtonHover : {})
+                                                        ...(hoverStates.rows[user?._id] ? styles.resetPasswordButtonHover : {})
                                                     }}
                                                     onClick={() => openResetPasswordModal(user)}
                                                 >
                                                     <span>🔄</span>
                                                     Reset Password
                                                 </button>
-                                            </td>
+                                            </td> */}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -713,7 +631,8 @@ const UserDashboard = () => {
                             </div>
                         </div>
 
-                        <form onSubmit={handleResetPassword} style={styles.modalForm}>
+                        {/* FIXED: Added preventDefault to form submission */}
+                        {/* <form onSubmit={handleResetPassword} style={styles.modalForm}>
                             <div style={styles.formGroup}>
                                 <label style={styles.label}>
                                     <span>🔑</span>
@@ -785,7 +704,7 @@ const UserDashboard = () => {
                                     Reset Password
                                 </button>
                             </div>
-                        </form>
+                        </form> */}
                     </div>
                 </div>
             )}

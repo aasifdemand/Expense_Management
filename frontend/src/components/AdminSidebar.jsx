@@ -47,9 +47,10 @@ const AdminSidebar = ({
         { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
         { text: "Budgeting", icon: <MonetizationOn />, path: "/admin/budget" },
         { text: "Expenses", icon: <ExpensesIcon />, path: "/admin/expenses" },
-        { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
+
         { text: "Reimbursement", icon: <AccountBalanceWallet />, path: "/admin/reimbursements" },
         { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
+        { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
         { text: "Settings", icon: <SettingsIcon />, path: "/admin/settings" }
     ];
 

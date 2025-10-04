@@ -25,6 +25,9 @@ export class User extends Document {
   @Prop({ default: "" })
   twoFactorSecret?: string;
 
+  @Prop({ default: "" })
+  department?: string
+
   @Prop({ type: [{ type: Types.ObjectId, ref: "Expense" }] })
   expenses?: Types.ObjectId[];
 
@@ -49,6 +52,25 @@ export class User extends Document {
 
   @Prop({ default: 0 })
   budgetLeft: 0
+
+  @Prop({
+    type: [
+      {
+        deviceId: String,
+        lastLogin: Date,
+        deviceName: String,
+        twoFactorVerified: { type: Boolean, default: false },
+      },
+    ],
+    default: [],
+  })
+  sessions: {
+    deviceId: string;
+    lastLogin: Date;
+    deviceName?: string;
+    twoFactorVerified: boolean;
+  }[];
+
 }
 
 

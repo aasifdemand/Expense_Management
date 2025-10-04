@@ -129,6 +129,9 @@ const Login = () => {
 
         setIsLoading(true);
         try {
+
+            const deviceName = navigator.userAgent.split(' ')[0];
+
             const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/login`, {
                 method: "POST",
                 credentials: "include",
@@ -136,6 +139,7 @@ const Login = () => {
                 body: JSON.stringify({
                     name: formData?.name,
                     password: formData?.password,
+                    deviceName
                 }),
             });
 
