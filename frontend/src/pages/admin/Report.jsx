@@ -633,7 +633,7 @@ const Reports = () => {
         styleSheet.innerText = animationStyles;
         document.head.appendChild(styleSheet);
         return () => document.head.removeChild(styleSheet);
-    }, []);
+    }, [animationStyles]);
 
     return (
         <div style={styles.container} className={`${animationClass} responsive-container`}>

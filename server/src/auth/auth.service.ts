@@ -68,6 +68,7 @@ export class AuthService {
             qr: qrCodeDataUrl,
             deviceId,
             session: {
+                role: user?.role,
                 twoFactorPending: session.twoFactorPending,
                 twoFactorVerified: session.twoFactorVerified,
                 authenticated: session.authenticated,
@@ -149,7 +150,7 @@ export class AuthService {
 
 
     async getSessionData(session: Record<string, any>) {
-        if (!session || !session.user) {
+        if (!session) {
             throw new NotFoundException('Session not found or has expired');
         }
 
