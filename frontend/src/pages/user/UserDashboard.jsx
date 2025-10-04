@@ -192,6 +192,9 @@ const Dashboard = () => {
   } = useExpenses();
 
 
+  console.log("AllBudgets: ", allBudgets);
+
+
 
 
   // Budget Stats Calculations

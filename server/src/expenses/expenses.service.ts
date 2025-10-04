@@ -63,24 +63,55 @@ export class ExpensesService {
         const month = now.getMonth() + 1;
         const year = now.getFullYear();
 
-        // Budget lookup
-        const budget = await this.budgetModel.findOne({ user: userId, month, year });
+        // Get ALL budgets for this user in current month/year
+        const budgets = await this.budgetModel.find({ user: userId, month, year }).sort({ createdAt: 1 });
+
+        // Calculate total available budget and track which budgets to update
+        let totalRemainingAmount = 0;
+        const budgetsToUpdate: Array<{ budgetId: Types.ObjectId; remainingAmount: number; spentAmount: number }> = [];
+
+        budgets.forEach(budget => {
+            totalRemainingAmount += budget.remainingAmount;
+            budgetsToUpdate.push({
+                budgetId: budget._id as Types.ObjectId,
+                remainingAmount: budget.remainingAmount,
+                spentAmount: budget.spentAmount
+            });
+        });
 
         // Allocation / reimbursement split
         let fromAllocation = 0;
         let fromReimbursement = 0;
 
-        if (budget) {
-            if (amount <= budget.remainingAmount) {
+        if (totalRemainingAmount > 0) {
+            if (amount <= totalRemainingAmount) {
                 fromAllocation = amount;
+                fromReimbursement = 0;
             } else {
-                fromAllocation = Math.max(0, budget.remainingAmount);
-                fromReimbursement = amount - fromAllocation;
+                fromAllocation = totalRemainingAmount;
+                fromReimbursement = amount - totalRemainingAmount;
             }
         } else {
-            // 🚨 No budget → whole amount goes to reimbursement
+            // No budget available → whole amount goes to reimbursement
             fromAllocation = 0;
             fromReimbursement = amount;
+        }
+
+        // Distribute the allocation across multiple budgets
+        let remainingAllocation = fromAllocation;
+        const budgetUpdates: Array<{ budgetId: Types.ObjectId; spentIncrease: number }> = [];
+
+        for (const budget of budgetsToUpdate) {
+            if (remainingAllocation <= 0) break;
+
+            const allocationFromThisBudget = Math.min(remainingAllocation, budget.remainingAmount);
+            if (allocationFromThisBudget > 0) {
+                budgetUpdates.push({
+                    budgetId: budget.budgetId,
+                    spentIncrease: allocationFromThisBudget
+                });
+                remainingAllocation -= allocationFromThisBudget;
+            }
         }
 
         // Validate department
@@ -108,11 +139,10 @@ export class ExpensesService {
             year,
             month,
             paymentMode,
-            budget: budget ? budget._id : null, // link only if exists
+            budgets: budgets.map(b => b._id), // link to all budgets
         });
 
         const expense = await newExpense.save();
-
 
         let reimbursement: Reimbursement | null = null;
         if (fromReimbursement > 0) {
@@ -126,7 +156,10 @@ export class ExpensesService {
 
         // Update user financials
         await this.userModal.findByIdAndUpdate(userId, {
-            $push: { expenses: expense._id, reimbursements: reimbursement && reimbursement._id },
+            $push: {
+                expenses: expense._id,
+                ...(reimbursement && { reimbursements: reimbursement._id })
+            },
             $inc: {
                 spentAmount: amount,
                 reimbursedAmount: fromReimbursement,
@@ -134,14 +167,20 @@ export class ExpensesService {
             },
         });
 
-        // Update budget only if it exists
-        if (budget && fromAllocation > 0) {
-            await this.budgetModel.findByIdAndUpdate(budget._id, {
-                $inc: {
-                    spentAmount: fromAllocation,
-                    remainingAmount: -fromAllocation,
+        // Update all affected budgets
+        if (budgetUpdates.length > 0) {
+            const bulkOps = budgetUpdates.map(update => ({
+                updateOne: {
+                    filter: { _id: update.budgetId },
+                    update: {
+                        $inc: {
+                            spentAmount: update.spentIncrease,
+                            remainingAmount: -update.spentIncrease,
+                        },
+                    },
                 },
-            });
+            }));
+            await this.budgetModel.bulkWrite(bulkOps);
         }
 
         // Clear caches
@@ -157,14 +196,15 @@ export class ExpensesService {
             expense: {
                 ...expense.toObject(),
                 user: { _id: user._id, name: user.name },
-                budget: budget
-                    ? {
+                budgets: budgets.map(budget => {
+                    const update = budgetUpdates.find(u => u.budgetId.equals(budget._id as Types.ObjectId));
+                    return {
                         _id: budget._id,
                         allocatedAmount: budget.allocatedAmount,
-                        spentAmount: budget.spentAmount + fromAllocation,
-                        remainingAmount: budget.remainingAmount - fromAllocation,
-                    }
-                    : null,
+                        spentAmount: budget.spentAmount + (update?.spentIncrease || 0),
+                        remainingAmount: budget.remainingAmount - (update?.spentIncrease || 0),
+                    };
+                }),
                 reimbursement: reimbursement
                     ? {
                         _id: reimbursement._id,
@@ -175,7 +215,6 @@ export class ExpensesService {
             },
         };
     }
-
 
 
 

@@ -5,7 +5,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { Budget } from 'src/models/budget.model';
-import { User } from 'src/models/user.model';
+import { User, UserRole } from 'src/models/user.model';
 import { AllocateBudgetDto, UpdateAllocatedBudgetDto } from './dto/allocate-budget.dto';
 import { SearchBudgetAllocationsDto } from './dto/search-budgets.dto';
 import type { Cache } from 'cache-manager';
@@ -60,22 +60,26 @@ export class BudgetService {
     }
 
 
-    async fetchAllocatedBudgets(page = 1, limit = 20, session: Record<string, any>) {
+    async fetchAllocatedBudgets(
+        page = 1,
+        limit = 20,
+        userId?: string,
+    ) {
         const safePage = Math.max(page, 1);
         const safeLimit = Math.max(limit, 1);
         const skip = (safePage - 1) * safeLimit;
-        console.log("session in allocated budgets fetch: ", session);
 
-
-        const { user } = session;
+        const user = userId ? await this.userModel.findById(userId) : null;
 
         const query: any = {};
-        if (user?.role !== "superadmin") {
-            query.user = user?.id;
+
+        if (user?.role === UserRole.USER) {
+            query.user = user._id;
         }
 
-        const cacheKeyPage = `budgets:${user?.role}:${user?.id}:page:${safePage}:${safeLimit}`;
-        const cacheKeyAll = `budgets:${user?.role}:${user?.id}:all`;
+
+        const cacheKeyPage = `budgets:${user?.role || "superadmin"}:${userId || "all"}:page:${safePage}:${safeLimit}`;
+        const cacheKeyAll = `budgets:${user?.role || "superadmin"}:${userId || "all"}:all`;
 
         // Paginated budgets
         let budgets = await this.cacheManager.get(cacheKeyPage);
@@ -86,16 +90,15 @@ export class BudgetService {
                 .skip(skip)
                 .limit(safeLimit)
                 .populate({ path: "user", select: "name _id" })
-
                 .lean();
 
             await this.cacheManager.set(cacheKeyPage, budgets, 3000);
         }
 
-        // Count total (based on query)
+
         const total = await this.budgetModel.countDocuments(query);
 
-        // All budgets (with same filtering)
+
         let allBudgets = await this.cacheManager.get(cacheKeyAll);
         if (!allBudgets) {
             allBudgets = await this.budgetModel
@@ -118,6 +121,7 @@ export class BudgetService {
             },
         };
     }
+
 
 
 

@@ -26,20 +26,26 @@ export class BudgetController {
   @UseGuards(CsrfGuard)
   @UsePipes(new ValidationPipe({ transform: true, forbidNonWhitelisted: true, whitelist: true }))
   async getExpenses(
-    @Query("page") skip = "1",
+    @Query("page") page = "1",
     @Query("limit") limit = "20",
     @Session() session: Record<string, any>,
+    @Query("userId") userId?: string, // userId from query params
+
   ) {
     console.log("Session in get all budget allocations route: ", session);
+
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
-      throw new UnauthorizedException("Unauthorized, Please verify Your identity first")
+      throw new UnauthorizedException("Unauthorized, Please verify your identity first");
     }
 
+    return this.budgetService.fetchAllocatedBudgets(
+      Number(page),
+      Number(limit),
+      userId,
 
-
-
-    return this.budgetService.fetchAllocatedBudgets(Number(skip), Number(limit), session);
+    );
   }
+
 
   @Get("search")
   @UseGuards(CsrfGuard)

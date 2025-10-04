@@ -47,6 +47,8 @@ export const useBudgeting = () => {
   }, [search]);
 
 
+  const { user } = useSelector((state) => state?.auth)
+
   useEffect(() => {
     const hasFilters =
       Boolean(filterMonth) || Boolean(filterYear) || debouncedSearch?.trim();
@@ -57,20 +59,30 @@ export const useBudgeting = () => {
           userName: debouncedSearch || undefined,
           month: filterMonth || undefined,
           year: filterYear || undefined,
-
           page,
           limit,
         })
       );
     } else {
-      dispatch(
-        fetchBudgets({
-          page,
-          limit,
-        })
-      );
+      if (user?.role === "superadmin") {
+        dispatch(
+          fetchBudgets({
+            page,
+            limit,
+          })
+        );
+      } else {
+        dispatch(
+          fetchBudgets({
+            page,
+            limit,
+            userId: user?._id,
+          })
+        );
+      }
     }
-  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear,]);
+  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear, user]);
+
 
 
   const handleOpen = (row) => {
