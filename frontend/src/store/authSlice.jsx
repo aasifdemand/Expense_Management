@@ -261,11 +261,10 @@ const authSlice = createSlice({
         state.userLoading = true;
         state.userError = null;
       })
-      .addCase(resetUserPassword.fulfilled, (state, action) => {
+      .addCase(resetUserPassword.fulfilled, (state) => {
         state.userLoading = false;
-        // Optionally update the user in state if needed
-        const idx = state.users.findIndex(u => u.id === action.payload.id);
-        if (idx !== -1) state.users[idx] = action.payload;
+        state.userError = null;
+
         persistToLocalStorage(state);
       })
       .addCase(resetUserPassword.rejected, (state, action) => {

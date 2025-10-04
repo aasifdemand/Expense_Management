@@ -40,17 +40,16 @@ export const allocateBudget = createAsyncThunk(
 export const fetchBudgets = createAsyncThunk(
   "budget/fetchAll",
   async (
-    { page = 1, limit = 10, month = "", year = "", all = false },
+    { page = 1, limit = 10, month = "", year = "" },
     { getState, rejectWithValue }
   ) => {
     try {
       const csrf = getState().auth.csrf;
       const query = new URLSearchParams();
-      if (all) query.append("all", "true");
-      else {
-        query.append("page", String(page));
-        query.append("limit", String(limit));
-      }
+
+      query.append("page", String(page));
+      query.append("limit", String(limit));
+
       if (month) query.append("month", String(month));
       if (year) query.append("year", String(year));
 
