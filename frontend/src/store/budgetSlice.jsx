@@ -36,7 +36,7 @@ export const allocateBudget = createAsyncThunk(
   }
 );
 
-// --- Fetch Budgets ---
+// --- Fetch Budgets (All budgets with optional userId filter) ---
 export const fetchBudgets = createAsyncThunk(
   "budget/fetchAll",
   async (
@@ -47,7 +47,7 @@ export const fetchBudgets = createAsyncThunk(
       const csrf = getState().auth.csrf;
       const query = new URLSearchParams();
 
-      if (userId) query.append("user", String(userId));
+      if (userId) query.append("userId", String(userId));
       query.append("page", String(page));
       query.append("limit", String(limit));
 
@@ -78,6 +78,44 @@ export const fetchBudgets = createAsyncThunk(
   }
 );
 
+// --- NEW: Fetch User Budgets (Specific user only) ---
+export const fetchUserBudgets = createAsyncThunk(
+  "budget/fetchUserBudgets",
+  async (
+    { userId, page = 1, limit = 10 },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const csrf = getState().auth.csrf;
+      const query = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASEURL}/budget/user/${userId}?${query.toString()}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch user budgets");
+
+      const data = await response.json();
+
+      return {
+        budgets: data?.data || [],
+        allBudgets: data?.allBudgets || [],
+        meta: data?.meta || { total: 0, page, limit },
+        userId, // Include userId in response for tracking
+      };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // --- Search Budgets ---
 export const searchBudgets = createAsyncThunk(
@@ -166,7 +204,14 @@ export const updateBudget = createAsyncThunk(
 const budgetSlice = createSlice({
   name: "budget",
   initialState,
-  reducers: {},
+  reducers: {
+    // Optional: Add a reducer to clear user-specific data when needed
+    clearUserBudgets: (state) => {
+      state.budgets = [];
+      state.allBudgets = [];
+      state.meta = { total: 0, page: 1, limit: 20 };
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(allocateBudget.pending, (state) => { state.loading = true; state.error = null; })
@@ -187,6 +232,18 @@ const budgetSlice = createSlice({
       })
       .addCase(fetchBudgets.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
 
+      // NEW: User budgets cases
+      .addCase(fetchUserBudgets.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchUserBudgets.fulfilled, (state, action) => {
+        state.loading = false;
+        state.budgets = action.payload.budgets;
+        state.allBudgets = action.payload.allBudgets; // ✅ store allBudgets
+        state.meta = action.payload.meta;
+        // Optional: Store the userId we fetched for
+        state.meta.userId = action.payload.userId;
+      })
+      .addCase(fetchUserBudgets.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+
       .addCase(updateBudget.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(updateBudget.fulfilled, (state, action) => { state.loading = false; state.budget = action.payload; })
       .addCase(updateBudget.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
@@ -202,4 +259,5 @@ const budgetSlice = createSlice({
   },
 });
 
+export const { clearUserBudgets } = budgetSlice.actions;
 export default budgetSlice.reducer;

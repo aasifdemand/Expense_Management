@@ -1,54 +1,52 @@
 import {
-    IsString,
-    IsNumber,
-    IsBoolean,
-    IsOptional,
-    IsMongoId,
-} from "class-validator";
-import { PartialType } from "@nestjs/mapped-types";
-import { Type } from "class-transformer";
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  IsMongoId,
+} from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
+import { Type } from 'class-transformer';
 
 export class CreateExpenseDto {
+  @IsString()
+  @IsOptional()
+  description?: string;
 
+  @Type(() => Number)
+  @IsNumber()
+  amount: number;
 
-    @IsString()
-    @IsOptional()
-    description?: string;
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  reimbursedamount?: number;
 
-    @Type(() => Number)
-    @IsNumber()
-    amount: number;
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  allocatedAmount?: number;
 
-    @Type(() => Number)
-    @IsNumber()
-    @IsOptional()
-    reimbursedamount?: number;
+  @IsMongoId()
+  department: string;
 
-    @Type(() => Number)
-    @IsNumber()
-    @IsOptional()
-    allocatedAmount?: number;
+  @IsMongoId()
+  @IsOptional()
+  subDepartment?: string;
 
-    @IsMongoId()
-    department: string;
+  @IsString()
+  @IsOptional()
+  paymentMode?: string;
 
-    @IsMongoId()
-    @IsOptional()
-    subDepartment?: string;
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  isReimbursed?: boolean;
 
-    @IsString()
-    @IsOptional()
-    paymentMode?: string;
-
-    @IsBoolean()
-    @Type(() => Boolean)
-    @IsOptional()
-    isReimbursed?: boolean;
-
-    @IsBoolean()
-    @Type(() => Boolean)
-    @IsOptional()
-    isApproved?: boolean;
+  @IsBoolean()
+  @Type(() => Boolean)
+  @IsOptional()
+  isApproved?: boolean;
 }
 
-export class UpdateExpenseDto extends PartialType(CreateExpenseDto) { }
+export class UpdateExpenseDto extends PartialType(CreateExpenseDto) {}

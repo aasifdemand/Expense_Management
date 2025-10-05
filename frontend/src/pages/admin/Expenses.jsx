@@ -32,28 +32,22 @@ const Expenses = () => {
     limit,
   } = useExpenses();
 
+
+  console.log("expenses: ", expenses);
+
+
   // ✅ Calculations
   const totalExpenses =
     (allExpenses || []).reduce((acc, expense) => acc + Number(expense.amount), 0) || 0;
 
-  // const totalReimbursed =
-  //   (expenses || [])
-  //     .filter((item) => item?.isReimbursed)
-  //     .reduce((acc, item) => acc + Number(item.amount), 0) || 0;
 
-  // const totalPendingReimbursement = totalExpenses - totalReimbursed;
-
-  // const reimbursementPercentage =
-  //   totalExpenses > 0
-  //     ? ((totalReimbursed / totalExpenses) * 100).toFixed(1)
-  //     : 0;
 
   const salesExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Sales")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 
 
   const dataExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Data")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 
-  const itExpenses = allExpenses?.filter((sale) => sale?.department?.name === "IT (EndBounce)")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
+  const itExpenses = allExpenses?.filter((sale) => sale?.department?.name === "IT")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 
   const officeExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Office")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
 

@@ -1,17 +1,15 @@
-import "express-session";
+import 'express-session';
+import { User } from 'src/models/user.model';
 
-declare module "express-session" {
+declare module 'express-session' {
   interface SessionData {
-    user?: {
-      id: string;
-      name: string;
-      role: string;
-    };
     userId?: string;
+    deviceId?: string;
+    role?: string;
+    user?: User;
     twoFactorSecret?: string;
     twoFactorPending?: boolean;
     twoFactorVerified?: boolean;
     authenticated?: boolean;
-    csrfSecret?:string
   }
 }

@@ -13,6 +13,8 @@ import {
   fetchDepartments,
   fetchSubDepartments,
 } from "../store/departmentSlice";
+import { useNavigate } from "react-router-dom";
+import { useToastMessage } from "./useToast";
 
 export const useExpenses = () => {
   const dispatch = useDispatch();
@@ -117,7 +119,8 @@ export const useExpenses = () => {
   };
   const handleClose = () => setOpen(false);
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  const navigate = useNavigate()
+  const { success, error } = useToastMessage()
 
   const handleAdd = async () => {
     const response = await dispatch(addExpense(formData));
@@ -127,6 +130,8 @@ export const useExpenses = () => {
         dispatch(fetchExpenses({ page: 1, limit: 20 })),
       ]);
 
+
+
       setFormData({
         userId: "",
         amount: "",
@@ -135,6 +140,13 @@ export const useExpenses = () => {
         department: "",
         subDepartment: "",
       });
+
+      success("Expense added successfully")
+      setTimeout(() => { navigate("/user/expenses") }, 20000)
+
+    }
+    else {
+      error("Something went wrong, please try again later")
     }
   };
 
