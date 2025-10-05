@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   allocateBudget,
   fetchBudgets,
+  fetchUserBudgets,
   searchBudgets,
   updateBudget,
 } from "../store/budgetSlice";
@@ -13,11 +14,11 @@ export const useBudgeting = () => {
   const dispatch = useDispatch();
   const { budgets, loading, meta, allBudgets } = useSelector((state) => state?.budget);
   const { users } = useSelector((state) => state?.auth);
+  const { user } = useSelector((state) => state?.auth);
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -46,12 +47,8 @@ export const useBudgeting = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-
-  const { user } = useSelector((state) => state?.auth)
-
   useEffect(() => {
-    const hasFilters =
-      Boolean(filterMonth) || Boolean(filterYear) || debouncedSearch?.trim();
+    const hasFilters = debouncedSearch?.trim() || filterMonth || filterYear;
 
     if (hasFilters) {
       dispatch(
@@ -72,30 +69,38 @@ export const useBudgeting = () => {
           })
         );
       } else {
-        dispatch(
-          fetchBudgets({
-            page,
-            limit,
-            userId: user?._id,
-          })
-        );
+        // FIX: Make sure user._id is available and call fetchUserBudgets
+        if (user?._id) {
+          dispatch(
+            fetchUserBudgets({
+              userId: user._id, // ✅ This was missing
+              page,
+              limit,
+            })
+          );
+        }
       }
     }
-  }, [dispatch, page, limit, debouncedSearch, filterMonth, filterYear, user]);
-
-
+  }, [
+    dispatch,
+    page,
+    limit,
+    debouncedSearch,
+    filterMonth,
+    filterYear,
+    user, // ✅ Added user to dependencies
+    user?._id, // ✅ Added user._id to ensure it triggers when user changes
+    user?.role // ✅ Added user.role to ensure it triggers when role changes
+  ]);
 
   const handleOpen = (row) => {
-
     console.log("row: ", row);
-
     setSelectedBudget(row);
     setFormData({
       userId: row?.user?._id,
       amount: row.allocatedAmount,
       month: row.month,
       year: row.year,
-
     });
     setOpen(true);
   };
@@ -109,33 +114,8 @@ export const useBudgeting = () => {
   const handleAdd = async () => {
     console.log("formdata before mapping: ", formData);
 
-    const months = [
-      { value: 1, label: "January" },
-      { value: 2, label: "February" },
-      { value: 3, label: "March" },
-      { value: 4, label: "April" },
-      { value: 5, label: "May" },
-      { value: 6, label: "June" },
-      { value: 7, label: "July" },
-      { value: 8, label: "August" },
-      { value: 9, label: "September" },
-      { value: 10, label: "October" },
-      { value: 11, label: "November" },
-      { value: 12, label: "December" },
-    ];
-
-    // Convert month label to number
-    const monthObj = months.find(m => m.label === formData.month);
-    const monthNumber = monthObj ? monthObj.value : null;
-
-    if (!monthNumber) {
-      console.error("Invalid month:", formData.month);
-      return;
-    }
-
     const payload = {
       ...formData,
-      month: monthNumber, // now backend receives 10 instead of "October"
     };
 
     console.log("formdata after mapping: ", payload);
@@ -143,19 +123,23 @@ export const useBudgeting = () => {
     const resultAction = await dispatch(allocateBudget(payload));
 
     if (allocateBudget.fulfilled.match(resultAction)) {
-      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
+      // FIX: Refetch based on user role after allocation
+      if (user?.role === "superadmin") {
+        await dispatch(fetchBudgets({ page: 1, limit: 10 }));
+      } else {
+        await dispatch(fetchUserBudgets({ userId: user?._id, page: 1, limit: 10 }));
+      }
       await dispatch(fetchExpenses({ page: 1, limit: 20 }));
       setFormData({
         userId: "",
         amount: "",
-        month: getMonthByNumber(currentMonth),
+        month: currentMonth,
         year: year,
       });
     } else {
       console.error("Allocation failed:", resultAction);
     }
   };
-
 
   const handleSubmit = async () => {
     if (!selectedBudget) return;
@@ -165,17 +149,19 @@ export const useBudgeting = () => {
     );
 
     if (updateBudget.fulfilled.match(res)) {
-      await dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }))
-      await dispatch(fetchExpenses({ page: 1, limit: 20 }))
+      // FIX: Refetch based on user role after update
+      if (user?.role === "superadmin") {
+        await dispatch(fetchBudgets({ page: 1, limit: 10 }));
+      } else {
+        await dispatch(fetchUserBudgets({ userId: user?._id, page: 1, limit: 10 }));
+      }
+      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
     }
 
     setOpen(false);
   };
 
-
   return {
-
-
     allBudgets,
     budgets,
     loading,
@@ -202,6 +188,7 @@ export const useBudgeting = () => {
     filterYear,
     setFilterYear,
     getMonthByNumber,
-    selectedMonth, setSelectedMonth
+    selectedMonth,
+    setSelectedMonth
   };
 };

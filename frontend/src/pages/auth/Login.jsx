@@ -148,10 +148,10 @@ const Login = () => {
             if (response.ok) {
                 console.log("Login response:", data);
                 dispatch(setAuthState({
-                    isAuthenticated: data.session.authenticated,
-                    isTwoFactorPending: data.session.twoFactorPending,
-                    isTwoFactorVerified: data.session.twoFactorVerified,
-                    role: data.session.role,
+                    isAuthenticated: data.user.authenticated,
+                    isTwoFactorPending: data.user.twoFactorPending,
+                    isTwoFactorVerified: data.user.twoFactorVerified,
+                    role: data.user.role,
                     qr: data.qr,
                 }))
 
@@ -169,12 +169,12 @@ const Login = () => {
                     dispatch(setAuthState({ csrf: csrfData?.csrfToken }))
                 }
 
-                if (data?.session?.twoFactorPending) {
+                if (data?.user?.twoFactorPending) {
                     navigate("/qr");
-                } else if (data.session.role === "superadmin") {
-                    navigate("/admin");
+                } else if (data.user.role === "superadmin") {
+                    navigate("/admin/dashboard");
                 } else {
-                    navigate("/user");
+                    navigate("/user/dashboard");
                 }
 
                 //navigate("/qr"); // enable if you want auto redirect
