@@ -45,7 +45,7 @@ export class User extends Document {
   allocatedAmount: number;
 
   @Prop({ default: 0 })
-  budgetLeft: 0;
+  budgetLeft: number;
 
   @Prop({
     type: [

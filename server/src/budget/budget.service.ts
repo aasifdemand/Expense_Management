@@ -13,20 +13,19 @@ import {
 import { SearchBudgetAllocationsDto } from './dto/search-budgets.dto';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Department } from 'src/models/department.model';
-import { SubDepartment } from 'src/models/sub-department.model';
+import { Reimbursement } from 'src/models/reimbursements.model';
 
 @Injectable()
 export class BudgetService {
   constructor(
     @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
-    @InjectModel(Department.name)
-    private readonly departmentModel: Model<Budget>,
-    @InjectModel(SubDepartment.name)
-    private readonly subDepartmentModel: Model<User>,
+    @InjectModel(Reimbursement.name)
+    private readonly reimbursementModel: Model<Reimbursement>,
+
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) { }
+
 
   async allocateBudget(data: AllocateBudgetDto) {
     const { amount, userId } = data;
@@ -34,6 +33,42 @@ export class BudgetService {
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
+    // Get existing pending reimbursement for this user
+    const existingReimbursement = await this.reimbursementModel.findOne({
+      requestedBy: userId,
+      isReimbursed: false
+    });
+
+    console.log('=== BUDGET ALLOCATION DEBUG ===');
+    console.log('Existing reimbursement:', existingReimbursement);
+    console.log('New allocation amount:', amount);
+
+    let reimbursementUpdate: Reimbursement | null = null;
+
+    // If there's an existing reimbursement, reduce it with the new allocation
+    if (existingReimbursement && existingReimbursement.amount > 0) {
+      const newReimbursementAmount = Math.max(0, existingReimbursement.amount - amount);
+
+      if (newReimbursementAmount > 0) {
+        // Reduce reimbursement amount
+        reimbursementUpdate = await this.reimbursementModel.findByIdAndUpdate(
+          existingReimbursement._id,
+          { amount: newReimbursementAmount },
+          { new: true }
+        );
+        console.log('📉 Reduced reimbursement to:', newReimbursementAmount);
+      } else {
+        // Reimbursement is fully covered by new allocation - set to 0
+        reimbursementUpdate = await this.reimbursementModel.findByIdAndUpdate(
+          existingReimbursement._id,
+          { amount: 0 },
+          { new: true }
+        );
+        console.log('💰 Reimbursement fully covered by new allocation');
+      }
+    }
+
+    // Create the budget
     const budget = await this.budgetModel.create({
       user: userId,
       allocatedAmount: amount,
@@ -43,6 +78,7 @@ export class BudgetService {
       year: Number(new Date().getFullYear()),
     });
 
+    // Update user
     user.allocatedBudgets.push(budget._id as Types.ObjectId);
     user.allocatedAmount += Number(amount);
     user.budgetLeft += Number(amount);
@@ -57,11 +93,19 @@ export class BudgetService {
     await this.cacheManager.del(`budgets:all`);
     await this.cacheManager.del(`budget:${budget._id as string}`);
 
+    console.log('=== BUDGET ALLOCATION COMPLETE ===');
+
     return {
       message: 'Budget allocated successfully',
       budget: populatedBudget,
+      reimbursementUpdate: reimbursementUpdate ? {
+        _id: reimbursementUpdate._id,
+        newAmount: reimbursementUpdate.amount,
+        previousAmount: existingReimbursement?.amount
+      } : null
     };
   }
+
 
   async fetchAllocatedBudgets(page = 1, limit = 20, userId?: string) {
     const safePage = Math.max(page, 1);

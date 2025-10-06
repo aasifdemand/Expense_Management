@@ -25,13 +25,13 @@ export class ReimbursementController {
 
   @Get()
   @UseGuards(CsrfGuard)
-  async getAll(@Query() filters: any, @Req() req: Request) {
+  async getAll(@Req() req: Request) {
     const session = req.session;
 
     if (session?.twoFactorPending || !session?.twoFactorVerified || !session?.authenticated) {
       throw new UnauthorizedException("Unauthorized, Please verify Your identity first");
     }
-    return await this.reimbursementService.fetchAllReimbursements(filters)
+    return await this.reimbursementService.fetchAllReimbursements()
   }
 
   @Get(":id")
