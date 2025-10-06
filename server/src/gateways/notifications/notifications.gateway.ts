@@ -19,12 +19,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   private connectedUsers: Map<string, string> = new Map(); // userId -> socketId
 
   handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
+    // Use auth instead of query
+    const userId = client.handshake.auth.userId as string;
+
     if (userId) {
       this.connectedUsers.set(userId, client.id);
       console.log(`✅ User ${userId} connected with socket ${client.id}`);
     } else {
       console.log('⚠️ User connected without userId');
+      client.disconnect(true); // optional: disconnect users without userId
     }
   }
 

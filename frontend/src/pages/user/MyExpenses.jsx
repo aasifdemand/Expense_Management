@@ -12,7 +12,7 @@ export default function MyExpenses() {
 
 
     const {
-        userExpenses,
+        expenses,
         loading,
         meta,
         page,
@@ -85,7 +85,7 @@ export default function MyExpenses() {
             <ExpenseTable
                 limit={limit}
                 setLimit={setLimit}
-                expenses={userExpenses}
+                expenses={expenses}
                 loading={loading}
                 meta={meta}
                 page={page}

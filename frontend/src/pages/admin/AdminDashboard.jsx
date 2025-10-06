@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Typography, useTheme, Card, CardContent, alpha } from "@mui/material";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
@@ -11,7 +11,10 @@ import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import { useState } from "react";
 import TabButtonsWithReport from "../../components/general/TabButtonsWithReport";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBudgets } from "../../store/budgetSlice";
+import { fetchExpenses } from "../../store/expenseSlice";
+import { fetchReimbursements } from "../../store/reimbursementSlice";
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -66,13 +69,22 @@ const AdminDashboard = () => {
   } = useExpenses();
 
 
-  console.log("allExpenses: ", allExpenses);
+  const dispatch = useDispatch()
 
+  useEffect(() => {
+    dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false }));
+    dispatch(fetchExpenses({ page: 1, limit: 20 }));
+    dispatch(fetchReimbursements())
+  }, [dispatch]);
+
+
+
+  // console.log("All expenses: ", allExpenses);
 
   // Budget Stats Calculations
-  const totalAllocated = allBudgets?.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0) || 0;
-  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
-  const totalReimbursed = allExpenses?.reduce((acc, e) => acc + Number(e?.fromReimbursement || 0), 0) || 0;
+  const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0); // 153,000
+  const totalAllocated = allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0)
+  const totalReimbursementFromExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.fromReimbursement), 0);
 
   const budgetStats = [
     {
@@ -95,7 +107,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Reimbursement",
-      value: `₹${totalReimbursed.toLocaleString()}`,
+      value: `₹${totalReimbursementFromExpenses.toLocaleString()}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",

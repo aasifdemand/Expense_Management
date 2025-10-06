@@ -128,6 +128,7 @@ export const useExpenses = () => {
       await Promise.all([
         dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
         dispatch(fetchExpenses({ page: 1, limit: 20 })),
+        dispatch(fetchExpensesForUser({ page, limit }))
       ]);
 
 
@@ -159,6 +160,7 @@ export const useExpenses = () => {
         await Promise.all([
           dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
           dispatch(fetchExpenses({ page: 1, limit: 20 })),
+          dispatch(fetchExpensesForUser({ page, limit }))
         ]);
 
       }

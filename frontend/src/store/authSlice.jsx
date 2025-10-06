@@ -125,6 +125,34 @@ export const resetUserPassword = createAsyncThunk(
   }
 );
 
+// For updating own profile
+export const updateUserProfile = createAsyncThunk(
+  "auth/update-profile",
+  async (updateData, { getState, rejectWithValue }) => {
+    try {
+      const csrf = getState().auth.csrf;
+      const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/auth/profile/${updateData?.userId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrf,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // Fetch single user (session)
 export const fetchUser = createAsyncThunk(
@@ -155,6 +183,7 @@ export const fetchUser = createAsyncThunk(
     }
   }
 );
+
 const initialState = {
   isAuthenticated: safeJSONParse("authenticated", false),
   isTwoFactorVerified: safeJSONParse("twoFactorVerified", false),
@@ -165,9 +194,11 @@ const initialState = {
   loading: false,
   error: null,
   users: [],
-  user: null,
+  user: safeJSONParse("user", null),
   userLoading: false,
-  userError: null
+  userError: null,
+  updateProfileLoading: false,
+  updateProfileError: null
 };
 
 const persistToLocalStorage = (state) => {
@@ -177,9 +208,8 @@ const persistToLocalStorage = (state) => {
   localStorage.setItem("role", JSON.stringify(state.role));
   localStorage.setItem("qr", JSON.stringify(state.qr));
   localStorage.setItem("csrf", JSON.stringify(state.csrf));
-  localStorage.setItem("users", JSON.stringify(state.users))
-  localStorage.setItem("user", JSON.stringify(state.user))
-
+  localStorage.setItem("users", JSON.stringify(state.users));
+  localStorage.setItem("user", JSON.stringify(state.user));
 };
 
 const authSlice = createSlice({
@@ -190,9 +220,15 @@ const authSlice = createSlice({
       Object.assign(state, action.payload);
       persistToLocalStorage(state);
     },
+    clearErrors: (state) => {
+      state.error = null;
+      state.userError = null;
+      state.updateProfileError = null;
+    }
   },
   extraReducers: (builder) => {
     builder
+      // Logout
       .addCase(logout.pending, (state) => {
         state.error = null;
       })
@@ -204,46 +240,52 @@ const authSlice = createSlice({
         state.qr = null;
         state.csrf = null;
         state.loading = false;
-        state.users = []
-        state.user = null
+        state.users = [];
+        state.user = null;
 
-        // clear localStorage
+        // Clear localStorage
         localStorage.removeItem("authenticated");
         localStorage.removeItem("twoFactorVerified");
         localStorage.removeItem("twoFactorPending");
         localStorage.removeItem("role");
         localStorage.removeItem("qr");
         localStorage.removeItem("csrf");
-        localStorage.removeItem("users")
-        localStorage.removeItem("user")
+        localStorage.removeItem("users");
+        localStorage.removeItem("user");
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+      // Fetch all users
       .addCase(fetchAllUsers.pending, (state) => {
-        state.userLoading = true
-        state.userError = null
-      }).addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.userLoading = true;
+        state.userError = null;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.userLoading = false;
-        state.users = action.payload
-        persistToLocalStorage(state)
+        state.users = action.payload;
+        persistToLocalStorage(state);
       })
       .addCase(fetchAllUsers.rejected, (state, action) => {
-        state.error = action.payload
+        state.userLoading = false;
+        state.userError = action.payload;
       })
+      // Fetch single user
       .addCase(fetchUser.pending, (state) => {
-        state.loading = true
+        state.loading = true;
+        state.error = null;
       })
       .addCase(fetchUser.fulfilled, (state, action) => {
-        state.user = action.payload
-        persistToLocalStorage(state)
+        state.loading = false;
+        state.user = action.payload;
+        persistToLocalStorage(state);
       })
       .addCase(fetchUser.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
+        state.loading = false;
+        state.error = action.payload;
       })
-    builder
+      // Create user
       .addCase(createUser.pending, (state) => {
         state.userLoading = true;
         state.userError = null;
@@ -257,6 +299,7 @@ const authSlice = createSlice({
         state.userLoading = false;
         state.userError = action.payload;
       })
+      // Reset user password
       .addCase(resetUserPassword.pending, (state) => {
         state.userLoading = true;
         state.userError = null;
@@ -264,15 +307,37 @@ const authSlice = createSlice({
       .addCase(resetUserPassword.fulfilled, (state) => {
         state.userLoading = false;
         state.userError = null;
-
         persistToLocalStorage(state);
       })
       .addCase(resetUserPassword.rejected, (state, action) => {
         state.userLoading = false;
         state.userError = action.payload;
+      })
+      // Update user profile
+      .addCase(updateUserProfile.pending, (state) => {
+        state.updateProfileLoading = true;
+        state.updateProfileError = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.updateProfileLoading = false;
+        state.updateProfileError = null;
+        // Update both the user object and potentially the current user in state
+        state.user = action.payload;
+
+        // If the updated user is in the users list, update it there too
+        const userIndex = state.users.findIndex(user => user.id === action.payload.id);
+        if (userIndex !== -1) {
+          state.users[userIndex] = action.payload;
+        }
+
+        persistToLocalStorage(state);
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.updateProfileLoading = false;
+        state.updateProfileError = action.payload;
       });
   },
 });
 
-export const { setAuthState } = authSlice.actions;
+export const { setAuthState, clearErrors } = authSlice.actions;
 export default authSlice.reducer;

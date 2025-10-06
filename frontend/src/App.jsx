@@ -18,7 +18,7 @@ import { fetchAllUsers, fetchUser } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
 import Budgetings from "./pages/user/Budgetings";
 import Reimbursements from "./pages/admin/Reimbursements";
-
+import { SocketProvider } from "../src/contexts/SocketContext"
 
 
 const App = () => {
@@ -50,134 +50,135 @@ const App = () => {
     isTwoFactorVerified &&
     !isTwoFactorPending &&
     role === "user";
+  // console.log("user: ", user);
 
   return (
-
-    <Routes>
-
-
-      <Route path="user" element={<UserLayout />}>
-        <Route path="dashboard" element={
-          isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
-        } />
-        <Route path="expenses" element={
-          isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
-        } />
-
-        <Route
-          path="budgeting"
-          element={
-            isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
-          }
-        />
+    <SocketProvider >
+      <Routes>
 
 
-        <Route path="add" element={
-          isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
-        } />
-        {/* <Route path="settings" element={
+        <Route path="user" element={<UserLayout />}>
+          <Route path="dashboard" element={
+            isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
+          } />
+          <Route path="expenses" element={
+            isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
+          } />
+
+          <Route
+            path="budgeting"
+            element={
+              isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
+            }
+          />
+
+
+          <Route path="add" element={
+            isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
+          } />
+          {/* <Route path="settings" element={
           isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
         } /> */}
-      </Route>
+        </Route>
 
 
-      <Route path="admin" element={<AdminLayout />}>
-        {/* Admin Dashboard Route */}
+        <Route path="admin" element={<AdminLayout />}>
+          {/* Admin Dashboard Route */}
+          <Route
+            path="dashboard"
+            element={
+              canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
+            }
+          />
+
+
+          <Route
+            path="budget"
+            element={
+              canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
+            }
+          />
+
+
+
+
+          {/* Expenses Management */}
+          <Route
+            path="expenses"
+            element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
+          />
+
+          <Route path="reimbursements" element={
+            canAccessAdminRoutes ? <Reimbursements /> : <Navigate to="/login" />
+          } />
+
+
+
+          {/* Users */}
+          <Route
+            path="user"
+            element={canAccessAdminRoutes ? <User /> : <Navigate to="/login" />}
+          />
+
+          {/* Reports */}
+          <Route
+            path="report"
+            element={canAccessAdminRoutes ? <Report /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="settings"
+            element={canAccessAdminRoutes ? <Settings /> : <Navigate to="/login" />}
+          />
+        </Route>
+
+
+        {/* 2FA */}
         <Route
-          path="dashboard"
+          path="/qr"
           element={
-            canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
+            isTwoFactorPending ? (
+              <Qr />
+            ) : isAuthenticated ? (
+              role === "superadmin" ? (
+                <Navigate to="/admin/dashboard" />
+              ) : (
+                <Navigate to="/user/dashboard" />
+              )
+            ) : (
+              <Navigate to="/login" />
+            )
           }
         />
 
-
+        {/* Login */}
         <Route
-          path="budget"
+          path="/login"
           element={
-            canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
+            isAuthenticated && !isTwoFactorPending ? (
+              role === "superadmin" ? (
+                <Navigate to="/admin/dashboard" />
+              ) : (
+                <Navigate to="/user/dashboard" />
+              )
+            ) : (
+              <Login />
+            )
           }
         />
 
-
-
-
-        {/* Expenses Management */}
+        {/* Catch-all */}
         <Route
-          path="expenses"
-          element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
-        />
-
-        <Route path="reimbursements" element={
-          canAccessAdminRoutes ? <Reimbursements /> : <Navigate to="/login" />
-        } />
-
-
-
-        {/* Users */}
-        <Route
-          path="user"
-          element={canAccessAdminRoutes ? <User /> : <Navigate to="/login" />}
-        />
-
-        {/* Reports */}
-        <Route
-          path="report"
-          element={canAccessAdminRoutes ? <Report /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="settings"
-          element={canAccessAdminRoutes ? <Settings /> : <Navigate to="/login" />}
-        />
-      </Route>
-
-
-      {/* 2FA */}
-      <Route
-        path="/qr"
-        element={
-          isTwoFactorPending ? (
-            <Qr />
-          ) : isAuthenticated ? (
+          path="*"
+          element={
             role === "superadmin" ? (
               <Navigate to="/admin/dashboard" />
             ) : (
               <Navigate to="/user/dashboard" />
             )
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
-
-      {/* Login */}
-      <Route
-        path="/login"
-        element={
-          isAuthenticated && !isTwoFactorPending ? (
-            role === "superadmin" ? (
-              <Navigate to="/admin/dashboard" />
-            ) : (
-              <Navigate to="/user/dashboard" />
-            )
-          ) : (
-            <Login />
-          )
-        }
-      />
-
-      {/* Catch-all */}
-      <Route
-        path="*"
-        element={
-          role === "superadmin" ? (
-            <Navigate to="/admin/dashboard" />
-          ) : (
-            <Navigate to="/user/dashboard" />
-          )
-        }
-      />
-    </Routes>
-
+          }
+        />
+      </Routes>
+    </SocketProvider>
   );
 };
 

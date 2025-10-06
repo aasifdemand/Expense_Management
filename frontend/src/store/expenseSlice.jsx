@@ -1,10 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const initialState = {
-    expenses: [],         // paginated
-    allExpenses: [],      // full dataset for charts/stats
-    userExpenses: [],     // user-specific paginated
-    allUserExpenses: [],  // full dataset for user
+    expenses: [],        // paginated (all or user)
+    allExpenses: [],     // full dataset for charts/stats
     expense: null,
     loading: false,
     error: null,
@@ -20,7 +18,7 @@ const initialState = {
     },
 };
 
-
+// ===================== ADD EXPENSE =====================
 export const addExpense = createAsyncThunk(
     "expenses/addExpense",
     async (data, { getState, rejectWithValue }) => {
@@ -30,11 +28,9 @@ export const addExpense = createAsyncThunk(
             formData.append("description", description);
             formData.append("amount", amount);
             formData.append("department", department);
-            formData.append("subDepartment", subDepartment)
-            formData.append("paymentMode", paymentMode)
-            // formData.append("month", String(new Date(date).getMonth() + 1));
-            // formData.append("year", String(new Date(date).getFullYear()));
-            if (budget) formData.append("budgetId", budget)
+            formData.append("subDepartment", subDepartment);
+            formData.append("paymentMode", paymentMode);
+            if (budget) formData.append("budgetId", budget);
             if (proof) formData.append("proof", proof);
 
             const csrf = getState().auth.csrf;
@@ -53,7 +49,7 @@ export const addExpense = createAsyncThunk(
     }
 );
 
-// --- Update Expense ---
+// ===================== UPDATE EXPENSE =====================
 export const updateExpense = createAsyncThunk(
     "expenses/updateExpense",
     async ({ id, updates }, { getState, rejectWithValue }) => {
@@ -62,7 +58,10 @@ export const updateExpense = createAsyncThunk(
             const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/${id}`, {
                 method: "PATCH",
                 credentials: "include",
-                headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-csrf-token": csrf,
+                },
                 body: JSON.stringify(updates),
             });
             if (!response.ok) throw new Error("Failed to update expense");
@@ -74,7 +73,7 @@ export const updateExpense = createAsyncThunk(
     }
 );
 
-// --- Fetch All Expenses ---
+// ===================== FETCH ALL EXPENSES =====================
 export const fetchExpenses = createAsyncThunk(
     "expenses/fetchAllExpenses",
     async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
@@ -88,8 +87,6 @@ export const fetchExpenses = createAsyncThunk(
             });
             if (!response.ok) throw new Error("Failed to fetch expenses");
             const data = await response.json();
-
-
             return {
                 data: data?.data || [],
                 allExpenses: data?.allExpenses || [],
@@ -102,7 +99,7 @@ export const fetchExpenses = createAsyncThunk(
     }
 );
 
-// --- Fetch Expenses for User ---
+// ===================== FETCH EXPENSES FOR USER =====================
 export const fetchExpensesForUser = createAsyncThunk(
     "expenses/fetchUserExpenses",
     async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
@@ -118,7 +115,7 @@ export const fetchExpensesForUser = createAsyncThunk(
             const data = await response.json();
             return {
                 data: data?.data || [],
-                allUserExpenses: data?.allExpenses || [],
+                allExpenses: data?.allExpenses || [],
                 stats: data?.stats || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 },
                 meta: data?.meta || { total: 0, page, limit },
             };
@@ -128,7 +125,7 @@ export const fetchExpensesForUser = createAsyncThunk(
     }
 );
 
-// --- Search Expenses ---
+// ===================== SEARCH EXPENSES =====================
 export const searchExpenses = createAsyncThunk(
     "expenses/search",
     async (
@@ -150,6 +147,7 @@ export const searchExpenses = createAsyncThunk(
                 page: String(page),
                 limit: String(limit),
             });
+
             const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/search?${query}`, {
                 method: "GET",
                 credentials: "include",
@@ -169,7 +167,7 @@ export const searchExpenses = createAsyncThunk(
     }
 );
 
-// --- Slice ---
+// ===================== SLICE =====================
 const expenseSlice = createSlice({
     name: "expenses",
     initialState,
@@ -177,19 +175,26 @@ const expenseSlice = createSlice({
     extraReducers: (builder) => {
         builder
             // Add Expense
-            .addCase(addExpense.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(addExpense.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(addExpense.fulfilled, (state, action) => {
                 state.loading = false;
                 state.expense = action.payload;
                 state.expenses.unshift(action.payload);
                 state.allExpenses.unshift(action.payload);
-                state.userExpenses.unshift(action.payload);
-                state.allUserExpenses.unshift(action.payload);
             })
-            .addCase(addExpense.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            .addCase(addExpense.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
 
             // Update Expense
-            .addCase(updateExpense.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(updateExpense.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(updateExpense.fulfilled, (state, action) => {
                 state.loading = false;
                 const updated = action.payload;
@@ -197,13 +202,19 @@ const expenseSlice = createSlice({
                     const idx = arr.findIndex((e) => e._id === updated._id);
                     if (idx !== -1) arr[idx] = updated;
                 };
-                [state.expenses, state.allExpenses, state.userExpenses, state.allUserExpenses].forEach(updateInArray);
+                [state.expenses, state.allExpenses].forEach(updateInArray);
                 state.expense = updated;
             })
-            .addCase(updateExpense.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            .addCase(updateExpense.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
 
             // Fetch All Expenses
-            .addCase(fetchExpenses.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(fetchExpenses.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(fetchExpenses.fulfilled, (state, action) => {
                 state.loading = false;
                 state.expenses = action.payload.data;
@@ -211,21 +222,33 @@ const expenseSlice = createSlice({
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
             })
-            .addCase(fetchExpenses.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            .addCase(fetchExpenses.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
 
             // Fetch Expenses For User
-            .addCase(fetchExpensesForUser.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(fetchExpensesForUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(fetchExpensesForUser.fulfilled, (state, action) => {
                 state.loading = false;
-                state.userExpenses = action.payload.data;
-                state.allUserExpenses = action.payload.allUserExpenses;
+                state.expenses = action.payload.data;
+                state.allExpenses = action.payload.allExpenses;
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
             })
-            .addCase(fetchExpensesForUser.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            .addCase(fetchExpensesForUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
 
             // Search Expenses
-            .addCase(searchExpenses.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(searchExpenses.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
             .addCase(searchExpenses.fulfilled, (state, action) => {
                 state.loading = false;
                 state.expenses = action.payload.data;
@@ -233,7 +256,10 @@ const expenseSlice = createSlice({
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
             })
-            .addCase(searchExpenses.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
+            .addCase(searchExpenses.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            });
     },
 });
 

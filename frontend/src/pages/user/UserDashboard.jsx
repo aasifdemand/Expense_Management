@@ -13,6 +13,8 @@ import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart"
 import { useDispatch, useSelector } from "react-redux";
 import { fetchReimbursementsForUser } from "../../store/reimbursementSlice";
+import { fetchExpensesForUser } from "../../store/expenseSlice";
+import { fetchUserBudgets } from "../../store/budgetSlice";
 
 
 const StatCard = ({ stat }) => (
@@ -147,7 +149,7 @@ const Dashboard = () => {
   const { user } = useSelector((state) => state?.auth)
   const [activeTab, setActiveTab] = useState("budget");
   const { userReimbursements } = useSelector((state) => state?.reimbursement)
-  console.log("userReimbursements: ", userReimbursements);
+  // console.log("userReimbursements: ", userReimbursements);
 
 
   const {
@@ -178,7 +180,8 @@ const Dashboard = () => {
   } = useBudgeting();
 
   const {
-    userExpenses,
+
+    allExpenses,
     loading: expenseLoading,
     meta: expenseMeta,
     page: expensePage,
@@ -199,9 +202,16 @@ const Dashboard = () => {
 
 
 
+
   useEffect(() => {
-    if (user?._id) {
+    if (!user?._id) return
+    if (user && user?._id) {
+      dispatch(fetchExpensesForUser({ page: 1, limit: 20 }));
       dispatch(fetchReimbursementsForUser(user?._id))
+      dispatch(fetchUserBudgets({
+        userId: user._id
+      }))
+
     }
   }, [dispatch, user])
 
@@ -209,16 +219,17 @@ const Dashboard = () => {
 
   console.log("AllBudgets: ", allBudgets);
 
+  // console.log("user expenses: ", userExpenses);
 
   // Budget Stats Calculations
-  const totalAllocated = allBudgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0) || 0;
-  const totalExpenses = userExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
+  const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0) || allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0)
+  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
   const totalReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
 
   const budgetStats = [
     {
       title: "Total Allocated",
-      value: `₹${totalAllocated.toLocaleString()}`,
+      value: `₹${totalAllocated || 0}`,
       icon: <AccountBalanceIcon />,
       color: "#3b82f6",
       subtitle: "Total budget allocation",
@@ -227,7 +238,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Expenses",
-      value: `₹${totalExpenses.toLocaleString()}`,
+      value: `₹${totalExpenses || 0}`,
       color: "#f63b3bff",
       icon: <MonetizationOnIcon />,
       subtitle: "Total expenses amount",
@@ -236,7 +247,7 @@ const Dashboard = () => {
     },
     {
       title: "Total Reimbursement",
-      value: `₹${totalReimbursed.toLocaleString()}`,
+      value: `₹${totalReimbursed || 0}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",
@@ -264,7 +275,7 @@ const Dashboard = () => {
       <DashboardBudgetChart
 
 
-        budgets={userExpenses}
+        budgets={allExpenses}
         theme={theme}
         year={year}
         selectedMonth={budgetSelectedMonth}
@@ -278,7 +289,7 @@ const Dashboard = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           budgets={allBudgets}
-          expenses={userExpenses}
+          expenses={allExpenses}
         />
       </Box>
 
@@ -320,7 +331,7 @@ const Dashboard = () => {
 
             limit={expenseLimit}
             setLimit={setExpenseLimit}
-            expenses={userExpenses}
+            expenses={allExpenses}
             loading={expenseLoading}
             meta={expenseMeta}
             page={expensePage}
