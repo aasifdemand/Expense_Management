@@ -28,7 +28,7 @@ import type { Request } from 'express';
 @Controller('expenses')
 export class ExpensesController {
   private logger = new Logger('expenses_controller');
-  constructor(private readonly expensesService: ExpensesService) {}
+  constructor(private readonly expensesService: ExpensesService) { }
 
   @Post('create')
   @UseGuards(CsrfGuard)

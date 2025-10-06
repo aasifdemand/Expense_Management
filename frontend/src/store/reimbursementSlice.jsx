@@ -21,6 +21,27 @@ export const fetchReimbursements = createAsyncThunk(
         }
     }
 );
+export const fetchReimbursementsForUser = createAsyncThunk(
+    "reimbursement/fetchReimbursementsforuser",
+    async (id, { rejectWithValue, getState }) => {
+        try {
+            const csrf = getState().auth.csrf;
+            const res = await fetch(`${import.meta.env.VITE_API_BASEURL}/reimbursement/${id}`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "X-csrf-token": csrf,
+                },
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch reimbursements");
+
+            return await res.json();
+        } catch (err) {
+            return rejectWithValue(err.message);
+        }
+    }
+);
 
 export const markAsReimbursed = createAsyncThunk(
     "reimbursement/markReimbursed",
@@ -52,6 +73,7 @@ export const markAsReimbursed = createAsyncThunk(
 
 const initialState = {
     reimbursements: [],
+    userReimbursements: [],
     loading: false,
     error: null,
 };
@@ -75,6 +97,18 @@ export const reimbursementSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            .addCase(fetchReimbursementsForUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchReimbursementsForUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.userReimbursements = action.payload;
+            })
+            .addCase(fetchReimbursementsForUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
 
             // ---- MARK REIMBURSED ----
             .addCase(markAsReimbursed.pending, (state) => {
@@ -94,7 +128,7 @@ export const reimbursementSlice = createSlice({
             .addCase(markAsReimbursed.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
-            });
+            })
     },
 });
 

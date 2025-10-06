@@ -27,7 +27,7 @@ import { UserRole } from 'src/models/user.model';
 @Controller('auth')
 export class AuthController {
   private logger = new Logger('auth_controller');
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -47,10 +47,14 @@ export class AuthController {
     return this.authService.verifyTwoFactorCode(body.token, req);
   }
 
-  // CSRF token retrieval
+  // In your AuthController
   @Get('csrf-token')
   getCsrfToken(@Req() req: Request) {
-    return { csrfToken: req.csrfToken() };
+    // This will use the csrfSecret from the session
+    const token = req.csrfToken();
+    console.log('Generated CSRF token:', token);
+    console.log('Session CSRF secret:', req.session.twoFactorSecret);
+    return { csrfToken: token };
   }
 
   // Get current session info

@@ -79,6 +79,7 @@ async function bootstrap() {
     '/api/v1/auth/login',
     '/api/v1/auth/2fa/verify',
     '/api/v1/auth/2fa/show-qr',
+    // '/api/v1/auth/csrf-token'
   ];
 
   app.use((req, res, next) => {

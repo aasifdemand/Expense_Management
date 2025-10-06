@@ -24,11 +24,12 @@ import type { Request } from 'express';
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
-  ) {}
+  ) { }
 
   async auth(data: AuthDto, req: Request) {
     const { deviceName } = data;
     console.log('Auth attempt for user:', data.name);
+
 
     const user = await this.userModel.findOne({ name: data.name });
     if (!user) throw new UnauthorizedException('User not found');
@@ -309,7 +310,7 @@ export class AuthService {
 
       throw new UnauthorizedException(
         'Incorrect or expired OTP. ' +
-          'Please ensure your authenticator app time is synchronized with internet time.',
+        'Please ensure your authenticator app time is synchronized with internet time.',
       );
     }
 

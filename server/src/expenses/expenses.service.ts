@@ -38,7 +38,7 @@ export class ExpensesService {
     private readonly mediaService: ImagekitService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly notificationService: NotificationsService,
-  ) {}
+  ) { }
 
   private EXPENSE_ALL_KEY = (page: number, limit: number) =>
     `expenses:all:${page}:${limit}`;
@@ -250,10 +250,10 @@ export class ExpensesService {
         }),
         reimbursement: reimbursement
           ? {
-              _id: reimbursement._id,
-              amount: reimbursement.amount,
-              isReimbursed: reimbursement.isReimbursed,
-            }
+            _id: reimbursement._id,
+            amount: reimbursement.amount,
+            isReimbursed: reimbursement.isReimbursed,
+          }
           : null,
       },
     };
