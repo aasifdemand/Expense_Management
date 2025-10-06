@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -15,7 +16,7 @@ import { CreateExpenseDto, UpdateExpenseDto } from './dtos/create-expense.dto';
 import { ImagekitService } from 'src/services/media.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { User } from 'src/models/user.model';
+import { User, UserRole } from 'src/models/user.model';
 import { Budget } from 'src/models/budget.model';
 import { SearchExpensesDto } from './dtos/search-expense.dto';
 import { Department } from 'src/models/department.model';
@@ -295,19 +296,23 @@ export class ExpensesService {
     ]);
 
     // In your expense creation method
-    const superAdmin = await this.userModal.findById("68e40a86e4625d3d02e3f0cf");
+    const superAdmins = await this.userModal.find({ role: UserRole.SUPERADMIN }).select('_id');
 
-    if (superAdmin) {
-      const notificationMessage = `New expense created by ${user.name} for ₹${amount}`;
+    const notificationMessage = `New expense created by ${user.name} for ₹${amount}`;
 
-      this.notificationService.sendNotification(
-        superAdmin._id as string, // pass the ID as string
+    for (const admin of superAdmins) {
+      const userId = admin._id as Types.ObjectId; // proper conversion to string
+      const success = this.notificationService.sendNotification(
+        userId.toString(),
         notificationMessage,
         'EXPENSE_CREATED',
       );
-    } else {
-      console.warn("⚠️ SuperAdmin not found");
+
+      if (!success) {
+        console.warn(`⚠️ SuperAdmin ${userId.toString()} is not connected`);
+      }
     }
+
 
 
 

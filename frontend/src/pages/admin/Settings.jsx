@@ -1,79 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUserProfile, fetchUser } from "../../store/authSlice"
 
 const SettingsPage = () => {
-  const [settings, setSettings] = useState({
-    notifications: true,
-    emailUpdates: false,
-    autoSave: true,
-    language: 'english',
-    fontSize: 'medium',
-    twoFactor: false,
-    sound: true,
-    vibration: true
-  });
+  const dispatch = useDispatch();
+  const { user, updateProfileLoading, updateProfileError } = useSelector((state) => state.auth);
 
   const [activeSection, setActiveSection] = useState('account');
   const [saveStatus, setSaveStatus] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
 
   const [userProfile, setUserProfile] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    bio: 'Software developer and tech enthusiast',
-    location: 'New York, USA'
+    name: '',
+    email: '',
+    phone: '',
+    userLoc: ''
   });
 
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
 
-  const [passwordErrors, setPasswordErrors] = useState({});
 
-  // API Functions
-  const changePasswordAPI = async (passwordData) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (passwordData.currentPassword !== 'currentPassword123') {
-          reject({ message: 'Current password is incorrect' });
-        } else if (passwordData.newPassword.length < 6) {
-          reject({ message: 'New password must be at least 6 characters' });
-        } else if (passwordData.newPassword !== passwordData.confirmPassword) {
-          reject({ message: 'New passwords do not match' });
-        } else {
-          resolve({ message: 'Password changed successfully' });
-        }
-      }, 1500);
-    });
-  };
 
-  const updateProfileAPI = async (profileData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ message: 'Profile updated successfully', data: profileData });
-      }, 1000);
-    });
-  };
-
-  const saveSettingsAPI = async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ message: 'Settings saved successfully' });
-      }, 1000);
-    });
-  };
+  // Initialize user profile from Redux state
+  useEffect(() => {
+    if (user) {
+      setUserProfile({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        userLoc: user.userLoc || ''
+      });
+    }
+  }, [user]);
 
   // Event Handlers
-  const handleSettingChange = (key, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
   const handleProfileChange = (key, value) => {
     setUserProfile(prev => ({
       ...prev,
@@ -81,118 +41,32 @@ const SettingsPage = () => {
     }));
   };
 
-  const handlePasswordChange = (key, value) => {
-    setPasswordForm(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    if (passwordErrors[key]) {
-      setPasswordErrors(prev => ({
-        ...prev,
-        [key]: ''
-      }));
-    }
-  };
 
-  // Validation Functions
-  const validatePasswordForm = () => {
-    const errors = {};
 
-    if (!passwordForm.currentPassword.trim()) {
-      errors.currentPassword = 'Current password is required';
-    }
 
-    if (!passwordForm.newPassword.trim()) {
-      errors.newPassword = 'New password is required';
-    } else if (passwordForm.newPassword.length < 6) {
-      errors.newPassword = 'Password must be at least 6 characters';
-    }
-
-    if (!passwordForm.confirmPassword.trim()) {
-      errors.confirmPassword = 'Please confirm your new password';
-    } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-
-    setPasswordErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
 
   // Action Functions
-  const saveSettings = async () => {
-    setSaveStatus('Saving settings...');
-    try {
-      await saveSettingsAPI(settings);
-      setSaveStatus('Settings saved successfully!');
-      setTimeout(() => setSaveStatus(''), 3000);
-      // eslint-disable-next-line no-unused-vars
-    } catch (error) {
-      setSaveStatus('Error saving settings. Please try again.');
-      setTimeout(() => setSaveStatus(''), 3000);
-    }
-  };
-
-  const resetSettings = () => {
-    setSettings({
-      notifications: true,
-      emailUpdates: false,
-      autoSave: true,
-      language: 'english',
-      fontSize: 'medium',
-      twoFactor: false,
-      sound: true,
-      vibration: true
-    });
-    setSaveStatus('Settings reset to default!');
-    setTimeout(() => setSaveStatus(''), 3000);
-  };
-
   const saveProfile = async () => {
     setSaveStatus('Saving profile...');
+
     try {
-      const result = await updateProfileAPI(userProfile);
-      setUserProfile(result.data);
+      const result = await dispatch(updateUserProfile({ ...userProfile, userId: user?._id })).unwrap();
       setIsEditingProfile(false);
       setSaveStatus('Profile updated successfully!');
-      setTimeout(() => setSaveStatus(''), 3000);
-      // eslint-disable-next-line no-unused-vars
-    } catch (error) {
-      setSaveStatus('Error updating profile. Please try again.');
-      setTimeout(() => setSaveStatus(''), 3000);
-    }
-  };
 
-  const changePassword = async () => {
-    if (!validatePasswordForm()) {
-      return;
-    }
+      if (updateUserProfile.fulfilled.matches(result)) {
+        await dispatch(fetchUser());
+      }
 
-    setSaveStatus('Changing password...');
-    try {
-      await changePasswordAPI(passwordForm);
-      setSaveStatus('Password changed successfully!');
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      setIsChangingPassword(false);
+
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
-      setSaveStatus(error.message);
+      setSaveStatus(error || 'Error updating profile. Please try again.');
       setTimeout(() => setSaveStatus(''), 3000);
     }
   };
 
-  const cancelPasswordChange = () => {
-    setIsChangingPassword(false);
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    setPasswordErrors({});
-  };
+
 
   // CSS Styles
   const cssStyles = `
@@ -368,86 +242,6 @@ const SettingsPage = () => {
       border-bottom: 1px solid #e2e8f0;
     }
 
-    .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      transition: all 0.3s ease;
-    }
-
-    .setting-item:hover {
-      border-color: #cbd5e0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .setting-info {
-      flex: 1;
-    }
-
-    .setting-label {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: #2d3748;
-    }
-
-    .setting-description {
-      font-size: 14px;
-      color: #718096;
-      line-height: 1.4;
-    }
-
-    /* Toggle Switch */
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 52px;
-      height: 28px;
-    }
-
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #cbd5e0;
-      transition: 0.4s;
-      border-radius: 34px;
-    }
-
-    .toggle-slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: 0.4s;
-      border-radius: 50%;
-    }
-
-    input:checked + .toggle-slider {
-      background-color: #3182ce;
-    }
-
-    input:checked + .toggle-slider:before {
-      transform: translateX(24px);
-    }
-
     /* Buttons */
     .action-button {
       padding: 10px 20px;
@@ -570,11 +364,6 @@ const SettingsPage = () => {
       display: block;
     }
 
-    .form-textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-
     .form-actions {
       display: flex;
       gap: 12px;
@@ -668,45 +457,6 @@ const SettingsPage = () => {
       background: #f7fafc;
     }
 
-    .button-group {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-
-    .save-button, .reset-button {
-      padding: 12px 30px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      min-width: 160px;
-    }
-
-    .save-button.primary {
-      background: #3182ce;
-      color: white;
-    }
-
-    .save-button.primary:hover {
-      background: #2c5aa0;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(49, 130, 206, 0.4);
-    }
-
-    .reset-button.secondary {
-      background: transparent;
-      border: 2px solid #a0aec0;
-      color: #4a5568;
-    }
-
-    .reset-button.secondary:hover {
-      background: #e2e8f0;
-      transform: translateY(-2px);
-    }
-
     /* Status Message */
     .status-message {
       margin-top: 15px;
@@ -760,18 +510,8 @@ const SettingsPage = () => {
       }
       
       .content-header,
-      .settings-scrollable,
-      .settings-footer {
+      .settings-scrollable {
         padding: 20px;
-      }
-      
-      .button-group {
-        flex-direction: column;
-      }
-      
-      .save-button,
-      .reset-button {
-        width: 100%;
       }
       
       .account-card {
@@ -785,6 +525,10 @@ const SettingsPage = () => {
     }
   `;
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
       <style>{cssStyles}</style>
@@ -795,16 +539,14 @@ const SettingsPage = () => {
             <div className="user-profile">
               <div className="user-avatar">👤</div>
               <div className="user-info">
-                <div className="user-name">{userProfile.name}</div>
-                <div className="user-email">{userProfile.email}</div>
+                <div className="user-name">{user.name}</div>
+                <div className="user-email">{user.email}</div>
               </div>
             </div>
           </div>
 
           <div className="sidebar-nav">
             {[
-              { id: 'notifications', label: 'Notifications', icon: '🔔' },
-              { id: 'privacy', label: 'Privacy & Security', icon: '🔒' },
               { id: 'account', label: 'Account', icon: '👤' }
             ].map((section) => (
               <div
@@ -820,117 +562,17 @@ const SettingsPage = () => {
           </div>
 
           <div className="sidebar-footer">
-            <div className="app-version">Version 2.1.4</div>
+            <div className="app-version">Version 1.0.0</div>
           </div>
         </div>
 
         <div className="settings-content">
           <div className="content-header">
-            <h1 className="section-title">
-              {activeSection === 'notifications' && 'Notification Settings'}
-              {activeSection === 'privacy' && 'Privacy & Security'}
-              {activeSection === 'account' && 'Account Settings'}
-            </h1>
-            <p className="section-description">
-              {activeSection === 'notifications' && 'Manage how and when you receive notifications'}
-              {activeSection === 'privacy' && 'Control your privacy and security settings'}
-              {activeSection === 'account' && 'Manage your account preferences and profile'}
-            </p>
+            <h1 className="section-title">Account Settings</h1>
+            <p className="section-description">Manage your account preferences and profile</p>
           </div>
 
           <div className="settings-scrollable">
-            {activeSection === 'notifications' && (
-              <div className="settings-section">
-                <div className="setting-group">
-                  <h3 className="setting-group-title">Push Notifications</h3>
-                  <div className="setting-item">
-                    <div className="setting-info">
-                      <div className="setting-label">Enable Notifications</div>
-                      <div className="setting-description">Receive push notifications for important updates</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={settings.notifications}
-                        onChange={(e) => handleSettingChange('notifications', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="setting-item">
-                    <div className="setting-info">
-                      <div className="setting-label">Email Updates</div>
-                      <div className="setting-description">Receive regular updates via email</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={settings.emailUpdates}
-                        onChange={(e) => handleSettingChange('emailUpdates', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="setting-group">
-                  <h3 className="setting-group-title">Notification Types</h3>
-                  <div className="setting-item">
-                    <div className="setting-info">
-                      <div className="setting-label">Sound</div>
-                      <div className="setting-description">Play sound for notifications</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={settings.sound}
-                        onChange={(e) => handleSettingChange('sound', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-
-                  <div className="setting-item">
-                    <div className="setting-info">
-                      <div className="setting-label">Vibration</div>
-                      <div className="setting-description">Vibrate for notifications</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={settings.vibration}
-                        onChange={(e) => handleSettingChange('vibration', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'privacy' && (
-              <div className="settings-section">
-                <div className="setting-group">
-                  <h3 className="setting-group-title">Security</h3>
-                  <div className="setting-item">
-                    <div className="setting-info">
-                      <div className="setting-label">Two-Factor Authentication</div>
-                      <div className="setting-description">Add an extra layer of security to your account</div>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={settings.twoFactor}
-                        onChange={(e) => handleSettingChange('twoFactor', e.target.checked)}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeSection === 'account' && (
               <div className="settings-section">
                 {/* Profile Information Section */}
@@ -941,11 +583,14 @@ const SettingsPage = () => {
                     <div className="account-card">
                       <div className="account-avatar-large">👤</div>
                       <div className="account-details">
-                        <div className="account-name">{userProfile.name}</div>
-                        <div className="account-email">{userProfile.email}</div>
-                        <div className="account-detail">{userProfile.phone}</div>
-                        <div className="account-detail">{userProfile.location}</div>
-                        <div className="account-detail">{userProfile.bio}</div>
+                        <div className="account-name">{user.name}</div>
+                        <div className="account-email">{user.email}</div>
+                        <div className="account-detail">{user.phone}</div>
+                        <div className="account-detail">{user.userLoc}</div>
+                        <div className="account-detail">
+                          Role: {user.role === 'superadmin' ? 'Super Admin' : 'User'}
+                        </div>
+
                       </div>
                       <button
                         className="action-button primary"
@@ -994,20 +639,9 @@ const SettingsPage = () => {
                         <input
                           type="text"
                           className="form-input"
-                          value={userProfile.location}
-                          onChange={(e) => handleProfileChange('location', e.target.value)}
+                          value={userProfile.userLoc}
+                          onChange={(e) => handleProfileChange('userLoc', e.target.value)}
                           placeholder="Enter your location"
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label">Bio</label>
-                        <textarea
-                          className="form-input form-textarea"
-                          value={userProfile.bio}
-                          onChange={(e) => handleProfileChange('bio', e.target.value)}
-                          placeholder="Tell us about yourself"
-                          rows="3"
                         />
                       </div>
 
@@ -1015,14 +649,14 @@ const SettingsPage = () => {
                         <button
                           className="action-button primary"
                           onClick={saveProfile}
-                          disabled={saveStatus.includes('Saving')}
+                          disabled={updateProfileLoading}
                         >
-                          {saveStatus.includes('Saving') ? 'Saving...' : 'Save Changes'}
+                          {updateProfileLoading ? 'Saving...' : 'Save Changes'}
                         </button>
                         <button
                           className="action-button secondary"
                           onClick={() => setIsEditingProfile(false)}
-                          disabled={saveStatus.includes('Saving')}
+                          disabled={updateProfileLoading}
                         >
                           Cancel
                         </button>
@@ -1031,121 +665,22 @@ const SettingsPage = () => {
                   )}
                 </div>
 
-                {/* Change Password Section */}
-                <div className="setting-group">
-                  <h3 className="setting-group-title">Security</h3>
 
-                  <div className="password-section">
-                    <div className="password-header">
-                      <h4 className="password-title">Change Password</h4>
-                      <p className="password-description">Update your password for enhanced security</p>
-                    </div>
-
-                    {!isChangingPassword ? (
-                      <button
-                        className="action-button primary"
-                        onClick={() => setIsChangingPassword(true)}
-                      >
-                        Change Password
-                      </button>
-                    ) : (
-                      <div className="password-form">
-                        <div className="form-group">
-                          <label className="form-label">Current Password</label>
-                          <input
-                            type="password"
-                            className={`form-input ${passwordErrors.currentPassword ? 'error' : ''}`}
-                            value={passwordForm.currentPassword}
-                            onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
-                            placeholder="Enter your current password"
-                          />
-                          {passwordErrors.currentPassword && (
-                            <span className="error-message">{passwordErrors.currentPassword}</span>
-                          )}
-                        </div>
-
-                        <div className="form-group">
-                          <label className="form-label">New Password</label>
-                          <input
-                            type="password"
-                            className={`form-input ${passwordErrors.newPassword ? 'error' : ''}`}
-                            value={passwordForm.newPassword}
-                            onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                            placeholder="Enter your new password"
-                          />
-                          {passwordErrors.newPassword && (
-                            <span className="error-message">{passwordErrors.newPassword}</span>
-                          )}
-
-                          <div className="password-requirements">
-                            <div className="requirements-title">Password Requirements:</div>
-                            <div className={`requirement ${passwordForm.newPassword.length >= 6 ? 'valid' : ''}`}>
-                              At least 6 characters long
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="form-group">
-                          <label className="form-label">Confirm New Password</label>
-                          <input
-                            type="password"
-                            className={`form-input ${passwordErrors.confirmPassword ? 'error' : ''}`}
-                            value={passwordForm.confirmPassword}
-                            onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
-                            placeholder="Confirm your new password"
-                          />
-                          {passwordErrors.confirmPassword && (
-                            <span className="error-message">{passwordErrors.confirmPassword}</span>
-                          )}
-                        </div>
-
-                        <div className="form-actions">
-                          <button
-                            className="action-button primary"
-                            onClick={changePassword}
-                            disabled={saveStatus.includes('Changing')}
-                          >
-                            {saveStatus.includes('Changing') ? 'Changing...' : 'Update Password'}
-                          </button>
-                          <button
-                            className="action-button secondary"
-                            onClick={cancelPasswordChange}
-                            disabled={saveStatus.includes('Changing')}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             )}
           </div>
 
           <div className="settings-footer">
-            <div className="button-group">
-              <button
-                className="save-button primary"
-                onClick={saveSettings}
-                disabled={saveStatus.includes('Saving') && !saveStatus.includes('Profile') && !saveStatus.includes('Password')}
-              >
-                {saveStatus.includes('Saving settings') ? 'Saving...' : 'Save Changes'}
-              </button>
-              <button
-                className="reset-button secondary"
-                onClick={resetSettings}
-                disabled={saveStatus.includes('Saving')}
-              >
-                Reset to Default
-              </button>
-            </div>
-
             {saveStatus && (
-              <div className={`status-message ${saveStatus.includes('successfully') ? 'success' :
-                saveStatus.includes('Error') || saveStatus.includes('incorrect') || saveStatus.includes('do not match') ? 'error' : 'info'
+              <div className={`status-message ${saveStatus?.includes('successfully') ? 'success' :
+                saveStatus?.includes('Error') || saveStatus?.includes('incorrect') || saveStatus?.includes('do not match') ? 'error' : 'info'
                 }`}>
                 {saveStatus}
+              </div>
+            )}
+            {updateProfileError && (
+              <div className="status-message error">
+                {updateProfileError}
               </div>
             )}
           </div>

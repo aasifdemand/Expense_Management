@@ -18,11 +18,12 @@ import {
     Chip,
     Tooltip
 } from "@mui/material";
-import { useBudgeting } from '../../hooks/useBudgeting';
 import { useExpenses } from '../../hooks/useExpenses';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReimbursements, markAsReimbursed } from '../../store/reimbursementSlice';
 import { DoneAll } from '@mui/icons-material';
+import { fetchBudgets } from '../../store/budgetSlice';
+import { fetchExpenses, fetchExpensesForUser } from '../../store/expenseSlice';
 
 
 const ReimbursementManagement = () => {
@@ -32,12 +33,16 @@ const ReimbursementManagement = () => {
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const { allBudgets } = useBudgeting()
+
     const { allExpenses } = useExpenses()
 
-    const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)
+    const totalAllocated = allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0)
     const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0)
-    const totalReimbursed = allExpenses?.reduce((acc, b) => acc + Number(b?.fromReimbursement), 0)
+    const totalReimbursed = reimbursements
+        ?.filter(item => !item?.isReimbursed)
+        .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0);
+
+
 
 
 
@@ -50,6 +55,11 @@ const ReimbursementManagement = () => {
 
         if (markAsReimbursed.fulfilled.match(res)) {
             dispatch(fetchReimbursements())
+            await Promise.all([
+                dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
+                dispatch(fetchExpenses({ page: 1, limit: 20 })),
+                dispatch(fetchExpensesForUser({ page: 1, limit: 20 }))
+            ]);
         }
     }
 
@@ -212,7 +222,7 @@ const ReimbursementManagement = () => {
     // }
 
     // Show all reimbursements for all users
-    console.log(reimbursements);
+
 
 
 
@@ -332,7 +342,7 @@ const ReimbursementManagement = () => {
                                             </TableCell>
                                             <TableCell>
                                                 <Typography fontWeight={500}>
-                                                    {item?.expense?.fromReimbursement}
+                                                    {item?.isReimbursed ? 0 : item?.expense?.fromReimbursement}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell>

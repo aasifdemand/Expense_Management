@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -23,6 +24,7 @@ import type { Request, Response } from 'express';
 import { CsrfGuard } from 'src/guards/csrf/csrf.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRole } from 'src/models/user.model';
+import { UpdateProfileDto } from './dto/profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -125,5 +127,18 @@ export class AuthController {
       );
     }
     return this.authService.resetUserPassword(id, newPass);
+  }
+
+
+
+  @Patch('profile/:id')
+  @UseGuards(CsrfGuard)
+  async updateProfile(
+    @Req() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+    @Param("id") id: string
+  ) {
+    // Users can only update their own profile
+    return this.authService.updateProfile(updateProfileDto, id);
   }
 }

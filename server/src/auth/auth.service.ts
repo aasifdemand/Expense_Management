@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -19,6 +20,7 @@ import * as argon2 from 'argon2';
 import { CreateUserDto } from './dto/create-user.dto';
 import { v4 as uuidv4 } from 'uuid';
 import type { Request } from 'express';
+import { UpdateProfileDto } from './dto/profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -343,7 +345,7 @@ export class AuthService {
     const user = await this.userModel
       .findById(userId)
       .select(
-        'name email role spentAmount reimbursedAmount allocatedAmount budgetLeft',
+        'name email role userLoc phone spentAmount reimbursedAmount allocatedAmount budgetLeft',
       )
       // .populate([
       //     {
@@ -459,6 +461,80 @@ export class AuthService {
       id: user._id,
       name: user.name,
       role: user.role,
+    };
+  }
+
+
+
+  async updateProfile(updateProfileDto: UpdateProfileDto, userId: string,) {
+    // Check if user exists
+    const existingUser = await this.userModel.findById(userId);
+    if (!existingUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Prepare update data
+    const updateData: any = { ...updateProfileDto };
+
+    // Handle email uniqueness check
+    if (updateProfileDto.email && updateProfileDto.email !== existingUser.email) {
+      const emailExists = await this.userModel.findOne({
+        email: updateProfileDto.email,
+        _id: { $ne: userId }
+      });
+      if (emailExists) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    // Handle phone uniqueness check
+    if (updateProfileDto.phone && updateProfileDto.phone !== existingUser.phone) {
+      const phoneExists = await this.userModel.findOne({
+        phone: updateProfileDto.phone,
+        _id: { $ne: userId }
+      });
+      if (phoneExists) {
+        throw new ConflictException('Phone number already exists');
+      }
+    }
+
+    // Handle password hashing if provided
+    if (updateProfileDto.password) {
+      const hashedPassword = await argon2.hash(updateProfileDto.password);
+      updateData.password = hashedPassword;
+    }
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
+
+    // Update user
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password -twoFactorSecret -sessions'); // Exclude sensitive fields
+
+    if (!updatedUser) {
+      throw new NotFoundException('User not found after update');
+    }
+
+    // Return sanitized user object (matching your existing pattern)
+    return {
+      id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      department: updatedUser.department,
+      userLoc: updatedUser.userLoc,
+      spentAmount: updatedUser.spentAmount,
+      reimbursedAmount: updatedUser.reimbursedAmount,
+      allocatedAmount: updatedUser.allocatedAmount,
+      budgetLeft: updatedUser.budgetLeft,
     };
   }
 }
