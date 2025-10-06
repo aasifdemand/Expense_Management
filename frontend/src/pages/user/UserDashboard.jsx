@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Grid, Typography, alpha, useTheme } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
 
@@ -11,6 +11,8 @@ import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart"
+import { useDispatch, useSelector } from "react-redux";
+import { fetchReimbursementsForUser } from "../../store/reimbursementSlice";
 
 
 const StatCard = ({ stat }) => (
@@ -141,8 +143,12 @@ const StatCard = ({ stat }) => (
 
 const Dashboard = () => {
   const theme = useTheme();
-
+  const dispatch = useDispatch()
+  const { user } = useSelector((state) => state?.auth)
   const [activeTab, setActiveTab] = useState("budget");
+  const { userReimbursements } = useSelector((state) => state?.reimbursement)
+  console.log("userReimbursements: ", userReimbursements);
+
 
   const {
     allBudgets,
@@ -192,15 +198,22 @@ const Dashboard = () => {
   } = useExpenses();
 
 
+
+  useEffect(() => {
+    if (user?._id) {
+      dispatch(fetchReimbursementsForUser(user?._id))
+    }
+  }, [dispatch, user])
+
+
+
   console.log("AllBudgets: ", allBudgets);
-
-
 
 
   // Budget Stats Calculations
   const totalAllocated = allBudgets.reduce((acc, b) => acc + (b.allocatedAmount || 0), 0) || 0;
   const totalExpenses = userExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
-  const totalReimbursed = userExpenses?.reduce((acc, e) => acc + Number(e?.fromReimbursement || 0), 0) || 0;
+  const totalReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
 
   const budgetStats = [
     {

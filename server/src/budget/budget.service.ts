@@ -26,7 +26,7 @@ export class BudgetService {
     @InjectModel(SubDepartment.name)
     private readonly subDepartmentModel: Model<User>,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {}
+  ) { }
 
   async allocateBudget(data: AllocateBudgetDto) {
     const { amount, userId } = data;

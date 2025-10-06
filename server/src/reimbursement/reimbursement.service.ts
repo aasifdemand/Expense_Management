@@ -71,6 +71,18 @@ export class ReimbursementService {
     }
 
 
+    async fetchUserReimbursements(userId: string) {
+        const reimbursements = await this.reimbursementModel
+            .find({ requestedBy: new Types.ObjectId(userId) })
+            .populate('requestedBy', 'name email')
+            .populate('expense')
+            .sort({ createdAt: -1 })
+            .exec();
+
+        return reimbursements;
+    }
+
+
     async searchReimbursements(filters: any, page = 1, limit = 20) {
         const safePage = Math.max(Number(page), 1);
         const safeLimit = Math.max(Number(limit), 1);

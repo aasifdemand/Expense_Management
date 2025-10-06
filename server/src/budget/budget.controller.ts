@@ -23,7 +23,7 @@ import type { Request } from 'express';
 
 @Controller('budget')
 export class BudgetController {
-  constructor(private readonly budgetService: BudgetService) {}
+  constructor(private readonly budgetService: BudgetService) { }
 
   @Post('allocate')
   @UseGuards(CsrfGuard)
