@@ -40,6 +40,9 @@ export class Expense extends Document {
 
   @Prop({ type: Types.ObjectId, ref: "Budget" })
   budget?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: "Reimbursement" })
+  reimbursement?: Types.ObjectId
 }
 
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);

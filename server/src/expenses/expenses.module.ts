@@ -9,12 +9,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-ioredis-yet';
 import { Budget, BudgetSchema } from 'src/models/budget.model';
-import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { Notification, NotificationSchema } from 'src/models/notifications.model';
-import { NotificationsService } from 'src/services/notifications.service';
 import { Department, DepartmentSchema } from 'src/models/department.model';
 import { SubDepartment, SubDepartmentSchema } from 'src/models/sub-department.model';
 import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.model';
+import { NotificationsModule } from 'src/notifications/notifications.module';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
+
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.mo
         schema: ReimbursementSchema
       }
     ]),
+    NotificationsModule,
     CacheModule.registerAsync({
       isGlobal: true,
       inject: [ConfigService],
@@ -67,6 +70,7 @@ import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.mo
 
   ],
   controllers: [ExpensesController],
-  providers: [ExpensesService, ImagekitService, NotificationsGateway, NotificationsService],
+  providers: [ExpensesService, ImagekitService, NotificationsService, NotificationsGateway],
+  exports: [NotificationsService, NotificationsGateway],
 })
 export class ExpensesModule { }

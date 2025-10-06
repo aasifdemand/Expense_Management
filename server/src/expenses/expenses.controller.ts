@@ -144,7 +144,7 @@ export class ExpensesController {
     return this.expensesService.getAllExpensesForUser(
       Number(page),
       Number(limit),
-      session,
+      req,
     );
   }
 

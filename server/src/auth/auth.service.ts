@@ -28,7 +28,7 @@ export class AuthService {
 
   async auth(data: AuthDto, req: Request) {
     const { deviceName } = data;
-    console.log('Auth attempt for user:', data.name);
+
 
 
     const user = await this.userModel.findOne({ name: data.name });
@@ -58,18 +58,9 @@ export class AuthService {
         length: 20,
       });
 
-      console.log('=== NEW DEVICE SETUP ===');
-      console.log('Generated Secret:', secret.base32);
-      console.log('Device ID:', deviceId);
-      console.log('OTPAuth URL:', secret.otpauth_url);
 
-      // Test the secret immediately
-      const testToken = speakeasy.totp({
-        secret: secret.base32,
-        encoding: 'base32',
-      });
-      console.log('Test token with new secret:', testToken);
-      console.log('========================');
+
+
 
       const newSession = {
         deviceId,
@@ -95,18 +86,10 @@ export class AuthService {
       // EXISTING device: reuse secret
       deviceSecret = existingDevice.twoFactorSecret;
 
-      console.log('=== EXISTING DEVICE ===');
-      console.log('Device ID:', existingDevice.deviceId);
-      console.log('Stored Secret:', existingDevice.twoFactorSecret);
-      console.log('Previously Verified:', existingDevice.twoFactorVerified);
 
-      // Test the stored secret
-      const testToken = speakeasy.totp({
-        secret: existingDevice.twoFactorSecret,
-        encoding: 'base32',
-      });
-      console.log('Test token with stored secret:', testToken);
-      console.log('========================');
+
+
+
 
       if (existingDevice.twoFactorVerified) {
         // Verified device: skip 2FA entirely
@@ -141,10 +124,7 @@ export class AuthService {
           },
         };
       } else {
-        // Existing but UNVERIFIED device: DO NOT generate new QR code
-        console.log(
-          'Existing unverified device - reusing existing secret, NO new QR code',
-        );
+
 
         // Update last login but keep the same secret
         existingDevice.lastLogin = new Date();
@@ -179,7 +159,7 @@ export class AuthService {
 
     console.log('2FA pending - QR code provided only for new devices');
     return {
-      qr: qrCodeDataUrl, // null for existing unverified devices, QR for new devices
+      qr: qrCodeDataUrl,
       deviceId,
       user: {
         id: user._id,

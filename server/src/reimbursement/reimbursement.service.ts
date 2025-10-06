@@ -9,6 +9,7 @@ import { Reimbursement } from 'src/models/reimbursements.model';
 import { CreateReimbursementDto, UpdateReimbursementDto } from './dto/create-reimbursement.dto';
 import { User, UserRole } from 'src/models/user.model';
 import { Expense } from 'src/models/expense.model';
+import { Budget } from 'src/models/budget.model';
 
 @Injectable()
 export class ReimbursementService {
@@ -16,6 +17,7 @@ export class ReimbursementService {
         @InjectModel(Reimbursement.name) private readonly reimbursementModel: Model<Reimbursement>,
         @InjectModel(User.name) private readonly userModel: Model<User>,
         @InjectModel(Expense.name) private readonly expenseModel: Model<Expense>,
+        @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
 
     ) { }
 
@@ -53,15 +55,15 @@ export class ReimbursementService {
 
 
 
-    async fetchAllReimbursements(filters?: any) {
-        const query: any = {};
+    async fetchAllReimbursements() {
+        // const query: any = {};
 
-        if (filters?.isReimbursed !== undefined) query.isReimbursed = filters.isReimbursed;
-        if (filters?.userId) query.requestedBy = new Types.ObjectId(filters.userId);
-        if (filters?.expenseId) query.expense = new Types.ObjectId(filters.expenseId);
+        // if (filters?.isReimbursed !== undefined) query.isReimbursed = filters.isReimbursed;
+        // if (filters?.userId) query.requestedBy = new Types.ObjectId(filters.userId);
+        // if (filters?.expenseId) query.expense = new Types.ObjectId(filters.expenseId);
 
         const reimbursements = await this.reimbursementModel
-            .find(query)
+            .find()
             .populate('requestedBy', 'name email')
             .populate('expense')
             .sort({ createdAt: -1 })
@@ -166,56 +168,106 @@ export class ReimbursementService {
             throw new NotFoundException("Reimbursement record doesn't exist");
         }
 
+        // Prevent re-processing already reimbursed records
+        if (reimbursementDoc.isReimbursed && isReimbursed) {
+            throw new BadRequestException("Reimbursement is already marked as paid");
+        }
+
         // Only update when marking as reimbursed
-        if (isReimbursed) {
-            // ✅ Update linked expense reimbursement tracker (not the actual expense amount)
+        if (isReimbursed && !reimbursementDoc.isReimbursed) {
+            // ✅ Update linked expense - convert reimbursement to allocation
             if (reimbursementDoc.expense) {
                 const expense = await this.expenseModel.findById(reimbursementDoc.expense);
                 if (!expense) throw new NotFoundException("Linked expense not found");
 
-                // Decrease pending reimbursement on expense
-                expense.fromReimbursement =
-                    Number(expense.fromReimbursement || 0) - Number(reimbursementDoc.amount);
-
-                if (expense.fromReimbursement < 0) {
-                    throw new BadRequestException(
-                        "Expense reimbursement amount cannot go negative"
-                    );
-                }
+                // Convert reimbursement amount back to allocation
+                expense.fromAllocation = Number(expense.fromAllocation) + Number(reimbursementDoc.amount);
+                expense.fromReimbursement = Math.max(0, Number(expense.fromReimbursement) - Number(reimbursementDoc.amount));
 
                 await expense.save();
+
+                // ✅ Update the budget for this expense
+                if (expense.budget) {
+                    await this.budgetModel.findByIdAndUpdate(
+                        expense.budget,
+                        {
+                            $inc: {
+                                remainingAmount: reimbursementDoc.amount,
+                                spentAmount: -reimbursementDoc.amount
+                            }
+                        }
+                    );
+                    console.log(`✅ Updated budget ${expense.budget.toString()} - added ${reimbursementDoc.amount} back to allocation`);
+                }
             }
 
-            // ✅ Update linked user's reimbursed balance
+            // ✅ Update linked user's balances
             const user = await this.userModel.findById(reimbursementDoc.requestedBy);
             if (!user) throw new NotFoundException("User not found");
 
-            if (user.reimbursedAmount === undefined) user.reimbursedAmount = 0;
-            user.reimbursedAmount =
-                Number(user.reimbursedAmount) - Number(reimbursementDoc.amount);
-
-            if (user.reimbursedAmount < 0) {
-                throw new BadRequestException(
-                    "User reimbursed amount cannot go negative"
-                );
-            }
+            // Update user balances
+            user.reimbursedAmount = Number(user.reimbursedAmount || 0) + Number(reimbursementDoc.amount);
+            user.budgetLeft = Number(user.budgetLeft || 0) + Number(reimbursementDoc.amount); // Add back to available budget
 
             await user.save();
 
             // ✅ Mark reimbursement as completed
             reimbursementDoc.isReimbursed = true;
+            reimbursementDoc.reimbursedAt = new Date();
+
+            console.log(`💰 Reimbursement processed: ${reimbursementDoc.amount} converted to allocation`);
+
+        } else if (!isReimbursed && reimbursementDoc.isReimbursed) {
+            // Handle case where superadmin wants to undo reimbursement
+            // ✅ Revert expense changes
+            if (reimbursementDoc.expense) {
+                const expense = await this.expenseModel.findById(reimbursementDoc.expense);
+                if (expense) {
+                    // Revert allocation changes
+                    expense.fromAllocation = Math.max(0, Number(expense.fromAllocation) - Number(reimbursementDoc.amount));
+                    expense.fromReimbursement = Number(expense.fromReimbursement) + Number(reimbursementDoc.amount);
+
+                    await expense.save();
+
+                    // Revert budget changes
+                    if (expense.budget) {
+                        await this.budgetModel.findByIdAndUpdate(
+                            expense.budget,
+                            {
+                                $inc: {
+                                    remainingAmount: -reimbursementDoc.amount,
+                                    spentAmount: reimbursementDoc.amount
+                                }
+                            }
+                        );
+                        console.log(`↩️ Reverted budget ${expense.budget.toString()} - moved ${reimbursementDoc.amount} back to reimbursement`);
+                    }
+                }
+            }
+
+            // ✅ Revert user's balances
+            const user = await this.userModel.findById(reimbursementDoc.requestedBy);
+            if (user) {
+                user.reimbursedAmount = Math.max(0, Number(user.reimbursedAmount || 0) - Number(reimbursementDoc.amount));
+                user.budgetLeft = Math.max(0, Number(user.budgetLeft || 0) - Number(reimbursementDoc.amount));
+                await user.save();
+            }
+
+            reimbursementDoc.isReimbursed = false;
+            reimbursementDoc.reimbursedAt = undefined;
+
+            console.log(`↩️ Reimbursement reverted: ${reimbursementDoc.amount}`);
         }
 
         await reimbursementDoc.save();
 
         return {
             message: isReimbursed
-                ? "Reimbursement marked as paid and synced with expense/user"
-                : "No changes applied (not reimbursed)",
+                ? "Reimbursement processed - amount converted to budget allocation"
+                : "Reimbursement reverted - amount moved back to reimbursement",
             reimbursement: reimbursementDoc,
         };
     }
-
 
 
     async deleteReimbursement(rId: string) {

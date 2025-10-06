@@ -15,6 +15,8 @@ export class Reimbursement extends Document {
     @Prop({ type: Boolean, default: false })
     isReimbursed?: boolean;
 
+    @Prop({ type: Date })
+    reimbursedAt?: Date;
 }
 
 export const ReimbursementSchema = SchemaFactory.createForClass(Reimbursement);

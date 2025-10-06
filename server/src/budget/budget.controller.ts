@@ -94,7 +94,7 @@ export class BudgetController {
     @Query() search: SearchBudgetAllocationsDto,
     @Session() session: Record<string, any>,
   ) {
-    console.log('Session in get all budget allocations route: ', session);
+
 
     if (
       session?.twoFactorPending ||
@@ -118,8 +118,7 @@ export class BudgetController {
     @Req() req: Request,
   ) {
     const { session } = req;
-    console.log('Fetching budgets for user:', userId);
-    console.log('Session:', session);
+
 
     if (
       session?.twoFactorPending ||

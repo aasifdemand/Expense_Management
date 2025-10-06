@@ -9,6 +9,7 @@ import { User, userSchema } from 'src/models/user.model';
 // import { redisStore } from 'cache-manager-ioredis-yet';
 import { Department, DepartmentSchema } from "src/models/department.model"
 import { SubDepartment, SubDepartmentSchema } from "src/models/sub-department.model"
+import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.model';
 
 @Module({
   imports: [
@@ -28,6 +29,10 @@ import { SubDepartment, SubDepartmentSchema } from "src/models/sub-department.mo
       {
         name: SubDepartment.name,
         schema: SubDepartmentSchema
+      },
+      {
+        name: Reimbursement.name,
+        schema: ReimbursementSchema
       }
     ]),
     // CacheModule.registerAsync({

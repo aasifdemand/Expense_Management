@@ -7,6 +7,7 @@ import { BudgetModule } from './budget/budget.module';
 import { NotificationsGateway } from './gateways/notifications/notifications.gateway';
 import { DepartmentModule } from './department/department.module';
 import { ReimbursementModule } from './reimbursement/reimbursement.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 
 
@@ -27,7 +28,8 @@ import { ReimbursementModule } from './reimbursement/reimbursement.module';
     ExpensesModule,
     BudgetModule,
     DepartmentModule,
-    ReimbursementModule
+    ReimbursementModule,
+    NotificationsModule
   ],
   controllers: [],
   providers: [NotificationsGateway],

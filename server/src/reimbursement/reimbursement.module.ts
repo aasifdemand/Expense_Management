@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.model';
 import { User, userSchema } from 'src/models/user.model';
 import { Expense, ExpenseSchema } from 'src/models/expense.model';
+import { Budget, BudgetSchema } from 'src/models/budget.model';
 
 @Module({
   imports: [
@@ -20,6 +21,10 @@ import { Expense, ExpenseSchema } from 'src/models/expense.model';
       {
         name: Expense.name,
         schema: ExpenseSchema
+      },
+      {
+        name: Budget.name,
+        schema: BudgetSchema
       }
     ])
   ],
