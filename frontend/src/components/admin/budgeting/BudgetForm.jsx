@@ -59,8 +59,8 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                         label="Company"
                     >
-                        <MenuItem value="Demand Curve">Demand Curve</MenuItem>
-                        <MenuItem value="Stacko">Stacko</MenuItem>
+                        <MenuItem value="Demand Curve Marketing">Demand Curve Marketing</MenuItem>
+                        <MenuItem value="Stackio">Stackio</MenuItem>
                     </StyledSelect>
                 </StyledFormControl>
 
