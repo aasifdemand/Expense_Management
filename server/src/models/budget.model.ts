@@ -15,6 +15,9 @@ export class Budget extends Document {
   @Prop({ type: Types.ObjectId, ref: "Expense", })
   expense?: Types.ObjectId;
 
+  @Prop({ type: String, default: "" })
+  company?: string
+
   @Prop({
     type: String,
     enum: BudgetType,

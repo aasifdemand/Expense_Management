@@ -19,10 +19,21 @@ import { Add as AddIcon } from "@mui/icons-material";
 // ];
 
 const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loading }) => {
+
+    // console.log("form data: ", formData);
+
     return (
         <SectionCard>
             <SectionTitle>Allocate Budget</SectionTitle>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
+            <div
+                style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 16,
+                    alignItems: "center",
+                }}
+            >
+                {/* User Dropdown */}
                 <StyledFormControl sx={{ flex: "1 1 300px" }}>
                     <InputLabel>User</InputLabel>
                     <StyledSelect
@@ -39,6 +50,21 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     </StyledSelect>
                 </StyledFormControl>
 
+                {/* Company Dropdown */}
+                <StyledFormControl sx={{ flex: "1 1 200px" }}>
+                    <InputLabel>Company</InputLabel>
+                    <StyledSelect
+                        name="company"
+                        value={formData.company || "Demand Curve"}
+                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        label="Company"
+                    >
+                        <MenuItem value="Demand Curve">Demand Curve</MenuItem>
+                        <MenuItem value="Stacko">Stacko</MenuItem>
+                    </StyledSelect>
+                </StyledFormControl>
+
+                {/* Amount Input */}
                 <StyledTextField
                     label="Amount"
                     name="amount"
@@ -49,23 +75,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     sx={{ flex: "1 1 200px" }}
                 />
 
-                {/* <StyledFormControl sx={{ flex: "1 1 200px" }}>
-                    <InputLabel>Types</InputLabel>
-                    <StyledSelect
-                        name="Types"
-                        value={formData.type}
-                        onChange={handleChange}
-                        label="Types"
-                    >
-                        {types.map((m) => (
-                            <MenuItem key={m.value} value={m.value}>
-                                {m.label}
-                            </MenuItem>
-                        ))}
-                    </StyledSelect>
-                </StyledFormControl> */}
-
-
+                {/* Add Button */}
                 <PrimaryButton
                     variant="contained"
                     loading={loading}
@@ -74,9 +84,9 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                         minWidth: "auto",
                         p: 1.2,
                         borderRadius: 2,
-                        backgroundColor: '#1976d2',
-                        '&:hover': {
-                            backgroundColor: '#1565c0',
+                        backgroundColor: "#1976d2",
+                        "&:hover": {
+                            backgroundColor: "#1565c0",
                         },
                     }}
                 >
@@ -84,6 +94,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                 </PrimaryButton>
             </div>
         </SectionCard>
+
     );
 };
 

@@ -25,6 +25,8 @@ import { Reimbursement } from 'src/models/reimbursements.model';
 import type { Request } from 'express';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
+import { MailService } from 'src/services/mail.service';
+import createExpenseEmailTemplate from './templates/create-expense.template';
 
 @Injectable()
 export class ExpensesService {
@@ -41,7 +43,8 @@ export class ExpensesService {
     private readonly mediaService: ImagekitService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly notificationService: NotificationsService,
-    private readonly notificationsGateway: NotificationsGateway
+    private readonly notificationsGateway: NotificationsGateway,
+    private readonly mailService: MailService
   ) { }
 
   private EXPENSE_ALL_KEY = (page: number, limit: number) =>
@@ -66,7 +69,7 @@ export class ExpensesService {
 
     const user = await this.userModal
       .findById(userId)
-      .select('name spentAmount reimbursedAmount budgetLeft');
+      .select('name email spentAmount reimbursedAmount budgetLeft');
 
     if (!user) throw new NotFoundException('User not found!!');
 
@@ -94,69 +97,42 @@ export class ExpensesService {
     console.log('Searching budgets for:', { userId, month, year });
     console.log('Found budgets:', currentMonthBudgets.length);
 
-    // Detailed budget info
-    currentMonthBudgets.forEach((budget, index) => {
-      console.log(`Budget ${index + 1}:`, {
-        id: budget._id,
-        allocated: budget.allocatedAmount,
-        spent: budget.spentAmount,
-        remaining: budget.remainingAmount,
-        month: budget.month,
-        year: budget.year
-      });
-    });
-
     // Calculate available budget from CURRENT MONTH only
     const currentMonthAvailableBudget = currentMonthBudgets.reduce(
       (total, budget) => total + budget.remainingAmount,
       0
     );
 
-
-
     let fromAllocation = 0;
     let fromReimbursement = 0;
 
-    // If no budgets exist for current month
+    // Budget allocation logic
     if (currentMonthBudgets.length === 0) {
-
       fromAllocation = 0;
       fromReimbursement = amount;
     } else if (currentMonthAvailableBudget >= amount) {
-      // Case 1: Enough budget in current month
       fromAllocation = amount;
       fromReimbursement = 0;
-
     } else if (currentMonthAvailableBudget > 0) {
-      // Case 2: Partial budget in current month
       fromAllocation = currentMonthAvailableBudget;
       fromReimbursement = amount - currentMonthAvailableBudget;
-
     } else {
-      // Case 3: No budget left in current month
       fromAllocation = 0;
       fromReimbursement = amount;
-
     }
 
-
-
-    // [Rest of your reimbursement and expense creation logic...]
-    // Get or create reimbursement document for this user
+    // Get or create reimbursement document
     let reimbursement = await this.reimbursementModel.findOne({
       requestedBy: userId,
       isReimbursed: false
     });
 
-    // Calculate new reimbursement amount
     let newReimbursementAmount = 0;
     if (reimbursement) {
       newReimbursementAmount = reimbursement.amount + fromReimbursement;
     } else {
       newReimbursementAmount = fromReimbursement;
     }
-
-
 
     // Handle reimbursement document
     if (newReimbursementAmount > 0) {
@@ -166,14 +142,12 @@ export class ExpensesService {
           { amount: newReimbursementAmount },
           { new: true }
         );
-
       } else {
         reimbursement = await this.reimbursementModel.create({
           requestedBy: user._id,
           amount: newReimbursementAmount,
           isReimbursed: false,
         });
-
       }
     } else {
       if (reimbursement) {
@@ -182,10 +156,8 @@ export class ExpensesService {
           { amount: 0 },
           { new: true }
         );
-
       }
     }
-
 
     let remainingAllocation = fromAllocation;
     const budgetUpdates: Array<{ budgetId: Types.ObjectId; spentIncrease: number }> = [];
@@ -202,20 +174,20 @@ export class ExpensesService {
             spentIncrease: useFromThisBudget,
           });
           remainingAllocation -= useFromThisBudget;
-
         }
       }
     }
 
-    // Department validation
     const deptExists = await this.departmentModel.findById(department);
     if (!deptExists) throw new NotFoundException('Department not found!');
 
+    let subDeptData: SubDepartment | null = null;
     let subDeptId;
     if (subDepartment) {
       const subDeptExists = await this.subDepartmentModel.findById(subDepartment);
       if (!subDeptExists) throw new NotFoundException('SubDepartment not found!');
       subDeptId = subDeptExists._id as Types.ObjectId;
+      subDeptData = subDeptExists;
     }
 
     // Create expense
@@ -244,7 +216,6 @@ export class ExpensesService {
         reimbursement._id,
         { expense: expense._id }
       );
-
     }
 
     // Update user financials
@@ -273,7 +244,6 @@ export class ExpensesService {
         },
       }));
 
-
       try {
         const result = await this.budgetModel.bulkWrite(bulkOps);
         console.log('✅ Budgets updated successfully:', {
@@ -294,28 +264,25 @@ export class ExpensesService {
       this.cacheManager.del('expenses:search:*'),
     ]);
 
-    // In your expense creation method
-    const superAdmins = await this.userModal.find({ role: UserRole.SUPERADMIN }).select('_id');
+    // 🔔 SEND EMAIL NOTIFICATIONS TO SUPER ADMINS
+    await this.sendExpenseEmailNotifications(expense, user, deptExists, subDeptData);
 
+    // In-app notifications
+    const superAdmins = await this.userModal.find({ role: UserRole.SUPERADMIN }).select('_id');
     const notificationMessage = `New expense created by ${user.name} for ₹${amount}`;
 
     for (const admin of superAdmins) {
-      const userId = admin._id as Types.ObjectId; // proper conversion to string
+      const adminId = admin._id as Types.ObjectId;
       const success = this.notificationService.sendNotification(
-        userId.toString(),
+        adminId.toString(),
         notificationMessage,
         'EXPENSE_CREATED',
       );
 
       if (!success) {
-        console.warn(`⚠️ SuperAdmin ${userId.toString()} is not connected`);
+        console.warn(`⚠️ SuperAdmin ${adminId.toString()} is not connected`);
       }
     }
-
-
-
-
-
 
     return {
       message: 'Created the new Expense successfully',
@@ -330,34 +297,59 @@ export class ExpensesService {
       },
     };
   }
-  // In your expenses.service.ts - Add location filtering to all methods
 
-  // In expenses.service.ts - Add these methods and updates
+  private async sendExpenseEmailNotifications(
+    expense: any,
+    user: any,
+    department: any,
+    subDepartment?: any
+  ): Promise<void> {
+    try {
+      // Get super admins with email addresses
+      const superAdmins = await this.userModal.find({
+        role: UserRole.SUPERADMIN
+      }).select('email name').lean();
 
-  private buildLocationFilter(location?: string): Record<string, any> {
-    if (!location || location === 'OVERALL') {
-      return {}; // No filter for overall
-    }
-
-    // For specific locations, we need to filter by user's location
-    // This will be used in aggregation pipelines
-    return {}; // We'll handle this differently in aggregation
-  }
-
-  private buildLocationAggregationFilter(location?: string): PipelineStage[] {
-    if (!location || location === 'OVERALL') {
-      return []; // No filter for overall
-    }
-
-    // For specific locations, add a $match stage after user lookup
-    return [
-      {
-        $match: {
-          'user.userLoc': location
-        }
+      if (superAdmins.length === 0) {
+        console.log('No super admins found for email notification');
+        return;
       }
-    ];
+
+      // Properly filter out undefined/null emails and ensure they are strings
+      const adminEmails = superAdmins
+        .map(admin => admin.email)
+        .filter((email): email is string =>
+          typeof email === 'string' && email.trim().length > 0
+        );
+
+      if (adminEmails.length === 0) {
+        console.log('No valid admin emails found for notification');
+        return;
+      }
+
+      // Create email template
+      const emailHtml = createExpenseEmailTemplate(expense, user, department, subDepartment);
+
+      // Send email to all super admins
+      const emailSuccess = await this.mailService.sendEmail({
+        to: adminEmails,
+        subject: `💰 New Expense Submitted - ₹${expense.amount}`,
+        html: emailHtml,
+      });
+
+      if (emailSuccess) {
+        console.log(`✅ Expense email notifications sent to ${adminEmails.length} admins`);
+      } else {
+        console.log('❌ Failed to send expense email notifications');
+      }
+    } catch (error) {
+      console.error('Error sending expense email notifications:', error);
+      // Don't throw error - email failure shouldn't break expense creation
+    }
   }
+
+
+
 
   async getAllExpenses(page = 1, limit = 10, location?: string) {
     const safePage = Math.max(page, 1);
@@ -370,140 +362,51 @@ export class ExpensesService {
     if (cached)
       return { message: 'Fetched expenses from cache', ...(cached as any) };
 
-    // Build base query with location filtering using aggregation
-    const aggregationPipeline: PipelineStage[] = [
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...this.buildLocationAggregationFilter(location), // Apply location filter after user lookup
-      {
-        $lookup: {
-          from: 'departments',
-          localField: 'department',
-          foreignField: '_id',
-          as: 'department',
-        },
-      },
-      { $unwind: { path: '$department', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'subdepartments',
-          localField: 'subDepartment',
-          foreignField: '_id',
-          as: 'subDepartment',
-        },
-      },
-      { $unwind: { path: '$subDepartment', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'reimbursements',
-          localField: 'reimbursement',
-          foreignField: '_id',
-          as: 'reimbursement',
-        },
-      },
-      { $unwind: { path: '$reimbursement', preserveNullAndEmptyArrays: true } },
-      { $sort: { createdAt: -1 } },
-    ];
+    // Build base query with population and location filtering
+    const baseQuery: any = {};
+
+    // Apply location filter if provided
+    if (location && location !== 'OVERALL') {
+      // First, find users with the specified location
+      const usersWithLocation = await this.userModal.find({ userLoc: location }).select('_id');
+      const userIds = usersWithLocation.map(user => user._id);
+
+      // Then filter expenses by those user IDs
+      baseQuery.user = { $in: userIds };
+    }
+
+    const query = this.expenseModal
+      .find(baseQuery)
+      .populate('user', 'name userLoc')
+      .populate('department', 'name')
+      .populate('subDepartment', 'name')
+      .populate('reimbursement', 'amount isReimbursed')
+      .sort({ createdAt: -1 });
 
     // Get paginated data
-    const paginatedPipeline = [
-      ...aggregationPipeline,
-      { $skip: skip },
-      { $limit: safeLimit },
-      {
-        $project: {
-          _id: 1,
-          amount: 1,
-          fromAllocation: 1,
-          fromReimbursement: 1,
-          description: 1,
-          paymentMode: 1,
-          isReimbursed: 1,
-          isApproved: 1,
-          month: 1,
-          year: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          proof: 1,
-          user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
-          department: { _id: '$department._id', name: '$department.name' },
-          subDepartment: { _id: '$subDepartment._id', name: '$subDepartment.name' },
-          reimbursement: { _id: '$reimbursement._id', amount: '$reimbursement.amount', isReimbursed: '$reimbursement.isReimbursed' },
-        },
-      },
-    ];
-
-    // Get total count with location filter
-    const countPipeline = [
-      ...aggregationPipeline,
-      { $count: 'total' }
-    ];
-
-    const [data, totalResult, allExpenses] = await Promise.all([
-      this.expenseModal.aggregate(paginatedPipeline),
-      this.expenseModal.aggregate(countPipeline),
-      this.expenseModal.aggregate([
-        ...aggregationPipeline,
-        {
-          $project: {
-            _id: 1,
-            amount: 1,
-            fromAllocation: 1,
-            fromReimbursement: 1,
-            description: 1,
-            paymentMode: 1,
-            isReimbursed: 1,
-            isApproved: 1,
-            month: 1,
-            year: 1,
-            createdAt: 1,
-            updatedAt: 1,
-            proof: 1,
-            user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
-            department: { _id: '$department._id', name: '$department.name' },
-            subDepartment: { _id: '$subDepartment._id', name: '$subDepartment.name' },
-            reimbursement: { _id: '$reimbursement._id', amount: '$reimbursement.amount', isReimbursed: '$reimbursement.isReimbursed' },
-          },
-        },
-      ]),
+    const [data, total] = await Promise.all([
+      query.skip(skip).limit(safeLimit).exec(),
+      this.expenseModal.countDocuments(baseQuery),
     ]);
 
-    const total = totalResult[0]?.total || 0;
+    // Get all expenses for stats (without pagination)
+    const allExpensesQuery = this.expenseModal
+      .find(baseQuery)
+      .populate('user', 'name userLoc')
+      .populate('department', 'name')
+      .populate('subDepartment', 'name')
+      .populate('reimbursement', 'amount isReimbursed')
+      .sort({ createdAt: -1 });
 
-    // Stats pipeline with location filter
-    const statsPipeline: PipelineStage[] = [
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...this.buildLocationAggregationFilter(location),
-      {
-        $group: {
-          _id: null,
-          totalSpent: { $sum: '$amount' },
-          totalFromAllocation: { $sum: '$fromAllocation' },
-          totalFromReimbursement: { $sum: '$fromReimbursement' },
-        },
-      },
-    ];
+    const allExpenses = await allExpensesQuery.exec();
 
-    const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
-    const stats = statsResult || {
-      totalSpent: 0,
-      totalFromAllocation: 0,
-      totalFromReimbursement: 0,
+    // Calculate stats
+    const statsData = await this.expenseModal.find(baseQuery).exec();
+
+    const stats = {
+      totalSpent: statsData.reduce((sum, expense) => sum + expense.amount, 0),
+      totalFromAllocation: statsData.reduce((sum, expense) => sum + (expense.fromAllocation || 0), 0),
+      totalFromReimbursement: statsData.reduce((sum, expense) => sum + (expense.fromReimbursement || 0), 0),
     };
 
     const result = {
@@ -532,22 +435,25 @@ export class ExpensesService {
         ...(cached as any),
       };
 
-    const matchStage: Record<string, any> = {};
+    // Build the main query
+    const baseQuery: any = {};
 
-    // Existing filters
-    if (filters.month !== undefined) matchStage.month = filters.month;
-    if (filters.year !== undefined) matchStage.year = filters.year;
+    // Apply basic filters
+    if (filters.month !== undefined) {
+      baseQuery.month = filters.month;
+    }
+    if (filters.year !== undefined) {
+      baseQuery.year = filters.year;
+    }
     if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
-      matchStage.amount = {};
-      if (filters.minAmount !== undefined)
-        matchStage.amount.$gte = filters.minAmount;
-      if (filters.maxAmount !== undefined)
-        matchStage.amount.$lte = filters.maxAmount;
+      baseQuery.amount = {};
+      if (filters.minAmount !== undefined) baseQuery.amount.$gte = filters.minAmount;
+      if (filters.maxAmount !== undefined) baseQuery.amount.$lte = filters.maxAmount;
     }
 
     if (filters.department) {
       try {
-        matchStage.department = new Types.ObjectId(filters.department);
+        baseQuery.department = new Types.ObjectId(filters.department);
       } catch (err) {
         console.warn('Invalid department ID:', filters.department, err);
       }
@@ -555,156 +461,81 @@ export class ExpensesService {
 
     if (filters.subDepartment) {
       try {
-        matchStage.subDepartment = new Types.ObjectId(filters.subDepartment);
+        baseQuery.subDepartment = new Types.ObjectId(filters.subDepartment);
       } catch (err) {
         console.warn('Invalid subDepartment ID:', filters.subDepartment, err);
       }
     }
 
-    const basePipeline: PipelineStage[] = [
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...this.buildLocationAggregationFilter(location), // Apply location filter
-      {
-        $lookup: {
-          from: 'departments',
-          localField: 'department',
-          foreignField: '_id',
-          as: 'department',
-        },
-      },
-      { $unwind: { path: '$department', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'subdepartments',
-          localField: 'subDepartment',
-          foreignField: '_id',
-          as: 'subDepartment',
-        },
-      },
-      { $unwind: { path: '$subDepartment', preserveNullAndEmptyArrays: true } },
-    ];
+    // Apply location filter if provided
+    if (location && location !== 'OVERALL') {
+      // First, find users with the specified location
+      const usersWithLocation = await this.userModal.find({ userLoc: location }).select('_id');
+      const userIds = usersWithLocation.map(user => user._id);
 
-    // Search by username if provided
+      // Then filter expenses by those user IDs
+      baseQuery.user = { $in: userIds };
+    }
+
+    const query = this.expenseModal
+      .find(baseQuery)
+      .populate('user', 'name userLoc')
+      .populate('department', 'name')
+      .populate('subDepartment', 'name')
+      .sort({ createdAt: -1 });
+
+    // Get data without username filter first
+    let data = await query.skip(skip).limit(safeLimit).exec();
+    let allExpenses = await this.expenseModal.find(baseQuery)
+      .populate('user', 'name userLoc')
+      .populate('department', 'name')
+      .populate('subDepartment', 'name')
+      .sort({ createdAt: -1 })
+      .exec();
+
+    // Apply username filter in memory if provided
     if (filters.userName) {
-      basePipeline.push({
-        $match: { 'user.name': { $regex: new RegExp(filters.userName, 'i') } },
+      const userNameRegex = new RegExp(filters.userName, 'i');
+
+      // Type-safe filtering using Mongoose document methods
+      data = data.filter(expense => {
+        const user = expense.user as any; // Use type assertion for populated field
+        return user && user.name && userNameRegex.test(user.name);
+      });
+
+      allExpenses = allExpenses.filter(expense => {
+        const user = expense.user as any; // Use type assertion for populated field
+        return user && user.name && userNameRegex.test(user.name);
       });
     }
 
-    // Project with userLoc
-    const projectionStage: PipelineStage = {
-      $project: {
-        _id: 1,
-        paidTo: 1,
-        amount: 1,
-        fromAllocation: 1,
-        fromReimbursement: 1,
-        month: 1,
-        year: 1,
-        createdAt: 1,
-        updatedAt: 1,
-        user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
-        department: { _id: '$department._id', name: '$department.name' },
-        subDepartment: {
-          _id: '$subDepartment._id',
-          name: '$subDepartment.name',
-        },
-      },
+    // Get total count (need to handle username filter separately)
+    let total = await this.expenseModal.countDocuments(baseQuery);
+
+    // If username filter is applied, we need to adjust the total count
+    if (filters.userName) {
+      const allFilteredExpenses = await this.expenseModal.find(baseQuery)
+        .populate('user', 'name userLoc')
+        .exec();
+
+      const userNameRegex = new RegExp(filters.userName, 'i');
+      const filteredExpenses = allFilteredExpenses.filter(expense => {
+        const user = expense.user as any; // Use type assertion for populated field
+        return user && user.name && userNameRegex.test(user.name);
+      });
+      total = filteredExpenses.length;
+    }
+
+    // Calculate stats using the same filter
+    const statsData = await this.expenseModal.find(baseQuery).exec();
+
+    const stats = {
+      totalSpent: statsData.reduce((sum, expense) => sum + expense.amount, 0),
+      totalFromAllocation: statsData.reduce((sum, expense) => sum + (expense.fromAllocation || 0), 0),
+      totalFromReimbursement: statsData.reduce((sum, expense) => sum + (expense.fromReimbursement || 0), 0),
     };
 
-    const pipeline = [...basePipeline, projectionStage];
-
-    // --- Stats aggregation with location filter ---
-    const statsPipeline = [
-      ...pipeline,
-      {
-        $group: {
-          _id: null,
-          totalSpent: { $sum: '$amount' },
-          totalFromAllocation: { $sum: '$fromAllocation' },
-          totalFromReimbursement: { $sum: '$fromReimbursement' },
-        },
-      },
-    ];
-    const statsResult = await this.expenseModal.aggregate(statsPipeline);
-    const stats = statsResult[0] || {
-      totalSpent: 0,
-      totalFromAllocation: 0,
-      totalFromReimbursement: 0,
-    };
-
-    // Pagination + sorting for filtered data
-    pipeline.push({ $sort: { createdAt: -1 } });
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: safeLimit });
-
-    const data = await this.expenseModal.aggregate(pipeline);
-
-    // Count total matching documents with location filter
-    const countPipeline = [
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...this.buildLocationAggregationFilter(location),
-      { $count: 'total' }
-    ];
-
-    const totalResult = await this.expenseModal.aggregate(countPipeline);
-    const total = totalResult[0]?.total || 0;
-
-    // All expenses with location filter
-    const allExpensesPipeline: PipelineStage[] = [
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...this.buildLocationAggregationFilter(location),
-      {
-        $lookup: {
-          from: 'departments',
-          localField: 'department',
-          foreignField: '_id',
-          as: 'department',
-        },
-      },
-      { $unwind: { path: '$department', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'subdepartments',
-          localField: 'subDepartment',
-          foreignField: '_id',
-          as: 'subDepartment',
-        },
-      },
-      { $unwind: { path: '$subDepartment', preserveNullAndEmptyArrays: true } },
-      projectionStage,
-      { $sort: { createdAt: -1 } },
-    ];
-    const allExpenses = await this.expenseModal.aggregate(allExpensesPipeline);
-
-    return {
+    const result = {
       message: 'Search completed',
       data,
       stats,
@@ -712,8 +543,10 @@ export class ExpensesService {
       location: location || 'OVERALL',
       meta: { total, page: safePage, limit: safeLimit },
     };
-  }
 
+    await this.cacheManager.set(cacheKey, result, 60_000);
+    return result;
+  }
 
   async getAllExpensesForUser(
     page = 1,

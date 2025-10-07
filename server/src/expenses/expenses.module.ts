@@ -15,6 +15,7 @@ import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.mo
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
+import { MailService } from 'src/services/mail.service';
 
 
 @Module({
@@ -66,7 +67,7 @@ import { NotificationsGateway } from 'src/gateways/notifications/notifications.g
 
   ],
   controllers: [ExpensesController],
-  providers: [ExpensesService, ImagekitService, NotificationsService, NotificationsGateway],
-  exports: [NotificationsService, NotificationsGateway],
+  providers: [ExpensesService, ImagekitService, NotificationsService, NotificationsGateway, MailService],
+  exports: [NotificationsService, NotificationsGateway, MailService],
 })
 export class ExpensesModule { }

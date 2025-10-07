@@ -15,14 +15,12 @@ import { LocationProvider } from './contexts/LocationContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
-
       <BrowserRouter>
         <LocationProvider>
           <App />
           <Toaster />
         </LocationProvider>
       </BrowserRouter>
-
     </Provider>
   </StrictMode>,
 )

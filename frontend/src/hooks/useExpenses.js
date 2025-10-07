@@ -76,7 +76,7 @@ export const useExpenses = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // ✅ FIXED: Fetch expenses with filters and location
+
   useEffect(() => {
     const filters = {};
     if (debouncedSearch?.trim()) filters.userName = debouncedSearch;
@@ -93,13 +93,13 @@ export const useExpenses = () => {
           ...filters,
           page,
           limit,
-          location: currentLoc // Pass current location to search
+          location: currentLoc
         }));
       } else {
         dispatch(fetchExpenses({
           page,
           limit,
-          location: currentLoc // Pass current location to fetch
+          location: currentLoc
         }));
       }
     } else {

@@ -4,17 +4,20 @@ import {
     IsBoolean,
     IsOptional,
     IsMongoId,
+    IsEnum,
 } from "class-validator";
 import { Type } from "class-transformer";
+
+export enum Location {
+    OVERALL = 'OVERALL',
+    MUMBAI = 'MUMBAI',
+    BENGALURU = 'BENGALURU'
+}
 
 export class SearchExpensesDto {
     @IsOptional()
     @IsString()
     userName?: string;
-
-    // @IsOptional()
-    // @IsString()
-    // paidTo?: string;
 
     @IsOptional()
     @Type(() => Number)
@@ -26,11 +29,9 @@ export class SearchExpensesDto {
     @IsNumber()
     maxAmount?: number;
 
-
     @IsOptional()
     @IsMongoId()
     department?: string;
-
 
     @IsOptional()
     @IsMongoId()
@@ -55,6 +56,10 @@ export class SearchExpensesDto {
     @Type(() => Number)
     @IsNumber()
     year?: number;
+
+    @IsOptional()
+    @IsEnum(Location)
+    location?: Location;
 
     @IsOptional()
     @Type(() => Number)

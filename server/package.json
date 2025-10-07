@@ -43,6 +43,7 @@
     "ioredis": "^5.8.0",
     "mongoose": "^8.18.1",
     "multer": "^2.0.2",
+    "node-mailer": "^0.1.1",
     "qrcode": "^1.5.4",
     "redis": "^5.8.2",
     "reflect-metadata": "^0.2.2",

@@ -1,5 +1,12 @@
 import { Type } from "class-transformer";
-import { IsOptional, IsString, IsNumber, Min } from "class-validator";
+import { IsOptional, IsString, IsNumber, Min, IsEnum } from "class-validator";
+
+export enum Location {
+    OVERALL = 'OVERALL',
+    MUMBAI = 'MUMBAI',
+    BENGALURU = 'BENGALURU'
+}
+
 
 export class SearchBudgetAllocationsDto {
     @IsOptional()
@@ -36,6 +43,10 @@ export class SearchBudgetAllocationsDto {
     @Type(() => Number)
     maxSpent?: number;
 
+
+    @IsOptional()
+    @IsEnum(Location)
+    location?: Location;
 
     @IsOptional()
     @Type(() => Number)

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -449,6 +450,11 @@ export class AuthService {
 
 
   async updateProfile(updateProfileDto: UpdateProfileDto, userId: string,) {
+
+    // Validate userId before using it
+    if (!userId || userId === 'undefined') {
+      throw new BadRequestException('Invalid user ID');
+    }
     // Check if user exists
     const existingUser = await this.userModel.findById(userId);
     if (!existingUser) {
