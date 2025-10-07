@@ -122,7 +122,7 @@ const Navbar = ({
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 transition: 'all 0.3s ease',
-                zIndex: (theme) => theme.zIndex.drawer + 1 // Reduced zIndex
+                // zIndex: (theme) => theme.zIndex.drawer + 1000
             }}
         >
             <Toolbar sx={{
@@ -152,7 +152,7 @@ const Navbar = ({
                 </IconButton>
 
                 {/* Enhanced App Title */}
-                {isMobile && (
+                {/* {isMobile && (
                     <Typography
                         variant="h6"
                         component="div"
@@ -165,7 +165,7 @@ const Navbar = ({
                     >
                         ExpenseTracker
                     </Typography>
-                )}
+                )} */}
 
                 {/* Enhanced Right side icons */}
                 <Box sx={{
@@ -248,6 +248,46 @@ const Navbar = ({
                             </Select>
                         </FormControl>
                     )}
+
+                    {/* Enhanced Dark Mode Toggle */}
+                    {/* {!isMobile && (
+                        <IconButton
+                            size="medium"
+                            aria-label="toggle dark mode"
+                            color="inherit"
+                            onClick={handleDarkModeToggle}
+                            sx={{
+                                p: 1,
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                    transform: 'scale(1.1)',
+                                }
+                            }}
+                        >
+                            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+                        </IconButton>
+                    )} */}
+
+                    {/* Enhanced Notifications */}
+                    {/* <IconButton
+                        size={isMobile ? "small" : "medium"}
+                        aria-label="show notifications"
+                        color="inherit"
+                        onClick={handleNotificationClick}
+                        sx={{
+                            p: { xs: 0.5, sm: 1 },
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                transform: 'scale(1.1)',
+                            }
+                        }}
+                    >
+                        <Badge badgeContent={4} color="error" size={isMobile ? "small" : "medium"}>
+                            <NotificationsIcon fontSize={isMobile ? "small" : "medium"} />
+                        </Badge>
+                    </IconButton> */}
 
                     {/* Enhanced Three dots menu */}
                     <IconButton
@@ -391,13 +431,6 @@ const Navbar = ({
                         <Typography variant="body2">Profile</Typography>
                     </MenuItem>
 
-                    <MenuItem onClick={handleSettingsClick} sx={{ transition: 'all 0.3s ease' }}>
-                        <SettingsIcon sx={{
-                            mr: 2,
-                            fontSize: isMobile ? 18 : 20
-                        }} />
-                        <Typography variant="body2">Settings</Typography>
-                    </MenuItem>
 
                     {/* Enhanced Dark Mode Toggle */}
                     <Box sx={{
@@ -438,7 +471,7 @@ const Navbar = ({
                     </MenuItem>
                 </Menu>
             </Toolbar>
-        </AppBar>
+        </AppBar >
     );
 };
 

@@ -23,14 +23,28 @@ const Reports = () => {
         reduxDeps: reduxDeps
     });
 
+    // Get current date for proper date initialization
+    const getCurrentDateRange = () => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+
+        // Get first day of current month
+        const startDate = new Date(currentYear, currentMonth, 1);
+        // Get last day of current month
+        const endDate = new Date(currentYear, currentMonth + 1, 0);
+
+        return {
+            start: startDate.toISOString().split('T')[0],
+            end: endDate.toISOString().split('T')[0]
+        };
+    };
+
     const [filter, setFilter] = useState({
         type: 'expenses',
         department: 'all',
         reimbursementStatus: 'all',
-        dateRange: {
-            start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-            end: new Date().toISOString().split('T')[0]
-        }
+        dateRange: getCurrentDateRange()
     });
 
     const [generatedReport, setGeneratedReport] = useState(null);
@@ -41,9 +55,9 @@ const Reports = () => {
     const styles = getStyles(isMobile);
 
     // Get departments from Redux store
-    const departments = ['All', ...(reduxDeps?.map(dept => dept.name) || [])];
+    const departments = ['all', ...(reduxDeps?.map(dept => dept.name) || [])];
 
-    const reimbursementStatuses = ['All', 'Paid', 'Unpaid'];
+    const reimbursementStatuses = ['all', 'paid', 'unpaid'];
 
     const reportTypes = [
         { value: 'expenses', label: 'Expense Report', icon: '📊' },
@@ -67,17 +81,25 @@ const Reports = () => {
             type: 'expenses',
             department: 'all',
             reimbursementStatus: 'all',
-            dateRange: {
-                start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-                end: new Date().toISOString().split('T')[0]
-            }
+            dateRange: getCurrentDateRange()
         });
         setGeneratedReport(null);
         setAnimationClass('fade-out');
         setTimeout(() => setAnimationClass(''), 800);
     };
 
-    // Export to PDF using jsPDF
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    // Enhanced PDF Export function using jsPDF
     const exportPDF = () => {
         if (!generatedReport) {
             alert('No report generated to export');
@@ -90,114 +112,194 @@ const Reports = () => {
         try {
             const doc = new jsPDF();
 
-            // Title
+            // Title Section
+            doc.setFontSize(20);
+            doc.setTextColor(40, 40, 40);
+            doc.setFont('helvetica', 'bold');
+            doc.text('DEMANDCURVE', 105, 20, { align: 'center' });
+
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TALENT INTERPRETED', 105, 28, { align: 'center' });
+
+            // Report Title
             doc.setFontSize(16);
             doc.setTextColor(40, 40, 40);
-            doc.text(generatedReport.title, 14, 15);
+            doc.setFont('helvetica', 'bold');
+            doc.text(generatedReport.title, 105, 45, { align: 'center' });
 
             // Report details
             doc.setFontSize(10);
             doc.setTextColor(100, 100, 100);
-            doc.text(`Generated on: ${new Date(generatedReport.date).toLocaleDateString()}`, 14, 25);
-            doc.text(`Department: ${generatedReport.department}`, 14, 32);
-            doc.text(`Total Records: ${generatedReport.items.length}`, 14, 39);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated on ${formatDate(new Date())} • Department: ${generatedReport.department} • ${generatedReport.items.length} records found`, 105, 52, { align: 'center' });
+
+            // Add separator line
+            doc.setDrawColor(200, 200, 200);
+            doc.line(14, 58, 196, 58);
+
+            // Dataset Report Section
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Dataset Report', 14, 70);
 
             // Summary table
             const summaryData = [];
-            if (generatedReport.type === 'comparison') {
+
+            if (generatedReport.type === 'expenses') {
                 summaryData.push(
-                    ['Total Budget', `₹${generatedReport.summary.totalBudget?.toLocaleString() || '0'}`],
-                    ['Total Expense', `₹${generatedReport.summary.totalExpense?.toLocaleString() || '0'}`],
-                    ['Utilization Rate', `${generatedReport.summary.utilizationRate?.toFixed(1) || '0'}%`]
+                    ['Description', 'Report Type', 'Total Amount', 'Number of Records'],
+                    ['Expense Report', getReportTypeLabel(generatedReport.type), `₹${generatedReport.totalAmount?.toLocaleString() || '0'}`, generatedReport.items.length.toString()]
+                );
+            } else if (generatedReport.type === 'budgets') {
+                summaryData.push(
+                    ['Description', 'Report Type', 'Total Amount', 'Number of Records'],
+                    ['Budget Report', getReportTypeLabel(generatedReport.type), `₹${generatedReport.totalAmount?.toLocaleString() || '0'}`, generatedReport.items.length.toString()]
                 );
             } else if (generatedReport.type === 'reimbursement') {
                 summaryData.push(
-                    ['Total Amount', `₹${generatedReport.totalAmount?.toLocaleString() || '0'}`],
-                    ['Paid Amount', `₹${generatedReport.summary.paidAmount?.toLocaleString() || '0'}`],
-                    ['Unpaid Amount', `₹${generatedReport.summary.unpaidAmount?.toLocaleString() || '0'}`],
-                    ['Total Records', generatedReport.summary.totalReports || '0']
+                    ['Description', 'Report Type', 'Total Amount', 'Number of Records'],
+                    ['Reimbursement Report', getReportTypeLabel(generatedReport.type), `₹${generatedReport.totalAmount?.toLocaleString() || '0'}`, generatedReport.items.length.toString()]
                 );
-            } else {
+            } else if (generatedReport.type === 'comparison') {
                 summaryData.push(
-                    ['Total Amount', `₹${generatedReport.totalAmount?.toLocaleString() || '0'}`],
-                    ['Average Amount', `₹${generatedReport.summary.averageAmount?.toLocaleString() || '0'}`],
-                    ['Total Records', generatedReport.summary.totalReports || '0']
+                    ['Description', 'Report Type', 'Total Budget', 'Number of Records'],
+                    ['Budget vs Expense Report', getReportTypeLabel(generatedReport.type), `₹${generatedReport.summary.totalBudget?.toLocaleString() || '0'}`, generatedReport.items.length.toString()]
                 );
             }
 
+            // Add summary table using autoTable
             doc.autoTable({
-                startY: 45,
-                head: [['Metric', 'Value']],
-                body: summaryData,
+                startY: 75,
+                head: [summaryData[0]],
+                body: [summaryData[1]],
                 theme: 'grid',
-                headStyles: { fillColor: [59, 130, 246] },
-                styles: { fontSize: 10 }
+                headStyles: {
+                    fillColor: [59, 130, 246],
+                    textColor: 255,
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 5,
+                    overflow: 'linebreak'
+                },
+                margin: { left: 14, right: 14 }
             });
 
-            // Main data table
-            const tableColumn = [];
-            const tableRows = [];
+            // Settings Section
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Settings', 14, doc.lastAutoTable.finalY + 15);
 
-            // Define columns based on report type
+            let columns = [];
+            let rows = [];
+
+            // Define data based on report type
             if (generatedReport.type === 'expenses') {
-                tableColumn.push(['ID', 'Description', 'Department', 'Date', 'Amount', 'User', 'Payment Mode']);
-                generatedReport.items.forEach(item => {
-                    tableRows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
-                        item.description || 'N/A',
-                        item.department || 'N/A',
-                        item.date || 'N/A',
+                columns = ["ID", "Description", "Vendor", "Department", "Sub-Department", "Date", "Amount", "User", "Payment Mode"];
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        (index + 1).toString(),
+                        item.description || "N/A",
+                        item.vendor || "N/A",
+                        item.department || "N/A",
+                        item.subDepartment || "N/A",
+                        item.date || "N/A",
                         `₹${(item.amount || 0).toLocaleString()}`,
-                        item.user || 'Unknown',
-                        item.paymentMode || 'N/A'
+                        item.user || "Unknown",
+                        item.paymentMode || "N/A"
                     ]);
                 });
-            } else if (generatedReport.type === 'budgets') {
-                tableColumn.push(['ID', 'User', 'Month', 'Year', 'Allocated Amount', 'Spent Amount', 'Remaining Amount']);
-                generatedReport.items.forEach(item => {
-                    tableRows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
-                        item.user || 'N/A',
-                        item.month || 'N/A',
-                        item.year || 'N/A',
+            }
+            else if (generatedReport.type === 'budgets') {
+                columns = ["ID", "Name", "Department", "Month", "Year", "Allocated", "Spent", "Remaining"];
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        (index + 1).toString(),
+                        item.user || "N/A",
+                        item.department || "N/A",
+                        item.month?.toString() || "N/A",
+                        item.year?.toString() || "N/A",
                         `₹${(item.allocatedAmount || 0).toLocaleString()}`,
                         `₹${(item.spentAmount || 0).toLocaleString()}`,
                         `₹${(item.remainingAmount || 0).toLocaleString()}`
                     ]);
                 });
-            } else if (generatedReport.type === 'reimbursement') {
-                tableColumn.push(['ID', 'Requested By', 'Amount', 'Status', 'Date']);
-                generatedReport.items.forEach(item => {
-                    tableRows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
-                        item.requestedBy || 'N/A',
+            }
+            else if (generatedReport.type === 'reimbursement') {
+                columns = ["ID", "Requested By", "Vendor", "Department", "Sub-Department", "Amount", "Status", "Date"];
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        (index + 1).toString(),
+                        item.requestedBy || "N/A",
+                        item.vendor || "N/A",
+                        item.department || "N/A",
+                        item.subDepartment || "N/A",
                         `₹${(item.amount || 0).toLocaleString()}`,
-                        item.status || 'unpaid',
-                        item.date || 'N/A'
+                        item.status === 'paid' ? 'Paid' : 'Unpaid',
+                        item.date || "N/A"
                     ]);
                 });
-            } else if (generatedReport.type === 'comparison') {
-                tableColumn.push(['Department', 'Total Budget', 'Total Expense', 'Utilization Rate']);
-                generatedReport.items.forEach(item => {
-                    tableRows.push([
-                        item.department || 'N/A',
+            }
+            else if (generatedReport.type === 'comparison') {
+                columns = ["Department", "Total Budget", "Total Expense"];
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        item.department || "N/A",
                         `₹${(item.totalBudget || 0).toLocaleString()}`,
-                        `₹${(item.totalExpense || 0).toLocaleString()}`,
-                        `${(item.utilizationRate || 0).toFixed(1)}%`
+                        `₹${(item.totalExpense || 0).toLocaleString()}`
                     ]);
                 });
             }
 
-            if (tableRows.length > 0) {
+            // Add main data table using autoTable
+            if (rows.length > 0) {
                 doc.autoTable({
-                    startY: doc.lastAutoTable.finalY + 10,
-                    head: tableColumn,
-                    body: tableRows,
-                    theme: 'grid',
-                    headStyles: { fillColor: [59, 130, 246] },
-                    styles: { fontSize: 8 },
+                    startY: doc.lastAutoTable.finalY + 20,
+                    head: [columns],
+                    body: rows,
+                    theme: "grid",
+                    headStyles: {
+                        fillColor: [33, 150, 243],
+                        textColor: 255,
+                        fontStyle: "bold",
+                        fontSize: 9
+                    },
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 4,
+                        overflow: 'linebreak'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245],
+                    },
+                    margin: { left: 14, right: 14 },
                     pageBreak: 'auto'
                 });
+            } else {
+                // Add message if no data
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text('No data available for the selected criteria', 14, doc.lastAutoTable.finalY + 20);
+            }
+
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+                doc.text('Generated by DemandCurve Talent Management System', 105, 290, { align: 'center' });
             }
 
             // Save the PDF
@@ -208,7 +310,7 @@ const Reports = () => {
         }
     };
 
-    // Export to CSV
+    // Export to CSV (working fine - keeping as is)
     const exportCSV = () => {
         if (!generatedReport) {
             alert('No report generated to export');
@@ -225,12 +327,14 @@ const Reports = () => {
 
             // Define headers and rows based on report type
             if (generatedReport.type === 'expenses') {
-                headers.push('ID', 'Description', 'Department', 'Date', 'Amount', 'User', 'Payment Mode');
-                generatedReport.items.forEach(item => {
+                headers.push('ID', 'Description', 'Vendor', 'Department', 'Sub-Department', 'Date', 'Amount', 'User', 'Payment Mode');
+                generatedReport.items.forEach((item, index) => {
                     rows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
+                        index + 1,
                         `"${item.description || 'N/A'}"`,
+                        `"${item.vendor || 'N/A'}"`,
                         `"${item.department || 'N/A'}"`,
+                        `"${item.subDepartment || 'N/A'}"`,
                         item.date || 'N/A',
                         item.amount || 0,
                         `"${item.user || 'Unknown'}"`,
@@ -238,11 +342,12 @@ const Reports = () => {
                     ]);
                 });
             } else if (generatedReport.type === 'budgets') {
-                headers.push('ID', 'User', 'Month', 'Year', 'Allocated Amount', 'Spent Amount', 'Remaining Amount');
-                generatedReport.items.forEach(item => {
+                headers.push('ID', 'Name', 'Department', 'Month', 'Year', 'Allocated', 'Spent', 'Remaining');
+                generatedReport.items.forEach((item, index) => {
                     rows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
+                        index + 1,
                         `"${item.user || 'N/A'}"`,
+                        `"${item.department || 'N/A'}"`,
                         item.month || '',
                         item.year || '',
                         item.allocatedAmount || 0,
@@ -251,33 +356,49 @@ const Reports = () => {
                     ]);
                 });
             } else if (generatedReport.type === 'reimbursement') {
-                headers.push('ID', 'Requested By', 'Amount', 'Status', 'Date');
-                generatedReport.items.forEach(item => {
+                headers.push('ID', 'Requested By', 'Vendor', 'Department', 'Sub-Department', 'Amount', 'Status', 'Date');
+                generatedReport.items.forEach((item, index) => {
                     rows.push([
-                        `#${item.id?.slice(-6) || 'N/A'}`,
+                        index + 1,
                         `"${item.requestedBy || 'N/A'}"`,
+                        `"${item.vendor || 'N/A'}"`,
+                        `"${item.department || 'N/A'}"`,
+                        `"${item.subDepartment || 'N/A'}"`,
                         item.amount || 0,
                         item.status || 'unpaid',
                         item.date || 'N/A'
                     ]);
                 });
             } else if (generatedReport.type === 'comparison') {
-                headers.push('Department', 'Total Budget', 'Total Expense', 'Utilization Rate');
-                generatedReport.items.forEach(item => {
+                headers.push('Department', 'Total Budget', 'Total Expense');
+                generatedReport.items.forEach((item, index) => {
                     rows.push([
                         `"${item.department || 'N/A'}"`,
                         item.totalBudget || 0,
-                        item.totalExpense || 0,
-                        item.utilizationRate || 0
+                        item.totalExpense || 0
                     ]);
                 });
             }
 
             // Add report summary
-            csvContent += `Report: ${generatedReport.title}\n`;
-            csvContent += `Generated on: ${new Date(generatedReport.date).toLocaleDateString()}\n`;
+            csvContent += `DEMANDCURVE - TALENT INTERPRETED\n`;
+            csvContent += `${generatedReport.title}\n`;
+            csvContent += `Generated on: ${formatDate(new Date())}\n`;
             csvContent += `Department: ${generatedReport.department}\n`;
             csvContent += `Total Records: ${generatedReport.items.length}\n\n`;
+
+            // Dataset Report Section
+            csvContent += `Dataset Report\n`;
+            if (generatedReport.type === 'comparison') {
+                csvContent += `Description,Report Type,Total Budget,Number of Records\n`;
+                csvContent += `${generatedReport.title},${getReportTypeLabel(generatedReport.type)},₹${generatedReport.summary.totalBudget?.toLocaleString() || '0'},${generatedReport.items.length}\n\n`;
+            } else {
+                csvContent += `Description,Report Type,Total Amount,Number of Records\n`;
+                csvContent += `${generatedReport.title},${getReportTypeLabel(generatedReport.type)},₹${generatedReport.totalAmount?.toLocaleString() || '0'},${generatedReport.items.length}\n\n`;
+            }
+
+            // Settings Section
+            csvContent += `Settings\n`;
 
             // Add headers
             csvContent += headers.join(',') + '\n';
@@ -303,6 +424,121 @@ const Reports = () => {
         }
     };
 
+    // Export to Google Sheets format
+    const exportGoogleSheets = () => {
+        if (!generatedReport) {
+            alert('No report generated to export');
+            return;
+        }
+
+        setAnimationClass('bounce');
+        setTimeout(() => setAnimationClass(''), 800);
+
+        try {
+            let sheetsContent = '';
+            const headers = [];
+            const rows = [];
+
+            // Define headers and rows based on report type
+            if (generatedReport.type === 'expenses') {
+                headers.push('ID', 'Description', 'Vendor', 'Department', 'Sub-Department', 'Date', 'Amount', 'User', 'Payment Mode');
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        index + 1,
+                        item.description || 'N/A',
+                        item.vendor || 'N/A',
+                        item.department || 'N/A',
+                        item.subDepartment || 'N/A',
+                        item.date || 'N/A',
+                        item.amount || 0,
+                        item.user || 'Unknown',
+                        item.paymentMode || 'N/A'
+                    ]);
+                });
+            } else if (generatedReport.type === 'budgets') {
+                headers.push('ID', 'Name', 'Department', 'Month', 'Year', 'Allocated Amount', 'Spent Amount', 'Remaining Amount');
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        index + 1,
+                        item.user || 'N/A',
+                        item.department || 'N/A',
+                        item.month || '',
+                        item.year || '',
+                        item.allocatedAmount || 0,
+                        item.spentAmount || 0,
+                        item.remainingAmount || 0
+                    ]);
+                });
+            } else if (generatedReport.type === 'reimbursement') {
+                headers.push('ID', 'Requested By', 'Vendor', 'Department', 'Sub-Department', 'Amount', 'Status', 'Date');
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        index + 1,
+                        item.requestedBy || 'N/A',
+                        item.vendor || 'N/A',
+                        item.department || 'N/A',
+                        item.subDepartment || 'N/A',
+                        item.amount || 0,
+                        item.status || 'unpaid',
+                        item.date || 'N/A'
+                    ]);
+                });
+            } else if (generatedReport.type === 'comparison') {
+                headers.push('Department', 'Total Budget', 'Total Expense');
+                generatedReport.items.forEach((item, index) => {
+                    rows.push([
+                        item.department || 'N/A',
+                        item.totalBudget || 0,
+                        item.totalExpense || 0
+                    ]);
+                });
+            }
+
+            // Add report header for Google Sheets
+            sheetsContent += `DEMANDCURVE - TALENT INTERPRETED\n`;
+            sheetsContent += `${generatedReport.title}\n`;
+            sheetsContent += `Generated on: ${formatDate(new Date())}\n`;
+            sheetsContent += `Department: ${generatedReport.department}\n`;
+            sheetsContent += `Total Records: ${generatedReport.items.length}\n\n`;
+
+            // Summary Section
+            sheetsContent += `SUMMARY\n`;
+            if (generatedReport.type === 'comparison') {
+                sheetsContent += `Total Budget: ₹${generatedReport.summary.totalBudget?.toLocaleString() || '0'}\n`;
+                sheetsContent += `Total Expense: ₹${generatedReport.summary.totalExpense?.toLocaleString() || '0'}\n`;
+            } else {
+                sheetsContent += `Total Amount: ₹${generatedReport.totalAmount?.toLocaleString() || '0'}\n`;
+                if (generatedReport.type === 'reimbursement') {
+                    sheetsContent += `Paid Amount: ₹${generatedReport.summary.paidAmount?.toLocaleString() || '0'}\n`;
+                    sheetsContent += `Unpaid Amount: ₹${generatedReport.summary.unpaidAmount?.toLocaleString() || '0'}\n`;
+                }
+            }
+            sheetsContent += `Number of Records: ${generatedReport.items.length}\n\n`;
+
+            // Add headers
+            sheetsContent += headers.join('\t') + '\n';
+
+            // Add rows with tab separation for Google Sheets
+            rows.forEach(row => {
+                sheetsContent += row.join('\t') + '\n';
+            });
+
+            // Create and download Google Sheets compatible file
+            const blob = new Blob([sheetsContent], { type: 'text/tab-separated-values;charset=utf-8' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${generatedReport.type}_report_${new Date().toISOString().split('T')[0]}.tsv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Google Sheets export error:', error);
+            alert('Error exporting to Google Sheets format. Please try again.');
+        }
+    };
+
     // Filter data based on date range
     const filterByDateRange = (items) => {
         if (!items || !Array.isArray(items)) {
@@ -317,7 +553,8 @@ const Reports = () => {
         const filtered = items.filter(item => {
             if (!item) return false;
 
-            const itemDate = new Date(item.createdAt || item.date || item.submittedAt || item.updatedAt);
+            // Handle different date fields in your data
+            const itemDate = new Date(item.date || item.createdAt || item.submittedAt || item.updatedAt);
             if (isNaN(itemDate.getTime())) {
                 console.log('Invalid date for item:', item);
                 return false;
@@ -330,7 +567,7 @@ const Reports = () => {
         return filtered;
     };
 
-    // Filter by department
+    // Enhanced Filter by department - now works for all report types including budgets
     const filterByDepartment = (items) => {
         if (filter.department === 'all' || !filter.department) {
             return items;
@@ -339,8 +576,23 @@ const Reports = () => {
         const filtered = items.filter(item => {
             if (!item) return false;
 
-            // Handle different department structures
-            const deptName = item.department?.name || item.department;
+            // Handle different department structures for different data types
+            let deptName = '';
+
+            if (item.department && typeof item.department === 'object') {
+                // If department is an object with name property
+                deptName = item.department.name;
+            } else if (typeof item.department === 'string') {
+                // If department is a string
+                deptName = item.department;
+            } else if (item.user?.department) {
+                // If department is in user object
+                deptName = item.user.department;
+            } else if (item.requestedBy?.department) {
+                // If department is in requestedBy object (for reimbursements)
+                deptName = item.requestedBy.department;
+            }
+
             return deptName?.toLowerCase() === filter.department.toLowerCase();
         });
 
@@ -348,12 +600,16 @@ const Reports = () => {
         return filtered;
     };
 
-    // Get actual data from hooks/Redux
+    // Get actual data from hooks/Redux - IMPROVED
     const getActualData = () => {
-        // Try to get data from all sources, fallback to empty array
-        const budgetData = allBudgets || budgets || [];
-        const expenseData = allExpenses || expenses || [];
-        const reimbursementData = reimbursements || [];
+        // Use the data from hooks that actually contains data
+        const budgetData = Array.isArray(allBudgets) && allBudgets.length > 0 ? allBudgets :
+            Array.isArray(budgets) && budgets.length > 0 ? budgets : [];
+
+        const expenseData = Array.isArray(allExpenses) && allExpenses.length > 0 ? allExpenses :
+            Array.isArray(expenses) && expenses.length > 0 ? expenses : [];
+
+        const reimbursementData = Array.isArray(reimbursements) && reimbursements.length > 0 ? reimbursements : [];
 
         console.log('Actual data counts:', {
             budgets: budgetData.length,
@@ -364,7 +620,16 @@ const Reports = () => {
         return { budgetData, expenseData, reimbursementData };
     };
 
-    // Generate expense report - UPDATED for your schema
+    // Get current month and year for display
+    const getCurrentMonthYear = () => {
+        const today = new Date();
+        return {
+            month: today.toLocaleString('default', { month: 'long' }),
+            year: today.getFullYear()
+        };
+    };
+
+    // Generate expense report - UPDATED with vendor name and department filtering
     const generateExpenseReport = () => {
         const { expenseData } = getActualData();
         console.log('Generating expense report with data:', expenseData);
@@ -375,20 +640,24 @@ const Reports = () => {
         const totalAmount = filteredExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
         const averageAmount = filteredExpenses.length > 0 ? totalAmount / filteredExpenses.length : 0;
 
+        const { month, year } = getCurrentMonthYear();
+
         const report = {
-            title: `Expense Report - ${filter.dateRange.start} to ${filter.dateRange.end}`,
+            title: `Expense Report - ${month} ${year}`,
             type: 'expenses',
-            department: filter.department,
+            department: filter.department === 'all' ? 'All Departments' : filter.department,
             date: new Date().toISOString(),
             totalAmount,
             items: filteredExpenses.map(expense => ({
-                id: expense._id || expense.id || 'unknown',
+                id: expense._id || expense.id || `exp-${Math.random().toString(36).substr(2, 9)}`,
                 description: expense.description || 'No description',
-                department: expense.department?.name || 'N/A',
-                date: new Date(expense.date || expense.createdAt).toLocaleDateString(),
+                vendor: expense.vendor || expense.paidTo || 'N/A', // Added vendor name
+                department: expense.department?.name || expense.department || 'General',
+                subDepartment: expense.subDepartment?.name || expense.subDepartment || 'N/A',
+                date: formatDate(expense.date || expense.createdAt),
                 amount: expense.amount || 0,
-                user: expense.user?.name || 'Unknown',
-                paymentMode: expense.paymentMode || 'N/A'
+                user: expense.user?.name || expense.user?.username || 'Unknown User',
+                paymentMode: expense.paymentMode || 'Cash'
             })),
             summary: {
                 totalReports: filteredExpenses.length,
@@ -401,38 +670,36 @@ const Reports = () => {
         return report;
     };
 
-    // Generate budget report - UPDATED for your schema
+    // Generate budget report - UPDATED with department filtering
     const generateBudgetReport = () => {
         const { budgetData } = getActualData();
         console.log('Generating budget report with data:', budgetData);
 
         let filteredBudgets = filterByDateRange(budgetData);
-
-        // For budgets, we need to handle department filtering differently since budgets might not have department field
-        // if (filter.department !== 'all') {
-        //     // You might need to adjust this based on how budgets are associated with departments
-        //     filteredBudgets = filteredBudgets; // Placeholder - adjust as needed
-        // }
+        filteredBudgets = filterByDepartment(filteredBudgets); // Now enabled for budget reports
 
         const totalAllocated = filteredBudgets.reduce((sum, budget) => sum + (budget.allocatedAmount || 0), 0);
         const totalSpent = filteredBudgets.reduce((sum, budget) => sum + (budget.spentAmount || 0), 0);
         const totalRemaining = filteredBudgets.reduce((sum, budget) => sum + (budget.remainingAmount || 0), 0);
 
+        const { month, year } = getCurrentMonthYear();
+
         const report = {
-            title: `Budget Report - ${filter.dateRange.start} to ${filter.dateRange.end}`,
+            title: `Budget Report - ${month} ${year}`,
             type: 'budgets',
-            department: filter.department,
+            department: filter.department === 'all' ? 'All Departments' : filter.department,
             date: new Date().toISOString(),
             totalAmount: totalAllocated,
             items: filteredBudgets.map(budget => ({
-                id: budget._id || budget.id || 'unknown',
-                user: budget.user?.name || 'Unknown',
-                month: budget.month,
-                year: budget.year,
+                id: budget._id || budget.id || `budget-${Math.random().toString(36).substr(2, 9)}`,
+                user: budget.user?.name || budget.user?.username || 'System',
+                department: budget.department?.name || budget.department || budget.user?.department || 'General',
+                month: budget.month || new Date().getMonth() + 1,
+                year: budget.year || new Date().getFullYear(),
                 allocatedAmount: budget.allocatedAmount || 0,
                 spentAmount: budget.spentAmount || 0,
                 remainingAmount: budget.remainingAmount || 0,
-                type: budget.type || 'Normal'
+                type: budget.type || 'Monthly'
             })),
             summary: {
                 totalReports: filteredBudgets.length,
@@ -447,12 +714,13 @@ const Reports = () => {
         return report;
     };
 
-    // Generate reimbursement report - UPDATED for your schema
+    // Generate reimbursement report - UPDATED with vendor name, department and sub-department filtering
     const generateReimbursementReport = () => {
         const { reimbursementData } = getActualData();
         console.log('Generating reimbursement report with data:', reimbursementData);
 
         let filteredReimbursements = filterByDateRange(reimbursementData);
+        filteredReimbursements = filterByDepartment(filteredReimbursements);
 
         // Filter by reimbursement status using isReimbursed field
         if (filter.reimbursementStatus !== 'all') {
@@ -475,18 +743,24 @@ const Reports = () => {
             .reduce((sum, reimb) => sum + (reimb.amount || 0), 0);
         const averageAmount = filteredReimbursements.length > 0 ? totalAmount / filteredReimbursements.length : 0;
 
+        const { month, year } = getCurrentMonthYear();
+
         const report = {
-            title: `Reimbursement Report - ${filter.dateRange.start} to ${filter.dateRange.end}`,
+            title: `Reimbursement Report - ${month} ${year}`,
             type: 'reimbursement',
             reimbursementStatus: filter.reimbursementStatus,
+            department: filter.department === 'all' ? 'All Departments' : filter.department,
             date: new Date().toISOString(),
             totalAmount,
             items: filteredReimbursements.map(reimb => ({
-                id: reimb._id || reimb.id || 'unknown',
-                requestedBy: reimb.requestedBy?.name || 'Unknown',
+                id: reimb._id || reimb.id || `reimb-${Math.random().toString(36).substr(2, 9)}`,
+                requestedBy: reimb.requestedBy?.name || reimb.user?.name || 'Unknown Employee',
+                vendor: reimb.vendor || reimb.paidTo || 'N/A', // Added vendor name
+                department: reimb.department?.name || reimb.department || reimb.user?.department || 'General',
+                subDepartment: reimb.subDepartment?.name || reimb.subDepartment || 'N/A',
                 amount: reimb.amount || 0,
                 status: reimb.isReimbursed ? 'paid' : 'unpaid',
-                date: new Date(reimb.createdAt || reimb.date).toLocaleDateString()
+                date: formatDate(reimb.createdAt || reimb.date)
             })),
             summary: {
                 totalReports: filteredReimbursements.length,
@@ -501,21 +775,26 @@ const Reports = () => {
         return report;
     };
 
-    // Generate comparison report - UPDATED for your schema
+    // Generate comparison report - UPDATED with department filtering
     const generateComparisonReport = () => {
         const { budgetData, expenseData } = getActualData();
         console.log('Generating comparison report with data:', { budgetData, expenseData });
 
-        const filteredBudgets = filterByDateRange(budgetData);
-        const filteredExpenses = filterByDateRange(expenseData);
+        let filteredBudgets = filterByDateRange(budgetData);
+        let filteredExpenses = filterByDateRange(expenseData);
+
+        // Apply department filter to both budgets and expenses
+        if (filter.department !== 'all') {
+            filteredBudgets = filterByDepartment(filteredBudgets);
+            filteredExpenses = filterByDepartment(filteredExpenses);
+        }
 
         // Group by department and calculate totals
         const departmentStats = {};
 
         // Process budgets by department
         filteredBudgets.forEach(budget => {
-            // Since budgets might not have department, you might need to get it from user or expense
-            const dept = budget.user?.department || 'Unknown Department';
+            const dept = budget.department?.name || budget.department || budget.user?.department || 'General';
             if (!departmentStats[dept]) {
                 departmentStats[dept] = { totalBudget: 0, totalExpense: 0 };
             }
@@ -524,42 +803,40 @@ const Reports = () => {
 
         // Process expenses by department
         filteredExpenses.forEach(expense => {
-            const dept = expense.department?.name || expense.department || 'Unknown Department';
+            const dept = expense.department?.name || expense.department || 'General';
             if (!departmentStats[dept]) {
                 departmentStats[dept] = { totalBudget: 0, totalExpense: 0 };
             }
             departmentStats[dept].totalExpense += expense.amount || 0;
         });
 
-        // Convert to array and calculate utilization rates
+        // Convert to array
         const items = Object.entries(departmentStats).map(([department, stats]) => {
-            const utilizationRate = stats.totalBudget > 0 ? (stats.totalExpense / stats.totalBudget) * 100 : 0;
             return {
                 id: department,
                 title: 'Budget Utilization',
                 department,
                 date: `${filter.dateRange.start} to ${filter.dateRange.end}`,
                 totalBudget: stats.totalBudget,
-                totalExpense: stats.totalExpense,
-                utilizationRate
+                totalExpense: stats.totalExpense
             };
         });
 
         const totalBudget = items.reduce((sum, item) => sum + (item.totalBudget || 0), 0);
         const totalExpense = items.reduce((sum, item) => sum + (item.totalExpense || 0), 0);
-        const overallUtilizationRate = totalBudget > 0 ? (totalExpense / totalBudget) * 100 : 0;
+
+        const { month, year } = getCurrentMonthYear();
 
         const report = {
-            title: `Budget vs Expense Report - ${filter.dateRange.start} to ${filter.dateRange.end}`,
+            title: `Budget vs Expense Report - ${month} ${year}`,
             type: 'comparison',
-            department: filter.department,
+            department: filter.department === 'all' ? 'All Departments' : filter.department,
             date: new Date().toISOString(),
             totalAmount: totalExpense,
             items,
             summary: {
                 totalBudget,
                 totalExpense,
-                utilizationRate: overallUtilizationRate,
                 budgetCount: filteredBudgets.length,
                 expenseCount: filteredExpenses.length
             }
@@ -668,7 +945,9 @@ const Reports = () => {
                                 className="hover-glow"
                             >
                                 {departments.map(dept => (
-                                    <option key={dept} value={dept}>{dept}</option>
+                                    <option key={dept} value={dept.toLowerCase()}>
+                                        {dept === 'all' ? 'All Departments' : dept}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -683,8 +962,8 @@ const Reports = () => {
                                     className="hover-glow"
                                 >
                                     {reimbursementStatuses.map(status => (
-                                        <option key={status} value={status.toLowerCase()}>
-                                            {status === 'Paid' ? '✅' : '⏳'} {status}
+                                        <option key={status} value={status}>
+                                            {status === 'paid' ? '✅' : status === 'unpaid' ? '⏳' : '📋'} {status.charAt(0).toUpperCase() + status.slice(1)}
                                         </option>
                                     ))}
                                 </select>
@@ -758,7 +1037,7 @@ const Reports = () => {
                                     {generatedReport.title}
                                 </h3>
                                 <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.9rem' }}>
-                                    Generated on {new Date(generatedReport.date).toLocaleDateString()} •
+                                    Generated on {formatDate(generatedReport.date)} •
                                     {generatedReport.type === 'reimbursement' ?
                                         ` Status: ${generatedReport.reimbursementStatus}` :
                                         ` Department: ${generatedReport.department}`
@@ -772,6 +1051,13 @@ const Reports = () => {
                                     className="hover-lift"
                                 >
                                     📥 Download CSV
+                                </button>
+                                <button
+                                    style={combineStyles(styles.button, styles.buttonInfo)}
+                                    onClick={exportGoogleSheets}
+                                    className="hover-lift"
+                                >
+                                    📊 Google Sheets
                                 </button>
                                 <button
                                     style={combineStyles(styles.button, styles.buttonPrimary)}
@@ -804,8 +1090,8 @@ const Reports = () => {
                                         <span style={styles.summaryValue}>₹{generatedReport.summary.totalBudget?.toLocaleString()}</span>
                                     </div>
                                     <div style={combineStyles(styles.summaryItem, styles.summaryHover)} className="summary-hover">
-                                        <span style={styles.summaryLabel}>Utilization Rate</span>
-                                        <span style={styles.summaryValue}>{generatedReport.summary.utilizationRate?.toFixed(1)}%</span>
+                                        <span style={styles.summaryLabel}>Total Expense</span>
+                                        <span style={styles.summaryValue}>₹{generatedReport.summary.totalExpense?.toLocaleString()}</span>
                                     </div>
                                 </>
                             )}
@@ -833,7 +1119,9 @@ const Reports = () => {
                                                 <>
                                                     <th style={styles.tableHeader}>ID</th>
                                                     <th style={styles.tableHeader}>Description</th>
+                                                    <th style={styles.tableHeader}>Vendor</th>
                                                     <th style={styles.tableHeader}>Department</th>
+                                                    <th style={styles.tableHeader}>Sub-Department</th>
                                                     <th style={styles.tableHeader}>Date</th>
                                                     <th style={styles.tableHeader}>Amount</th>
                                                     <th style={styles.tableHeader}>User</th>
@@ -843,7 +1131,8 @@ const Reports = () => {
                                             {generatedReport.type === 'budgets' && (
                                                 <>
                                                     <th style={styles.tableHeader}>ID</th>
-                                                    <th style={styles.tableHeader}>User</th>
+                                                    <th style={styles.tableHeader}>Name</th>
+                                                    <th style={styles.tableHeader}>Department</th>
                                                     <th style={styles.tableHeader}>Month</th>
                                                     <th style={styles.tableHeader}>Year</th>
                                                     <th style={styles.tableHeader}>Allocated</th>
@@ -855,6 +1144,9 @@ const Reports = () => {
                                                 <>
                                                     <th style={styles.tableHeader}>ID</th>
                                                     <th style={styles.tableHeader}>Requested By</th>
+                                                    <th style={styles.tableHeader}>Vendor</th>
+                                                    <th style={styles.tableHeader}>Department</th>
+                                                    <th style={styles.tableHeader}>Sub-Department</th>
                                                     <th style={styles.tableHeader}>Amount</th>
                                                     <th style={styles.tableHeader}>Status</th>
                                                     <th style={styles.tableHeader}>Date</th>
@@ -865,19 +1157,20 @@ const Reports = () => {
                                                     <th style={styles.tableHeader}>Department</th>
                                                     <th style={styles.tableHeader}>Total Budget</th>
                                                     <th style={styles.tableHeader}>Total Expense</th>
-                                                    <th style={styles.tableHeader}>Utilization Rate</th>
                                                 </>
                                             )}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {generatedReport.items.map((item) => (
+                                        {generatedReport.items.map((item, index) => (
                                             <tr key={item.id} style={styles.tableRow} className="fade-in">
                                                 {generatedReport.type === 'expenses' && (
                                                     <>
-                                                        <td style={styles.tableCell}>#{item.id?.slice(-6)}</td>
+                                                        <td style={styles.tableCell}>{index + 1}</td>
                                                         <td style={styles.tableCell}>{item.description}</td>
+                                                        <td style={styles.tableCell}>{item.vendor}</td>
                                                         <td style={styles.tableCell}>{item.department}</td>
+                                                        <td style={styles.tableCell}>{item.subDepartment}</td>
                                                         <td style={styles.tableCell}>{item.date}</td>
                                                         <td style={styles.tableCell}>
                                                             <div style={{ fontWeight: '600', color: '#1e293b' }}>
@@ -890,8 +1183,9 @@ const Reports = () => {
                                                 )}
                                                 {generatedReport.type === 'budgets' && (
                                                     <>
-                                                        <td style={styles.tableCell}>#{item.id?.slice(-6)}</td>
+                                                        <td style={styles.tableCell}>{index + 1}</td>
                                                         <td style={styles.tableCell}>{item.user}</td>
+                                                        <td style={styles.tableCell}>{item.department}</td>
                                                         <td style={styles.tableCell}>{item.month}</td>
                                                         <td style={styles.tableCell}>{item.year}</td>
                                                         <td style={styles.tableCell}>
@@ -905,8 +1199,11 @@ const Reports = () => {
                                                 )}
                                                 {generatedReport.type === 'reimbursement' && (
                                                     <>
-                                                        <td style={styles.tableCell}>#{item.id?.slice(-6)}</td>
+                                                        <td style={styles.tableCell}>{index + 1}</td>
                                                         <td style={styles.tableCell}>{item.requestedBy}</td>
+                                                        <td style={styles.tableCell}>{item.vendor}</td>
+                                                        <td style={styles.tableCell}>{item.department}</td>
+                                                        <td style={styles.tableCell}>{item.subDepartment}</td>
                                                         <td style={styles.tableCell}>
                                                             <div style={{ fontWeight: '600', color: '#1e293b' }}>
                                                                 ₹{item.amount?.toLocaleString()}
@@ -933,14 +1230,6 @@ const Reports = () => {
                                                             </div>
                                                         </td>
                                                         <td style={styles.tableCell}>₹{item.totalExpense?.toLocaleString()}</td>
-                                                        <td style={styles.tableCell}>
-                                                            <span style={combineStyles(
-                                                                styles.trendIndicator,
-                                                                item.utilizationRate <= 80 ? styles.trendUp : styles.trendDown
-                                                            )}>
-                                                                {item.utilizationRate?.toFixed(1)}%
-                                                            </span>
-                                                        </td>
                                                     </>
                                                 )}
                                             </tr>

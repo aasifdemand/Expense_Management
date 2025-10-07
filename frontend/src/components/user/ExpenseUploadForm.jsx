@@ -13,6 +13,7 @@ import {
     CardContent,
     Alert,
     Fade,
+    Paper,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AddIcon from "@mui/icons-material/Add";
@@ -52,6 +53,7 @@ export default function CreateExpenseForm() {
         paymentMode: "",
         isReimbursed: false,
         proof: null,
+        vendorName: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -94,9 +96,7 @@ export default function CreateExpenseForm() {
         }
 
         if (
-
             !form.amount ||
-            !form.date ||
             !form.department ||
             !form.paymentMode
         ) {
@@ -129,6 +129,7 @@ export default function CreateExpenseForm() {
                 paymentMode: "",
                 isReimbursed: false,
                 proof: null,
+                vendorName: "",
             });
         } catch (err) {
             setError(err.message);
@@ -141,25 +142,9 @@ export default function CreateExpenseForm() {
         <SectionCard>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
                 <Box component="form" onSubmit={handleSubmit} noValidate>
-                    <Stack spacing={3}>
-                        {/* Paid To */}
-                        {/* <StyledTextField
-                            fullWidth
-                            label="Paid To"
-                            name="paidTo"
-                            value={form.paidTo}
-                            onChange={handleChange}
-                            required
-                            variant="outlined"
-                            placeholder="Enter recipient name"
-                        /> */}
-
-                        {/* Amount + Date */}
-                        <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            spacing={2}
-                            sx={{ width: "100%" }}
-                        >
+                    <Stack spacing={4}>
+                        {/* Amount Only */}
+                        <Box sx={{ width: '100%' }}>
                             <StyledTextField
                                 fullWidth
                                 label="Amount"
@@ -170,16 +155,18 @@ export default function CreateExpenseForm() {
                                 required
                                 variant="outlined"
                                 placeholder="0.00"
+                                sx={{ maxWidth: { sm: '100%' } }}
                             />
+                        </Box>
 
-
-                        </Stack>
-
-                        {/* Department + Payment Mode */}
-                        <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            spacing={2}
-                            sx={{ width: "100%" }}
+                        {/* First Row: Department + Payment Mode */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                gap: 2,
+                                width: '100%'
+                            }}
                         >
                             {/* Department Dropdown */}
                             <FormControl fullWidth required sx={{ flex: 1 }}>
@@ -218,60 +205,112 @@ export default function CreateExpenseForm() {
                                     ))}
                                 </StyledSelect>
                             </FormControl>
-                        </Stack>
+                        </Box>
 
-                        {/* Sub-Department Dropdown */}
-                        {reduxSubDept.length > 0 && (
-                            <Fade in={true} timeout={300}>
-                                <Box sx={{ width: { xs: "100%", sm: "50%" } }}>
-                                    <FormControl fullWidth required>
-                                        <InputLabel>Sub-Department</InputLabel>
-                                        <StyledSelect
-                                            name="subDepartment"
-                                            value={form.subDepartment}
-                                            onChange={handleChange}
-                                            label="Sub-Department"
-                                            variant="outlined"
-                                        >
-                                            {reduxSubDept.map((sub) => (
-                                                <MenuItem key={sub._id} value={sub._id}>
-                                                    {sub.name}
-                                                </MenuItem>
-                                            ))}
-                                        </StyledSelect>
-                                    </FormControl>
+                        {/* Second Row: Vendor Name + Sub-Department in same line with same size */}
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                gap: 2,
+                                width: '100%'
+                            }}
+                        >
+                            {/* Vendor Name */}
+                            <StyledTextField
+                                fullWidth
+                                label="Vendor Name"
+                                name="vendorName"
+                                value={form.vendorName}
+                                onChange={handleChange}
+                                variant="outlined"
+                                placeholder="Enter vendor name"
+                                sx={{ flex: 1 }}
+                            />
 
-                                </Box>
-                            </Fade>
-                        )}
+                            {/* Sub-Department Dropdown */}
+                            {reduxSubDept.length > 0 ? (
+                                <FormControl fullWidth required sx={{ flex: 1 }}>
+                                    <InputLabel>Sub-Department</InputLabel>
+                                    <StyledSelect
+                                        name="subDepartment"
+                                        value={form.subDepartment}
+                                        onChange={handleChange}
+                                        label="Sub-Department"
+                                        variant="outlined"
+                                    >
+                                        {reduxSubDept.map((sub) => (
+                                            <MenuItem key={sub._id} value={sub._id}>
+                                                {sub.name}
+                                            </MenuItem>
+                                        ))}
+                                    </StyledSelect>
+                                </FormControl>
+                            ) : (
+                                <Box sx={{ flex: 1 }} />
+                            )}
+                        </Box>
 
-                        {/* Description Text Area */}
-                        <StyledTextField
-                            fullWidth
-                            label="Description"
-                            name="description"
-                            value={form.description}
-                            onChange={handleChange}
-                            variant="outlined"
-                            placeholder="Enter expense description (optional)"
-                            multiline
-                            rows={3}
-                        />
+                        {/* Description Section */}
+                        <Paper elevation={0}>
+                            {/* <Typography
+                                variant="h6"
+                                sx={{
+                                    mb: 2,
+                                    fontWeight: 600,
+                                    color: "text.primary"
+                                }}
+                            >
+                                Description
+                            </Typography> */}
+                            <StyledTextField
+                                fullWidth
+                                name="description"
+                                value={form.description}
+                                onChange={handleChange}
+                                variant="outlined"
+                                placeholder="Enter expense description"
+                                multiline
+                                rows={4}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        backgroundColor: 'background.paper',
+                                    }
+                                }}
+                            />
+                        </Paper>
 
-                        {/* File Upload */}
+                        {/* File Upload Section */}
                         <Card
                             variant="outlined"
                             sx={{
-                                border: "2px dashed",
-                                borderColor: form.proof ? "success.main" : "primary.light",
+                                border: "3px dashed",
+                                borderColor: form.proof ? "success.main" : "primary.main",
                                 backgroundColor: form.proof
                                     ? "success.lightest"
                                     : "primary.lightest",
                                 borderRadius: 3,
                                 cursor: "pointer",
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    borderColor: form.proof ? "success.dark" : "primary.dark",
+                                    backgroundColor: form.proof
+                                        ? "success.light"
+                                        : "primary.light",
+                                }
                             }}
                         >
-                            <CardContent sx={{ textAlign: "center", py: 3 }}>
+                            <CardContent sx={{ textAlign: "center", py: 4 }}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        mb: 2,
+                                        fontWeight: 600,
+                                        color: form.proof ? "success.dark" : "primary.dark"
+                                    }}
+                                >
+                                    UPLOAD BILL PROOF
+                                </Typography>
                                 <input
                                     type="file"
                                     hidden
@@ -286,6 +325,13 @@ export default function CreateExpenseForm() {
                                         startIcon={<UploadFileIcon />}
                                         variant={form.proof ? "contained" : "outlined"}
                                         color={form.proof ? "success" : "primary"}
+                                        size="large"
+                                        sx={{
+                                            px: 4,
+                                            py: 1.5,
+                                            fontSize: '1.1rem',
+                                            fontWeight: 600,
+                                        }}
                                     >
                                         {form.proof ? "Proof Uploaded" : "Upload Bill Proof"}
                                     </Button>
@@ -294,7 +340,7 @@ export default function CreateExpenseForm() {
                                     <Typography
                                         variant="body2"
                                         color="success.main"
-                                        sx={{ mt: 1, fontWeight: 600 }}
+                                        sx={{ mt: 2, fontWeight: 600 }}
                                     >
                                         ✅ {form.proof.name}
                                     </Typography>
@@ -311,15 +357,22 @@ export default function CreateExpenseForm() {
                                 loading || !form.proof || (reduxSubDept.length > 0 && !form.subDepartment)
                             }
                             fullWidth
+                            size="large"
+                            sx={{
+                                py: 2,
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                borderRadius: 2,
+                            }}
                         >
-                            {loading ? "Creating Expense..." : "Create Expense"}
+                            {loading ? "Creating Expense..." : "CREATE EXPENSE"}
                         </PrimaryButton>
 
                         {/* Response/Error Messages */}
                         {response && (
                             <Alert
                                 severity="success"
-                                sx={{ borderRadius: 2 }}
+                                sx={{ borderRadius: 2, fontSize: '1rem' }}
                                 onClose={() => setResponse(null)}
                             >
                                 {response}
@@ -328,7 +381,7 @@ export default function CreateExpenseForm() {
                         {error && (
                             <Alert
                                 severity="error"
-                                sx={{ borderRadius: 2 }}
+                                sx={{ borderRadius: 2, fontSize: '1rem' }}
                                 onClose={() => setError(null)}
                             >
                                 {error}
