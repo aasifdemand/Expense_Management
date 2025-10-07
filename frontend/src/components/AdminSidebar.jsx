@@ -100,7 +100,7 @@ const AdminSidebar = ({
                     style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'contain',
+                        // objectFit: 'contain',
                     }}
                     onError={(e) => {
                         e.target.src = "/image.svg";
@@ -122,7 +122,7 @@ const AdminSidebar = ({
                         height: '100%',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        // background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
                         fontWeight: 'bold',
                         fontSize: isSmallMobile ? '1rem' : '1.2rem',
@@ -158,7 +158,7 @@ const AdminSidebar = ({
                 position: 'relative',
                 minHeight: isSmallMobile ? '70px' : '90px',
                 background: 'rgba(255, 255, 255, 0.9)',
-                borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                // borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
             }}>
                 <Logo />
             </Box>
