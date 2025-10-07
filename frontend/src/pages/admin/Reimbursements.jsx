@@ -23,7 +23,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReimbursements, markAsReimbursed } from '../../store/reimbursementSlice';
 import { DoneAll } from '@mui/icons-material';
 import { fetchBudgets } from '../../store/budgetSlice';
-import { fetchExpenses, fetchExpensesForUser } from '../../store/expenseSlice';
+// import { fetchBudgets } from '../../store/budgetSlice';
+// import { fetchExpenses, fetchExpensesForUser } from '../../store/expenseSlice';
 
 
 const ReimbursementManagement = () => {
@@ -57,8 +58,8 @@ const ReimbursementManagement = () => {
             dispatch(fetchReimbursements())
             await Promise.all([
                 dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
-                dispatch(fetchExpenses({ page: 1, limit: 20 })),
-                dispatch(fetchExpensesForUser({ page: 1, limit: 20 }))
+                // dispatch(fetchExpenses({ page: 1, limit: 20 })),
+                // dispatch(fetchExpensesForUser({ page: 1, limit: 20 }))
             ]);
         }
     }

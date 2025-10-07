@@ -10,6 +10,7 @@ import { CreateReimbursementDto, UpdateReimbursementDto } from './dto/create-rei
 import { User, UserRole } from 'src/models/user.model';
 import { Expense } from 'src/models/expense.model';
 import { Budget } from 'src/models/budget.model';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ReimbursementService {
@@ -18,7 +19,7 @@ export class ReimbursementService {
         @InjectModel(User.name) private readonly userModel: Model<User>,
         @InjectModel(Expense.name) private readonly expenseModel: Model<Expense>,
         @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
-
+        private readonly notificationService: NotificationsService,
     ) { }
 
     async createReimbursement(data: CreateReimbursementDto) {
@@ -173,6 +174,10 @@ export class ReimbursementService {
             throw new BadRequestException("Reimbursement is already marked as paid");
         }
 
+        // Get the user who requested the reimbursement
+        const user = await this.userModel.findById(reimbursementDoc.requestedBy);
+        if (!user) throw new NotFoundException("User not found");
+
         // Only update when marking as reimbursed
         if (isReimbursed && !reimbursementDoc.isReimbursed) {
             // ✅ Update linked expense - convert reimbursement to allocation
@@ -202,9 +207,6 @@ export class ReimbursementService {
             }
 
             // ✅ Update linked user's balances
-            const user = await this.userModel.findById(reimbursementDoc.requestedBy);
-            if (!user) throw new NotFoundException("User not found");
-
             // Update user balances
             user.reimbursedAmount = Number(user.reimbursedAmount || 0) + Number(reimbursementDoc.amount);
             user.budgetLeft = Number(user.budgetLeft || 0) + Number(reimbursementDoc.amount); // Add back to available budget
@@ -216,6 +218,18 @@ export class ReimbursementService {
             reimbursementDoc.reimbursedAt = new Date();
 
             console.log(`💰 Reimbursement processed: ${reimbursementDoc.amount} converted to allocation`);
+
+            // ✅ Send notification to the user
+            const notificationMessage = `Your reimbursement request for ₹${reimbursementDoc.amount} has been approved and processed. Amount has been added back to your budget allocation.`;
+            const success = this.notificationService.sendNotification(
+                user._id as string,
+                notificationMessage,
+                'REIMBURSEMENT_APPROVED',
+            );
+
+            if (!success) {
+                console.warn(`⚠️ User ${user._id as string} is not connected for reimbursement notification`);
+            }
 
         } else if (!isReimbursed && reimbursementDoc.isReimbursed) {
             // Handle case where superadmin wants to undo reimbursement
@@ -246,17 +260,29 @@ export class ReimbursementService {
             }
 
             // ✅ Revert user's balances
-            const user = await this.userModel.findById(reimbursementDoc.requestedBy);
-            if (user) {
-                user.reimbursedAmount = Math.max(0, Number(user.reimbursedAmount || 0) - Number(reimbursementDoc.amount));
-                user.budgetLeft = Math.max(0, Number(user.budgetLeft || 0) - Number(reimbursementDoc.amount));
-                await user.save();
-            }
+            user.reimbursedAmount = Math.max(0, Number(user.reimbursedAmount || 0) - Number(reimbursementDoc.amount));
+            user.budgetLeft = Math.max(0, Number(user.budgetLeft || 0) - Number(reimbursementDoc.amount));
+            await user.save();
 
             reimbursementDoc.isReimbursed = false;
             reimbursementDoc.reimbursedAt = undefined;
 
             console.log(`↩️ Reimbursement reverted: ${reimbursementDoc.amount}`);
+
+            // ✅ Send notification to the user about reversal
+            const notificationMessage = `Your reimbursement request for ₹${reimbursementDoc.amount} has been reverted. Please contact administrator for more details.`;
+            console.log("user id: ", user?._id);
+
+
+            const success = this.notificationService.sendNotification(
+                user._id as string,
+                notificationMessage,
+                'REIMBURSEMENT_REVERTED',
+            );
+
+            if (!success) {
+                console.warn(`⚠️ User ${user._id as string} is not connected for reimbursement reversal notification`);
+            }
         }
 
         await reimbursementDoc.save();

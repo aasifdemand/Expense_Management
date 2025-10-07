@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, PipelineStage, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Budget } from 'src/models/budget.model';
 import { User, UserRole } from 'src/models/user.model';
 import {
@@ -107,53 +107,177 @@ export class BudgetService {
   }
 
 
-  async fetchAllocatedBudgets(page = 1, limit = 20, userId?: string) {
+
+
+  async fetchAllocatedBudgets(page = 1, limit = 20, userId?: string, location?: string) {
     const safePage = Math.max(page, 1);
     const safeLimit = Math.max(limit, 1);
     const skip = (safePage - 1) * safeLimit;
 
     const user = userId ? await this.userModel.findById(userId) : null;
 
-    const query: any = {};
+    // Build base query
+    let query = this.budgetModel.find();
 
+    // Apply user filter if needed
     if (user?.role === UserRole.USER) {
-      query.user = user._id;
+      query = query.where('user').equals(user._id);
     }
 
-    const cacheKeyPage = `budgets:${user?.role || 'superadmin'}:${userId || 'all'}:page:${safePage}:${safeLimit}`;
-    const cacheKeyAll = `budgets:${user?.role || 'superadmin'}:${userId || 'all'}:all`;
+    // Update cache keys to include location
+    const cacheKeyPage = `budgets:${user?.role || 'superadmin'}:${userId || 'all'}:${location || 'overall'}:page:${safePage}:${safeLimit}`;
+    const cacheKeyAll = `budgets:${user?.role || 'superadmin'}:${userId || 'all'}:${location || 'overall'}:all`;
 
-    // Paginated budgets
-    let budgets = await this.cacheManager.get(cacheKeyPage);
-    if (!budgets) {
-      budgets = await this.budgetModel
-        .find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .populate({ path: 'user', select: 'name _id' })
-        .lean();
-
-      await this.cacheManager.set(cacheKeyPage, budgets, 3000);
-    }
-
-    const total = await this.budgetModel.countDocuments(query);
-
-    let allBudgets = await this.cacheManager.get(cacheKeyAll);
+    // Get all budgets with user populated
+    let allBudgets = await this.cacheManager.get<Budget[]>(cacheKeyAll);
     if (!allBudgets) {
-      allBudgets = await this.budgetModel
-        .find(query)
+      allBudgets = await query
+        .populate({
+          path: 'user',
+          select: 'name _id userLoc role',
+        })
         .sort({ createdAt: -1 })
-        .populate({ path: 'user', select: 'name _id' })
         .lean();
 
       await this.cacheManager.set(cacheKeyAll, allBudgets, 3000);
     }
 
+    // Apply location filter in memory - use type assertion for user field
+    let filteredBudgets = allBudgets;
+    if (location && location !== 'OVERALL') {
+      filteredBudgets = allBudgets.filter(budget =>
+        (budget.user as any)?.userLoc === location
+      );
+    }
+
+    console.log('🔍 Budget Fetch Debug:', {
+      location,
+      totalBudgets: allBudgets.length,
+      filteredBudgets: filteredBudgets.length,
+      sampleBudget: filteredBudgets[0] // Debug first budget
+    });
+
+    // Use cache for paginated results
+    let paginatedBudgets = await this.cacheManager.get(cacheKeyPage);
+    if (!paginatedBudgets) {
+      // Paginate the filtered results
+      paginatedBudgets = filteredBudgets.slice(skip, skip + safeLimit);
+      await this.cacheManager.set(cacheKeyPage, paginatedBudgets, 3000);
+    }
+
+    // Total count
+    const total = filteredBudgets.length;
+
     return {
       message: 'Fetched budgets successfully',
-      data: budgets,
-      allBudgets,
+      data: paginatedBudgets,
+      allBudgets: filteredBudgets,
+      location: location || 'OVERALL',
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+      },
+    };
+  }
+
+  async searchBudgetAllocations(
+    filters: SearchBudgetAllocationsDto,
+    session: Record<string, any>,
+    location?: string
+  ) {
+    const {
+      userName,
+      month,
+      year,
+      minAllocated,
+      maxAllocated,
+      minSpent,
+      maxSpent,
+      page = 1,
+      limit = 10,
+    } = filters;
+    const safePage = Math.max(Number(page), 1);
+    const safeLimit = Math.max(Number(limit), 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const { user: sessionUser } = session;
+
+    // Build base query
+    let query = this.budgetModel.find();
+
+    // Apply role-based filter
+    if (sessionUser?.role !== 'superadmin') {
+      query = query.where('user').equals(new Types.ObjectId(sessionUser?.id));
+    }
+
+    // Apply other filters
+    if (month) query = query.where('month').equals(month);
+    if (year) query = query.where('year').equals(year);
+    if (minAllocated !== undefined) query = query.where('allocatedAmount').gte(minAllocated);
+    if (maxAllocated !== undefined) query = query.where('allocatedAmount').lte(maxAllocated);
+    if (minSpent !== undefined) query = query.where('spentAmount').gte(minSpent);
+    if (maxSpent !== undefined) query = query.where('spentAmount').lte(maxSpent);
+
+    // Update cache keys to include location
+    const cacheKeyPage = `budgets:search:${sessionUser?.role}:${sessionUser?.id}:${location || 'overall'}:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;
+    const cacheKeyAll = `budgets:search:${sessionUser?.role}:${sessionUser?.id}:${location || 'overall'}:all:${JSON.stringify(filters)}`;
+
+    // Get all budgets with user populated
+    let allBudgets = await this.cacheManager.get<Budget[]>(cacheKeyAll);
+    if (!allBudgets) {
+      allBudgets = await query
+        .populate({
+          path: 'user',
+          select: 'name _id userLoc role',
+        })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      await this.cacheManager.set(cacheKeyAll, allBudgets, 3000);
+    }
+
+    // Apply location and userName filters in memory with type assertions
+    let filteredBudgets = allBudgets;
+
+    // Apply location filter
+    if (location && location !== 'OVERALL') {
+      filteredBudgets = filteredBudgets.filter(budget =>
+        (budget.user as any)?.userLoc === location
+      );
+    }
+
+    // Apply userName filter
+    if (userName) {
+      filteredBudgets = filteredBudgets.filter(budget =>
+        (budget.user as any)?.name?.toLowerCase().includes(userName.toLowerCase())
+      );
+    }
+
+    console.log('🔍 Budget Search Debug:', {
+      location,
+      userName,
+      totalBudgets: allBudgets.length,
+      filteredBudgets: filteredBudgets.length,
+      sampleBudget: filteredBudgets[0] // Debug first budget
+    });
+
+    // Use cache for paginated results
+    let paginatedBudgets = await this.cacheManager.get(cacheKeyPage);
+    if (!paginatedBudgets) {
+      // Paginate the filtered results
+      paginatedBudgets = filteredBudgets.slice(skip, skip + safeLimit);
+      await this.cacheManager.set(cacheKeyPage, paginatedBudgets, 3000);
+    }
+
+    // Total count
+    const total = filteredBudgets.length;
+
+    return {
+      message: 'Fetched budgets successfully',
+      data: paginatedBudgets,
+      allBudgets: filteredBudgets,
+      location: location || 'OVERALL',
       meta: {
         total,
         page: safePage,
@@ -209,152 +333,7 @@ export class BudgetService {
     };
   }
 
-  async searchBudgetAllocations(
-    filters: SearchBudgetAllocationsDto,
-    session: Record<string, any>,
-  ) {
-    const {
-      userName,
-      month,
-      year,
-      minAllocated,
-      maxAllocated,
-      minSpent,
-      maxSpent,
-      page = 1,
-      limit = 10,
-    } = filters;
-    const safePage = Math.max(Number(page), 1);
-    const safeLimit = Math.max(Number(limit), 1);
-    const skip = (safePage - 1) * safeLimit;
 
-    const { user } = session;
-
-    // Build match stage based on filters + role
-    const matchStage: Record<string, any> = {};
-    if (user?.role !== 'superadmin') {
-      matchStage.user = user?.id;
-    }
-    if (month) matchStage.month = month;
-    if (year) matchStage.year = year;
-    if (minAllocated !== undefined || maxAllocated !== undefined) {
-      matchStage.allocatedAmount = {};
-      if (minAllocated !== undefined)
-        matchStage.allocatedAmount.$gte = minAllocated;
-      if (maxAllocated !== undefined)
-        matchStage.allocatedAmount.$lte = maxAllocated;
-    }
-    if (minSpent !== undefined || maxSpent !== undefined) {
-      matchStage.spentAmount = {};
-      if (minSpent !== undefined) matchStage.spentAmount.$gte = minSpent;
-      if (maxSpent !== undefined) matchStage.spentAmount.$lte = maxSpent;
-    }
-
-    const cacheKeyPage = `budgets:search:${user?.role}:${user?.id}:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;
-    const cacheKeyAll = `budgets:search:${user?.role}:${user?.id}:all:${JSON.stringify(filters)}`;
-
-    // Page results
-    let budgets: any[] | undefined = await this.cacheManager.get(cacheKeyPage);
-    if (!budgets) {
-      const pipelinePage: PipelineStage[] = [
-        { $match: matchStage },
-        {
-          $lookup: {
-            from: 'users',
-            let: { userId: { $toObjectId: '$user' } },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $project: { _id: 1, name: 1 } },
-            ],
-            as: 'user',
-          },
-        },
-        { $unwind: '$user' },
-      ];
-
-      if (userName) {
-        pipelinePage.push({
-          $match: { 'user.name': { $regex: userName, $options: 'i' } },
-        });
-      }
-
-      pipelinePage.push(
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: safeLimit },
-      );
-
-      budgets = await this.budgetModel.aggregate(pipelinePage);
-      await this.cacheManager.set(cacheKeyPage, budgets, 3000);
-    }
-
-    // Total count
-    const countPipeline: PipelineStage[] = [
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: 'users',
-          let: { userId: { $toObjectId: '$user' } },
-          pipeline: [
-            { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-            { $project: { _id: 1, name: 1 } },
-          ],
-          as: 'user',
-        },
-      },
-      { $unwind: '$user' },
-    ];
-    if (userName) {
-      countPipeline.push({
-        $match: { 'user.name': { $regex: userName, $options: 'i' } },
-      });
-    }
-    countPipeline.push({ $count: 'total' });
-
-    const countResult = await this.budgetModel.aggregate(countPipeline);
-    const total = countResult[0]?.total || 0;
-
-    // All budgets
-    let allBudgets: any[] | undefined =
-      await this.cacheManager.get(cacheKeyAll);
-    if (!allBudgets) {
-      const pipelineAll: PipelineStage[] = [
-        { $match: matchStage },
-        {
-          $lookup: {
-            from: 'users',
-            let: { userId: { $toObjectId: '$user' } },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
-              { $project: { _id: 1, name: 1 } },
-            ],
-            as: 'user',
-          },
-        },
-        { $unwind: '$user' },
-      ];
-      if (userName) {
-        pipelineAll.push({
-          $match: { 'user.name': { $regex: userName, $options: 'i' } },
-        });
-      }
-      pipelineAll.push({ $sort: { createdAt: -1 } });
-
-      allBudgets = await this.budgetModel.aggregate(pipelineAll);
-      await this.cacheManager.set(cacheKeyAll, allBudgets, 3000);
-    }
-
-    return {
-      message: 'Fetched budgets successfully',
-      data: budgets,
-      allBudgets,
-      meta: {
-        total,
-        page: safePage,
-        limit: safeLimit,
-      },
-    };
-  }
 
   async editAllocatedBudget(
     id: string,

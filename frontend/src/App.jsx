@@ -21,10 +21,12 @@ import Reimbursements from "./pages/admin/Reimbursements";
 import { SocketProvider } from "../src/contexts/SocketContext"
 
 
+
 const App = () => {
 
   const dispatch = useDispatch()
   const { isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role, } = useSelector((state) => state?.auth)
+
 
 
   useEffect(() => {
@@ -76,9 +78,9 @@ const App = () => {
           <Route path="add" element={
             isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
           } />
-          {/* <Route path="settings" element={
-          isRedirectToUserDashboard ? <UserSettings /> : <Navigate to="/login" />
-        } /> */}
+          <Route path="settings" element={
+            isRedirectToUserDashboard ? <Settings /> : <Navigate to="/login" />
+          } />
         </Route>
 
 

@@ -6,6 +6,21 @@ export enum UserRole {
   USER = 'user',
 }
 
+export enum UserLocation {
+  MUMBAI = 'MUMBAI',
+  BENGALURU = 'BENGALURU',
+  OVERALL = 'OVERALL',
+}
+
+
+export enum UserDepartment {
+  SALES = "SALES",
+  DATA = "DATA",
+  IT = "IT",
+  HR = "HR",
+  GENERAL = "GENERAL"
+}
+
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true, unique: true })
@@ -29,14 +44,17 @@ export class User extends Document {
   @Prop({ default: '' })
   twoFactorSecret?: string;
 
-  @Prop({ default: '' })
-  department?: string;
+  @Prop({ enum: UserDepartment, default: UserDepartment.GENERAL })
+  department: UserDepartment
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Expense' }] })
   expenses?: Types.ObjectId[];
 
-  @Prop({ default: 'Bangalore' })
-  userLoc?: string;
+  @Prop({
+    enum: UserLocation,
+    required: true
+  })
+  userLoc: UserLocation;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Budget' }] })
   allocatedBudgets: Types.ObjectId[];

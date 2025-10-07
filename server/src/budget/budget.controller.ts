@@ -47,6 +47,8 @@ export class BudgetController {
     return await this.budgetService.allocateBudget(data);
   }
 
+  // In budget.controller.ts - Add location parameter
+
   @Get()
   @UseGuards(CsrfGuard)
   @UsePipes(
@@ -59,8 +61,9 @@ export class BudgetController {
   async getExpenses(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Query('location') location = 'OVERALL', // Add location parameter
     @Session() session: Record<string, any>,
-    @Query('userId') userId?: string, // userId from query params
+    @Query('userId') userId?: string,
   ) {
     console.log('Session in get all budget allocations route: ', session);
 
@@ -78,6 +81,7 @@ export class BudgetController {
       Number(page),
       Number(limit),
       userId,
+      location // Pass location to service
     );
   }
 
@@ -92,10 +96,9 @@ export class BudgetController {
   )
   async getExpensesOrSearch(
     @Query() search: SearchBudgetAllocationsDto,
+    @Query('location') location = 'OVERALL', // Add location parameter
     @Session() session: Record<string, any>,
   ) {
-
-
     if (
       session?.twoFactorPending ||
       !session?.twoFactorVerified ||
@@ -106,7 +109,7 @@ export class BudgetController {
       );
     }
 
-    return this.budgetService.searchBudgetAllocations(search, session);
+    return this.budgetService.searchBudgetAllocations(search, session, location);
   }
 
   @Get('user/:userId')

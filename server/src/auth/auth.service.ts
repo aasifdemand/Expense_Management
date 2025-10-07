@@ -31,8 +31,6 @@ export class AuthService {
   async auth(data: AuthDto, req: Request) {
     const { deviceName } = data;
 
-
-
     const user = await this.userModel.findOne({ name: data.name });
     if (!user) throw new UnauthorizedException('User not found');
 
@@ -41,6 +39,22 @@ export class AuthService {
 
     let deviceId = req?.session.deviceId;
     let existingDevice = user.sessions?.find((s) => s.deviceId === deviceId);
+
+    // CRITICAL FIX: Check if session exists but doesn't match current device
+    const currentSessionDeviceId = req?.session.deviceId;
+    if (currentSessionDeviceId && !existingDevice) {
+      // Session exists but doesn't belong to this user's devices - destroy it
+      console.log('Destroying invalid session - device mismatch');
+      await new Promise<void>((resolve, reject) => {
+        req.session.destroy((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      // Reset deviceId after session destruction
+      deviceId = undefined;
+      existingDevice = undefined;
+    }
 
     // fallback: find by deviceName if deviceId not present
     if (!existingDevice && deviceName) {
@@ -51,6 +65,11 @@ export class AuthService {
     let qrCodeDataUrl: string | null = null;
     let deviceSecret: string | undefined;
 
+    // CRITICAL FIX: Check if this is a different device trying to login
+    const isDifferentDevice = !existingDevice || (currentSessionDeviceId && existingDevice.deviceId !== currentSessionDeviceId);
+
+    console.log(`Login debug - Device: ${deviceName}, Existing: ${!!existingDevice}, Different: ${isDifferentDevice}, CurrentSession: ${currentSessionDeviceId}`);
+
     if (!existingDevice) {
       // NEW device: generate secret & push to user.sessions
       deviceId = uuidv4();
@@ -59,10 +78,6 @@ export class AuthService {
         issuer: 'ExpenseManagement',
         length: 20,
       });
-
-
-
-
 
       const newSession = {
         deviceId,
@@ -78,7 +93,6 @@ export class AuthService {
         user.sessions.push(newSession);
       }
 
-      await user.save();
       deviceSecret = secret.base32;
 
       // Generate QR code ONLY for new devices
@@ -88,13 +102,10 @@ export class AuthService {
       // EXISTING device: reuse secret
       deviceSecret = existingDevice.twoFactorSecret;
 
-
-
-
-
-
-      if (existingDevice.twoFactorVerified) {
-        // Verified device: skip 2FA entirely
+      // CRITICAL FIX: Always require 2FA when logging in from different device
+      // even if the device was previously verified
+      if (existingDevice.twoFactorVerified && !isDifferentDevice) {
+        // Verified SAME device: skip 2FA
         existingDevice.lastLogin = new Date();
         await user.save();
 
@@ -112,7 +123,7 @@ export class AuthService {
           });
         });
 
-        console.log('Verified device - skipping 2FA');
+        console.log('Verified SAME device - skipping 2FA');
         return {
           qr: null,
           deviceId,
@@ -126,11 +137,17 @@ export class AuthService {
           },
         };
       } else {
+        // DIFFERENT device or unverified device: require 2FA
+        console.log(`Different device detected or unverified device - requiring 2FA. isDifferentDevice: ${isDifferentDevice}, twoFactorVerified: ${existingDevice.twoFactorVerified}`);
 
-
-        // Update last login but keep the same secret
+        // Update last login but require 2FA verification
         existingDevice.lastLogin = new Date();
-        await user.save();
+
+        // CRITICAL: For different devices, reset verification status to force 2FA
+        if (isDifferentDevice) {
+          existingDevice.twoFactorVerified = false;
+          console.log('Different device detected - resetting twoFactorVerified to false');
+        }
 
         // Return null for QR code since it should already be scanned
         qrCodeDataUrl = null;
@@ -138,12 +155,9 @@ export class AuthService {
       }
     }
 
-    // Only save if we have changes (for existing unverified devices, we already saved)
-    if (!existingDevice) {
-      await user.save();
-    }
+    await user.save();
 
-    // Pending 2FA: regenerate session (for both new and existing unverified devices)
+    // Pending 2FA: regenerate session (for both new and existing unverified/different devices)
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => {
         if (err) return reject(err);
@@ -177,7 +191,7 @@ export class AuthService {
   async verifyTwoFactorCode(token: string, req: Request) {
     console.log('\n=== 2FA VERIFICATION STARTED ===');
     console.log('Received token:', token);
-    console.log('Session userId:', req?.session?.userId);
+    console.log('Session userId:', req?.session?.user?._id);
     console.log('Session deviceId:', req?.session?.deviceId);
     console.log('Server time:', new Date().toISOString());
 
@@ -192,6 +206,7 @@ export class AuthService {
       (s) => s.deviceId === req?.session.deviceId,
     );
     if (!deviceSession) {
+      console.log('Available sessions:', user.sessions?.map(s => ({ deviceId: s.deviceId, deviceName: s.deviceName })));
       throw new UnauthorizedException('Device session not found');
     }
 
@@ -203,96 +218,63 @@ export class AuthService {
       throw new BadRequestException('Invalid OTP - must be 6 digits');
     }
 
-    console.log('Device session secret:', deviceSession.twoFactorSecret);
-
-    // Generate expected tokens for current time window
+    // SIMPLIFIED VERIFICATION - More tolerant approach
     const currentTime = Math.floor(Date.now() / 1000);
-
-    const expectedTokens = {
-      previous: speakeasy.totp({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        time: currentTime - 30, // Previous 30s window
-      }),
-      current: speakeasy.totp({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        time: currentTime, // Current window
-      }),
-      next: speakeasy.totp({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        time: currentTime + 30, // Next 30s window
-      }),
-    };
-
-    console.log('Expected tokens around current time:');
-    console.log('  Previous (-30s):', expectedTokens.previous);
-    console.log('  Current (now):  ', expectedTokens.current);
-    console.log('  Next (+30s):    ', expectedTokens.next);
-    console.log('  Provided:       ', cleanToken);
-
-    // Try verification with multiple approaches
     let verified = false;
     let verificationMethod = '';
 
-    // Method 1: Standard verification with window
-    if (!verified) {
-      verified = speakeasy.totp.verify({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        token: cleanToken,
-        window: 2, // ±60 seconds
-      });
-      if (verified) verificationMethod = 'standard window 2';
-    }
+    // Method 1: Try with very large window first (±5 minutes)
+    verified = speakeasy.totp.verify({
+      secret: deviceSession.twoFactorSecret,
+      encoding: 'base32',
+      token: cleanToken,
+      window: 10, // ±5 minutes - very tolerant
+    });
 
-    // Method 2: Direct comparison (most reliable)
-    if (!verified) {
-      verified =
-        cleanToken === expectedTokens.previous ||
-        cleanToken === expectedTokens.current ||
-        cleanToken === expectedTokens.next;
-      if (verified) verificationMethod = 'direct comparison';
-    }
-
-    // Method 3: Larger window as fallback
-    if (!verified) {
-      verified = speakeasy.totp.verify({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        token: cleanToken,
-        window: 6, // ±3 minutes
-      });
-      if (verified) verificationMethod = 'large window 6';
-    }
-
-    // Method 4: Time-agnostic verification (for testing)
-    if (!verified) {
-      // Generate tokens for wider time range
+    if (verified) {
+      verificationMethod = 'large window 10';
+    } else {
+      // Method 2: Manual check across wider time range
+      console.log('Testing wide time range (±5 minutes):');
       for (let i = -10; i <= 10; i++) {
+        const testTime = currentTime + (i * 30);
         const testToken = speakeasy.totp({
           secret: deviceSession.twoFactorSecret,
           encoding: 'base32',
-          time: currentTime + i * 30, // ±5 minutes
+          time: testTime,
         });
-        if (cleanToken === testToken) {
+
+        const isMatch = cleanToken === testToken;
+        console.log(`  Offset ${i * 30}s: ${testToken} ${isMatch ? '<<< MATCH' : ''}`);
+
+        if (isMatch) {
           verified = true;
           verificationMethod = `time offset ${i * 30}s`;
-          console.log(`Found match with time offset: ${i * 30} seconds`);
+          console.log(`FOUND MATCH: Server is ${Math.abs(i * 30)} seconds ${i > 0 ? 'ahead' : 'behind'} authenticator app`);
           break;
         }
       }
     }
 
     if (!verified) {
-      console.log('ALL VERIFICATION METHODS FAILED');
-      console.log('Secret being used:', deviceSession.twoFactorSecret);
+      // Generate what SHOULD be the current token for debugging
+      const currentTestToken = speakeasy.totp({
+        secret: deviceSession.twoFactorSecret,
+        encoding: 'base32',
+        time: currentTime,
+      });
+
+      console.log('VERIFICATION FAILED - TIME SYNC ISSUE DETECTED');
+      console.log('Server time:', new Date().toISOString());
       console.log('Current timestamp:', currentTime);
+      console.log('Token expected by server now:', currentTestToken);
+      console.log('Token you provided:', cleanToken);
+      console.log('Secret:', deviceSession.twoFactorSecret);
 
       throw new UnauthorizedException(
-        'Incorrect or expired OTP. ' +
-        'Please ensure your authenticator app time is synchronized with internet time.',
+        `Time synchronization issue detected. ` +
+        `Server expected: ${currentTestToken}, you provided: ${cleanToken}. ` +
+        'Please check that your server time is synchronized with internet time.'
       );
     }
 
@@ -305,14 +287,14 @@ export class AuthService {
     await user.save();
 
     // Update session
-    Object.assign(req?.session, {
+    Object.assign(req.session, {
       twoFactorPending: false,
       twoFactorVerified: true,
       authenticated: true,
     });
 
     await new Promise<void>((resolve, reject) =>
-      req?.session.save((err) => (err ? reject(err) : resolve())),
+      req.session.save((err) => (err ? reject(err) : resolve())),
     );
 
     console.log('=== 2FA VERIFICATION COMPLETED ===\n');
@@ -322,9 +304,9 @@ export class AuthService {
       verified: true,
       method: verificationMethod,
       session: {
-        twoFactorPending: req?.session.twoFactorPending,
-        twoFactorVerified: req?.session.twoFactorVerified,
-        authenticated: req?.session.authenticated,
+        twoFactorPending: req.session.twoFactorPending,
+        twoFactorVerified: req.session.twoFactorVerified,
+        authenticated: req.session.authenticated,
       },
     };
   }

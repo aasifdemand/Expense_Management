@@ -4,11 +4,9 @@ import {
     Toolbar,
     Typography,
     IconButton,
-    Badge,
     Menu,
     MenuItem,
     Box,
-    Avatar,
     FormControl,
     Select,
     useMediaQuery,
@@ -16,7 +14,6 @@ import {
     Switch,
 } from "@mui/material";
 import {
-    Notifications as NotificationsIcon,
     MoreVert as MoreVertIcon,
     Menu as MenuIcon,
     Settings as SettingsIcon,
@@ -28,7 +25,8 @@ import {
 } from "@mui/icons-material";
 
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../store/authSlice";
+import { fetchUser, logout } from "../store/authSlice";
+import { useLocation } from "../contexts/LocationContext";
 
 const Navbar = ({
     onMenuClick,
@@ -36,23 +34,22 @@ const Navbar = ({
     onSettingsClick,
     darkMode,
     onDarkModeToggle,
-    selectedLocation,
-    onLocationChange
 }) => {
+    const { user } = useSelector((state) => state.auth)
     const { csrf } = useSelector((state) => state?.auth)
     const dispatch = useDispatch()
     const [anchorEl, setAnchorEl] = useState(null);
-    const [notificationAnchor, setNotificationAnchor] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isSmallMobile = useMediaQuery('(max-width:480px)');
+    const { currentLoc, setCurrentLoc } = useLocation()
 
-    // Enhanced locations array
-    const locations = [
-        { id: "overall", name: "Overall", color: "#28be5dff" },
-        { id: "bangalore", name: "Bangalore", color: "#3f51b5" },
-        { id: "mumbai", name: "Mumbai", color: "#f44336" },
-    ];
+    console.log("user in nav: ", user);
+    console.log("currentLoc in nav: ", currentLoc);
+
+    React.useEffect(() => {
+        dispatch(fetchUser())
+    }, [dispatch])
 
     const handleProfileMenuOpen = (event) => {
         setAnchorEl(event.currentTarget);
@@ -60,14 +57,6 @@ const Navbar = ({
 
     const handleMenuClose = () => {
         setAnchorEl(null);
-    };
-
-    const handleNotificationClick = (event) => {
-        setNotificationAnchor(event.currentTarget);
-    };
-
-    const handleNotificationClose = () => {
-        setNotificationAnchor(null);
     };
 
     const handleProfileClick = () => {
@@ -84,23 +73,44 @@ const Navbar = ({
         await dispatch(logout(csrf))
     };
 
-    const handleLocationChange = (event) => {
-        const newLocation = event.target.value;
-        if (onLocationChange) onLocationChange(newLocation);
-    };
-
     const handleDarkModeToggle = () => {
         if (onDarkModeToggle) onDarkModeToggle();
     };
 
-    const getCurrentLocation = () => {
-        return locations.find(loc => loc.id === (selectedLocation || "overall")) || locations[0];
+    // Enhanced locations array
+    const locations = [
+        { id: "overall", name: "Overall", value: "OVERALL", color: "#28be5dff" },
+        { id: "bangalore", name: "Bangalore", value: "BENGALURU", color: "#3f51b5" },
+        { id: "mumbai", name: "Mumbai", value: "MUMBAI", color: "#f44336" },
+    ];
+
+    // Helper function to get location name
+    const getLocationName = (locationValue) => {
+        const location = locations.find(loc => loc.value === locationValue);
+        return location ? location.name : "Overall";
     };
 
-    const currentLocation = getCurrentLocation();
+    // Helper function to get location color
+    const getLocationColor = (locationValue) => {
+        const location = locations.find(loc => loc.value === locationValue);
+        return location ? location.color : "#28be5dff";
+    };
+
+    // Handle location change for desktop dropdown
+    const handleDesktopLocationChange = (event) => {
+        const newLocation = event.target.value;
+        console.log('Desktop location change to:', newLocation);
+        setCurrentLoc(newLocation);
+    };
+
+    // Handle location change for mobile dropdown
+    const handleMobileLocationChange = (event) => {
+        const newLocation = event.target.value;
+        console.log('Mobile location change to:', newLocation);
+        setCurrentLoc(newLocation);
+    };
 
     const menuId = 'primary-search-account-menu';
-    const notificationMenuId = 'notification-menu';
 
     return (
         <AppBar
@@ -112,7 +122,7 @@ const Navbar = ({
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 transition: 'all 0.3s ease',
-                zIndex: (theme) => theme.zIndex.drawer + 1000
+                zIndex: (theme) => theme.zIndex.drawer + 1 // Reduced zIndex
             }}
         >
             <Toolbar sx={{
@@ -165,8 +175,8 @@ const Navbar = ({
                     ml: 'auto',
                     transition: 'all 0.3s ease',
                 }}>
-                    {/* Enhanced Company State Dropdown */}
-                    {!isMobile && (
+                    {/* Enhanced Company State Dropdown for Desktop */}
+                    {!isMobile && user?.role === "superadmin" && (
                         <FormControl
                             size="small"
                             sx={{
@@ -179,8 +189,8 @@ const Navbar = ({
                             }}
                         >
                             <Select
-                                value={selectedLocation || "overall"}
-                                onChange={handleLocationChange}
+                                value={currentLoc || "OVERALL"}
+                                onChange={handleDesktopLocationChange}
                                 displayEmpty
                                 inputProps={{ 'aria-label': 'Select company location' }}
                                 sx={{
@@ -197,14 +207,14 @@ const Navbar = ({
                                     }
                                 }}
                                 renderValue={(selected) => {
-                                    const location = locations.find(loc => loc.id === selected) || locations[0];
+                                    const location = locations.find(loc => loc.value === selected);
                                     return (
                                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                             <BusinessIcon
                                                 sx={{
                                                     mr: 1,
                                                     fontSize: 18,
-                                                    color: location.color
+                                                    color: location?.color || "#28be5dff"
                                                 }}
                                             />
                                             <Typography
@@ -215,14 +225,14 @@ const Navbar = ({
                                                     fontWeight: 'medium'
                                                 }}
                                             >
-                                                {location.name}
+                                                {location?.name || "Overall"}
                                             </Typography>
                                         </Box>
                                     );
                                 }}
                             >
                                 {locations.map((location) => (
-                                    <MenuItem key={location.id} value={location.id}>
+                                    <MenuItem key={location.id} value={location.value}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                             <BusinessIcon
                                                 sx={{
@@ -238,46 +248,6 @@ const Navbar = ({
                             </Select>
                         </FormControl>
                     )}
-
-                    {/* Enhanced Dark Mode Toggle */}
-                    {/* {!isMobile && (
-                        <IconButton
-                            size="medium"
-                            aria-label="toggle dark mode"
-                            color="inherit"
-                            onClick={handleDarkModeToggle}
-                            sx={{
-                                p: 1,
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                    transform: 'scale(1.1)',
-                                }
-                            }}
-                        >
-                            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-                        </IconButton>
-                    )} */}
-
-                    {/* Enhanced Notifications */}
-                    <IconButton
-                        size={isMobile ? "small" : "medium"}
-                        aria-label="show notifications"
-                        color="inherit"
-                        onClick={handleNotificationClick}
-                        sx={{
-                            p: { xs: 0.5, sm: 1 },
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                transform: 'scale(1.1)',
-                            }
-                        }}
-                    >
-                        <Badge badgeContent={4} color="error" size={isMobile ? "small" : "medium"}>
-                            <NotificationsIcon fontSize={isMobile ? "small" : "medium"} />
-                        </Badge>
-                    </IconButton>
 
                     {/* Enhanced Three dots menu */}
                     <IconButton
@@ -300,121 +270,6 @@ const Navbar = ({
                         <MoreVertIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
                 </Box>
-
-                {/* Enhanced Notification Menu */}
-                <Menu
-                    disableScrollLock
-                    anchorEl={notificationAnchor}
-                    anchorOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
-                    }}
-                    id={notificationMenuId}
-                    keepMounted
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'right',
-                    }}
-                    open={Boolean(notificationAnchor)}
-                    onClose={handleNotificationClose}
-                    PaperProps={{
-                        sx: {
-                            mt: 4.5,
-                            minWidth: isMobile ? 280 : 300,
-                            maxWidth: isMobile ? '90vw' : 400,
-                            borderRadius: 2,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                            transition: 'all 0.3s ease',
-                            '@media (max-width: 480px)': {
-                                minWidth: '95vw',
-                                maxWidth: '95vw',
-                                mx: 1,
-                            }
-                        }
-                    }}
-                >
-                    <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 1,
-                            py: 0.5,
-                            transition: 'all 0.3s ease',
-                        }}>
-                            <Avatar sx={{
-                                width: 32,
-                                height: 32,
-                                mr: 2,
-                                bgcolor: 'primary.main',
-                                transition: 'all 0.3s ease',
-                            }}>
-                                <NotificationsIcon fontSize="small" />
-                            </Avatar>
-                            <Box sx={{ minWidth: 0 }}>
-                                <Typography variant="body2" fontWeight="medium" noWrap>
-                                    New expense submitted
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Just now
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </MenuItem>
-                    <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 1,
-                            py: 0.5,
-                            transition: 'all 0.3s ease',
-                        }}>
-                            <Avatar sx={{
-                                width: 32,
-                                height: 32,
-                                mr: 2,
-                                bgcolor: 'success.main',
-                                transition: 'all 0.3s ease',
-                            }}>
-                                <NotificationsIcon fontSize="small" />
-                            </Avatar>
-                            <Box sx={{ minWidth: 0 }}>
-                                <Typography variant="body2" fontWeight="medium" noWrap>
-                                    Payment approved
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    2 hours ago
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </MenuItem>
-                    <MenuItem onClick={handleNotificationClose}>
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 1,
-                            py: 0.5,
-                            transition: 'all 0.3s ease',
-                        }}>
-                            <Avatar sx={{
-                                width: 32,
-                                height: 32,
-                                mr: 2,
-                                bgcolor: 'warning.main',
-                                transition: 'all 0.3s ease',
-                            }}>
-                                <NotificationsIcon fontSize="small" />
-                            </Avatar>
-                            <Box sx={{ minWidth: 0 }}>
-                                <Typography variant="body2" fontWeight="medium" noWrap>
-                                    Budget limit warning
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    1 day ago
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </MenuItem>
-                </Menu>
 
                 {/* Enhanced Profile Menu */}
                 <Menu
@@ -439,6 +294,7 @@ const Navbar = ({
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                             transition: 'all 0.3s ease',
+                            zIndex: (theme) => theme.zIndex.drawer + 2000, // Increased zIndex for dropdown
                             '@media (max-width: 480px)': {
                                 minWidth: '95vw',
                                 maxWidth: '95vw',
@@ -448,7 +304,7 @@ const Navbar = ({
                     }}
                 >
                     {/* Enhanced Location Selector for Mobile */}
-                    {isMobile && (
+                    {isMobile && user?.role === "superadmin" && (
                         <Box sx={{
                             px: 2,
                             py: 1,
@@ -461,13 +317,22 @@ const Navbar = ({
                             </Typography>
                             <FormControl fullWidth size="small">
                                 <Select
-                                    value={selectedLocation || "overall"}
-                                    onChange={handleLocationChange}
+                                    value={currentLoc || "OVERALL"}
+                                    onChange={handleMobileLocationChange}
                                     displayEmpty
                                     sx={{ fontSize: '0.875rem' }}
+                                    MenuProps={{
+                                        disableScrollLock: true,
+                                        sx: {
+                                            zIndex: (theme) => theme.zIndex.drawer + 3000, // Highest zIndex for select dropdown
+                                        }
+                                    }}
                                 >
                                     {locations.map((location) => (
-                                        <MenuItem key={location.id} value={location.id}>
+                                        <MenuItem
+                                            key={location.id}
+                                            value={location.value}
+                                        >
                                             <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                                                 <BusinessIcon
                                                     sx={{
@@ -485,36 +350,39 @@ const Navbar = ({
                         </Box>
                     )}
 
-                    {/* Enhanced Current Location Display */}
-                    <Box sx={{
-                        px: 2,
-                        py: 1,
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.3s ease',
-                    }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <BusinessIcon
-                                sx={{
-                                    mr: 1.5,
-                                    fontSize: 18,
-                                    color: currentLocation.color
-                                }}
-                            />
-                            <Box>
-                                <Typography variant="subtitle2" fontWeight="bold">
-                                    Current Location
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {currentLocation.name}
-                                </Typography>
+                    {/* Current Location Display for Super Admin */}
+                    {user?.role === "superadmin" && (
+                        <Box sx={{
+                            px: 2,
+                            py: 1,
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            transition: 'all 0.3s ease',
+                        }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <BusinessIcon
+                                    sx={{
+                                        mr: 1.5,
+                                        fontSize: 18,
+                                        color: getLocationColor(currentLoc)
+                                    }}
+                                />
+                                <Box>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        Current Location
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {getLocationName(currentLoc)}
+                                    </Typography>
+                                </Box>
                             </Box>
                         </Box>
-                    </Box>
+                    )}
 
+                    {/* Profile Menu Items */}
                     <MenuItem onClick={handleProfileClick} sx={{ transition: 'all 0.3s ease' }}>
                         <AccountIcon sx={{
                             mr: 2,
