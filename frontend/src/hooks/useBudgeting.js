@@ -34,6 +34,7 @@ export const useBudgeting = () => {
     amount: 0,
     month: currentMonth,
     year,
+    company: ""
   });
 
   const [open, setOpen] = useState(false);
@@ -117,6 +118,7 @@ export const useBudgeting = () => {
       amount: row.allocatedAmount,
       month: row.month,
       year: row.year,
+      company: row?.company
     });
     setOpen(true);
   };
@@ -128,7 +130,7 @@ export const useBudgeting = () => {
   };
 
   const handleAdd = async () => {
-    console.log("formdata before mapping: ", formData);
+    // console.log("formdata before mapping: ", formData);
 
     const payload = {
       ...formData,

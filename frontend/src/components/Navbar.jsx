@@ -31,7 +31,6 @@ import { useLocation } from "../contexts/LocationContext";
 const Navbar = ({
     onMenuClick,
     onProfileClick,
-    onSettingsClick,
     darkMode,
     onDarkModeToggle,
 }) => {
@@ -41,11 +40,11 @@ const Navbar = ({
     const [anchorEl, setAnchorEl] = useState(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isSmallMobile = useMediaQuery('(max-width:480px)');
+
     const { currentLoc, setCurrentLoc } = useLocation()
 
-    console.log("user in nav: ", user);
-    console.log("currentLoc in nav: ", currentLoc);
+    // console.log("user in nav: ", user);
+    // console.log("currentLoc in nav: ", currentLoc);
 
     React.useEffect(() => {
         dispatch(fetchUser())
@@ -64,10 +63,7 @@ const Navbar = ({
         if (onProfileClick) onProfileClick();
     };
 
-    const handleSettingsClick = () => {
-        handleMenuClose();
-        if (onSettingsClick) onSettingsClick();
-    };
+
 
     const handleLogoutClick = async () => {
         await dispatch(logout(csrf))

@@ -159,8 +159,12 @@ const BudgetTable = ({
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>Allocated Amount</TableCell>
+                            {
+                                role === "superadmin" && <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
+                            }
+                            <TableCell sx={{ fontWeight: "bold" }}>Allocated</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Spent</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Remaining</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Budget Type</TableCell>
                         </TableRow>
@@ -175,18 +179,26 @@ const BudgetTable = ({
                         ) : budgets?.length > 0 ? (
                             budgets.map((row) => (
                                 <TableRow key={row._id} hover>
-                                    <TableCell>
-                                        <Box display="flex" alignItems="center" gap={2}>
-                                            <Avatar sx={{ bgcolor: "primary.main" }}>
-                                                {row?.user?.name?.charAt(0).toUpperCase()}
-                                            </Avatar>
-                                            <Typography fontWeight={500}>
-                                                {row?.user?.name}
-                                            </Typography>
-                                        </Box>
-                                    </TableCell>
+                                    {
+                                        role === "superadmin" && <TableCell>
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                <Avatar sx={{ bgcolor: "primary.main" }}>
+                                                    {row?.user?.name?.charAt(0).toUpperCase()}
+                                                </Avatar>
+                                                <Typography fontWeight={500}>
+                                                    {row?.user?.name}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                    }
                                     <TableCell sx={{ fontWeight: "bold" }}>
                                         ₹{row?.allocatedAmount?.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                        ₹{row?.spentAmount?.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                        ₹{row?.remainingAmount?.toLocaleString()}
                                     </TableCell>
                                     <TableCell>
                                         {row?.createdAt

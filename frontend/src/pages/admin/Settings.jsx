@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUserProfile, fetchUser } from "../../store/authSlice"
 import '../../styles/settings.styles.css';
+import { useToastMessage } from '../../hooks/useToast';
 
 const SettingsPage = () => {
   const dispatch = useDispatch();
-  const { user, updateProfileLoading, updateProfileError } = useSelector((state) => state.auth);
-
+  const { user, updateProfileLoading } = useSelector((state) => state.auth);
+  const { success, error: catchError } = useToastMessage()
   const [activeSection, setActiveSection] = useState('account');
-  const [saveStatus, setSaveStatus] = useState('');
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
 
@@ -56,22 +57,27 @@ const SettingsPage = () => {
 
   // Action Functions
   const saveProfile = async () => {
-    setSaveStatus('Saving profile...');
+    // Add validation for userId
+    if (!user?._id) {
+      catchError("User ID is missing. Please log in again.");
+      return;
+    }
 
     try {
-      const result = await dispatch(updateUserProfile({ ...userProfile, userId: user?._id })).unwrap();
+      const result = await dispatch(updateUserProfile({
+        ...userProfile,
+        userId: user._id
+      })).unwrap();
+
       setIsEditingProfile(false);
-      setSaveStatus('Profile updated successfully!');
 
       if (updateUserProfile.fulfilled.matches(result)) {
-        await dispatch(fetchUser());
+        success("Updated profile successfully");
+        setTimeout(() => { dispatch(fetchUser()) }, 5000);
       }
-
-
-      setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
-      setSaveStatus(error || 'Error updating profile. Please try again.');
-      setTimeout(() => setSaveStatus(''), 3000);
+      catchError("Error in updating the profile: ", error?.message);
+      console.log(error);
     }
   };
 
@@ -211,20 +217,7 @@ const SettingsPage = () => {
           )}
         </div>
 
-        <div className="settings-footer">
-          {saveStatus && (
-            <div className={`status-message ${saveStatus?.includes('successfully') ? 'success' :
-              saveStatus?.includes('Error') || saveStatus?.includes('incorrect') || saveStatus?.includes('do not match') ? 'error' : 'info'
-              }`}>
-              {saveStatus}
-            </div>
-          )}
-          {updateProfileError && (
-            <div className="status-message error">
-              {updateProfileError}
-            </div>
-          )}
-        </div>
+
       </div>
     </div>
 
