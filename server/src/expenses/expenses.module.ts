@@ -9,7 +9,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-ioredis-yet';
 import { Budget, BudgetSchema } from 'src/models/budget.model';
-import { Notification, NotificationSchema } from 'src/models/notifications.model';
 import { Department, DepartmentSchema } from 'src/models/department.model';
 import { SubDepartment, SubDepartmentSchema } from 'src/models/sub-department.model';
 import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.model';
@@ -36,10 +35,7 @@ import { NotificationsGateway } from 'src/gateways/notifications/notifications.g
         name: Budget.name,
         schema: BudgetSchema
       },
-      {
-        name: Notification.name,
-        schema: NotificationSchema
-      },
+
       {
         name: Department.name,
         schema: DepartmentSchema

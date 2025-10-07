@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom"
 import { Provider } from "react-redux"
 import { store } from './store/store.jsx'
 import { Toaster } from 'react-hot-toast'
+import { LocationProvider } from './contexts/LocationContext.jsx'
 
 
 
@@ -16,8 +17,10 @@ createRoot(document.getElementById('root')).render(
     <Provider store={store}>
 
       <BrowserRouter>
-        <App />
-        <Toaster />
+        <LocationProvider>
+          <App />
+          <Toaster />
+        </LocationProvider>
       </BrowserRouter>
 
     </Provider>

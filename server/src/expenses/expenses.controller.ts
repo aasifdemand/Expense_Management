@@ -69,11 +69,14 @@ export class ExpensesController {
     }
   }
 
+  // In expenses.controller.ts
+
   @Get()
   @UseGuards(CsrfGuard)
   async getExpenses(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Query('location') location = 'OVERALL',
     @Req() req: Request,
   ) {
     const { session } = req;
@@ -87,7 +90,7 @@ export class ExpensesController {
       );
     }
 
-    return this.expensesService.getAllExpenses(Number(page), Number(limit));
+    return this.expensesService.getAllExpenses(Number(page), Number(limit), location);
   }
 
   @Get('search')
@@ -103,6 +106,7 @@ export class ExpensesController {
     @Query() search: SearchExpensesDto,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Query('location') location = 'OVERALL',
     @Req() req: Request,
   ) {
     const { session } = req;
@@ -120,6 +124,7 @@ export class ExpensesController {
       search,
       Number(page),
       Number(limit),
+      location,
     );
   }
 

@@ -1,12 +1,18 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUser } from "../store/authSlice";
 
 const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const { user } = useSelector((state) => state?.auth);
+    const dispatch = useDispatch()
+    useEffect(() => {
+        dispatch(fetchUser())
+    }, [dispatch])
 
     useEffect(() => {
         if (!user?._id) {

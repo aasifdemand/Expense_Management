@@ -302,6 +302,7 @@ const Budgeting = () => {
 
             {/* Table */}
             <BudgetTable
+                showPagination
                 limit={limit}
                 setLimit={setLimit}
                 budgets={budgets}

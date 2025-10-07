@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
-import { User, userSchema, UserRole } from '../models/user.model';
+import { User, userSchema, UserRole, UserLocation, UserDepartment } from '../models/user.model';
 import * as argon2 from 'argon2';
-
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -21,29 +20,152 @@ async function seed() {
       return await argon2.hash(password);
     };
 
-    // Array of users to create
     const users = [
-      { name: 'Kaleem Mohammed', password: 'kaleem@dcm', role: UserRole.SUPERADMIN },
-      { name: "Malik Muzammil", password: "muzammil@dcm", role: UserRole.SUPERADMIN },
-      { name: 'Ashraf Ali', password: 'ashraf@dcm', role: UserRole.USER },
-      { name: 'Nihal Ahmed', password: 'nihal@dcm', role: UserRole.USER },
-      { name: 'Mohammed Ovez', password: 'ovez@dcm', role: UserRole.USER },
-      { name: "Dinesh Kumar", password: "dinesh@dcm", role: UserRole.USER },
-
-      //   { name: 'user4', password: 'password123', role: UserRole.USER },
-      //   { name: 'user5', password: 'password123', role: UserRole.USER },
-      //   { name: 'user6', password: 'password123', role: UserRole.USER },
-      //   { name: 'user7', password: 'password123', role: UserRole.USER },
-      //   { name: 'user8', password: 'password123', role: UserRole.USER },
+      {
+        name: 'Kaleem Mohammed',
+        password: 'kaleem@dcm',
+        role: UserRole.SUPERADMIN,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.GENERAL,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Malik Muzammil',
+        password: 'muzammil@dcm',
+        role: UserRole.SUPERADMIN,
+        userLoc: UserLocation.MUMBAI,
+        department: UserDepartment.GENERAL,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Ashraf Ali',
+        password: 'ashraf@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.DATA,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Nihal Ahmed',
+        password: 'nihal@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.IT,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Dinesh Kumar',
+        password: 'dinesh@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.HR,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Kannan Jaguya',
+        password: 'Kannan@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.MUMBAI,
+        department: UserDepartment.HR,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: 'Anwar Siddiqui',
+        password: 'anwar@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.MUMBAI,
+        department: UserDepartment.IT,
+        email: '',
+        phone: '',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
+      {
+        name: "Waris Ali",
+        password: "waris@dcm",
+        role: UserRole.USER,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.SALES,
+        email: "",
+        phone: "",
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      }
     ];
 
-    // Hash passwords and insert users
+    // Hash passwords and insert users with ALL fields
     for (const user of users) {
       const hashedPassword = await hashPassword(user.password);
+
       await new UserModel({
-        name: user.name,
-        password: hashedPassword,
-        role: user.role,
+        ...user,
+        password: hashedPassword
       }).save();
     }
 

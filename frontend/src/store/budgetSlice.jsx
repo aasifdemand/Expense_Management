@@ -36,11 +36,10 @@ export const allocateBudget = createAsyncThunk(
   }
 );
 
-// --- Fetch Budgets (All budgets with optional userId filter) ---
 export const fetchBudgets = createAsyncThunk(
   "budget/fetchAll",
   async (
-    { page = 1, limit = 10, month = "", year = "", userId },
+    { page = 1, limit = 10, month = "", year = "", userId, location = 'OVERALL' }, // Add location
     { getState, rejectWithValue }
   ) => {
     try {
@@ -50,6 +49,7 @@ export const fetchBudgets = createAsyncThunk(
       if (userId) query.append("userId", String(userId));
       query.append("page", String(page));
       query.append("limit", String(limit));
+      query.append("location", String(location)); // Add location to query
 
       if (month) query.append("month", String(month));
       if (year) query.append("year", String(year));
@@ -70,6 +70,7 @@ export const fetchBudgets = createAsyncThunk(
       return {
         budgets: data?.data || [],
         allBudgets: data?.allBudgets || [],
+        location: data?.location || 'OVERALL',
         meta: data?.meta || { total: 0, page, limit, totalAllocated: 0, totalSpent: 0 },
       };
     } catch (error) {
@@ -78,6 +79,62 @@ export const fetchBudgets = createAsyncThunk(
   }
 );
 
+// --- Search Budgets ---
+export const searchBudgets = createAsyncThunk(
+  "budget/search",
+  async (
+    {
+      userName = "",
+      month = "",
+      year = "",
+      minAllocated,
+      maxAllocated,
+      minSpent,
+      maxSpent,
+      page = 1,
+      limit = 10,
+      location = 'OVERALL', // Add location
+    },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const csrf = getState().auth.csrf;
+      const query = new URLSearchParams({
+        ...(userName && { userName }),
+        ...(month && { month: String(month) }),
+        ...(year && { year: String(year) }),
+        ...(minAllocated !== undefined && { minAllocated }),
+        ...(maxAllocated !== undefined && { maxAllocated }),
+        ...(minSpent !== undefined && { minSpent }),
+        ...(maxSpent !== undefined && { maxSpent }),
+        page: String(page),
+        limit: String(limit),
+        location: String(location), // Add location to query
+      });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASEURL}/budget/search?${query.toString()}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
+        }
+      );
+      if (!response.ok) throw new Error("Failed to search budgets");
+
+      const data = await response.json();
+
+      return {
+        budgets: data?.data || [],
+        allBudgets: data?.allBudgets || [],
+        location: data?.location || 'OVERALL',
+        meta: data?.meta || { total: 0, page, limit, totalAllocated: 0, totalSpent: 0 },
+      };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 // --- NEW: Fetch User Budgets (Specific user only) ---
 export const fetchUserBudgets = createAsyncThunk(
   "budget/fetchUserBudgets",
@@ -117,59 +174,7 @@ export const fetchUserBudgets = createAsyncThunk(
   }
 );
 
-// --- Search Budgets ---
-export const searchBudgets = createAsyncThunk(
-  "budget/search",
-  async (
-    {
-      userName = "",
-      month = "",
-      year = "",
-      minAllocated,
-      maxAllocated,
-      minSpent,
-      maxSpent,
-      page = 1,
-      limit = 10,
-    },
-    { getState, rejectWithValue }
-  ) => {
-    try {
-      const csrf = getState().auth.csrf;
-      const query = new URLSearchParams({
-        ...(userName && { userName }),
-        ...(month && { month: String(month) }),
-        ...(year && { year: String(year) }),
-        ...(minAllocated !== undefined && { minAllocated }),
-        ...(maxAllocated !== undefined && { maxAllocated }),
-        ...(minSpent !== undefined && { minSpent }),
-        ...(maxSpent !== undefined && { maxSpent }),
-        page: String(page),
-        limit: String(limit),
-      });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASEURL}/budget/search?${query.toString()}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
-        }
-      );
-      if (!response.ok) throw new Error("Failed to search budgets");
-
-      const data = await response.json();
-
-      return {
-        budgets: data?.data || [],
-        allBudgets: data?.allBudgets || [],
-        meta: data?.meta || { total: 0, page, limit, totalAllocated: 0, totalSpent: 0 },
-      };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
 
 // --- Update Budget ---
 export const updateBudget = createAsyncThunk(

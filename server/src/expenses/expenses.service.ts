@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -331,12 +330,201 @@ export class ExpensesService {
       },
     };
   }
-  async searchExpenses(filters: SearchExpensesDto, page = 1, limit = 20) {
+  // In your expenses.service.ts - Add location filtering to all methods
+
+  // In expenses.service.ts - Add these methods and updates
+
+  private buildLocationFilter(location?: string): Record<string, any> {
+    if (!location || location === 'OVERALL') {
+      return {}; // No filter for overall
+    }
+
+    // For specific locations, we need to filter by user's location
+    // This will be used in aggregation pipelines
+    return {}; // We'll handle this differently in aggregation
+  }
+
+  private buildLocationAggregationFilter(location?: string): PipelineStage[] {
+    if (!location || location === 'OVERALL') {
+      return []; // No filter for overall
+    }
+
+    // For specific locations, add a $match stage after user lookup
+    return [
+      {
+        $match: {
+          'user.userLoc': location
+        }
+      }
+    ];
+  }
+
+  async getAllExpenses(page = 1, limit = 10, location?: string) {
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    // Update cache key to include location
+    const cacheKey = `expenses:all:${location || 'overall'}:${safePage}:${safeLimit}`;
+    const cached = await this.cacheManager.get(cacheKey);
+    if (cached)
+      return { message: 'Fetched expenses from cache', ...(cached as any) };
+
+    // Build base query with location filtering using aggregation
+    const aggregationPipeline: PipelineStage[] = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ...this.buildLocationAggregationFilter(location), // Apply location filter after user lookup
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'department',
+          foreignField: '_id',
+          as: 'department',
+        },
+      },
+      { $unwind: { path: '$department', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'subdepartments',
+          localField: 'subDepartment',
+          foreignField: '_id',
+          as: 'subDepartment',
+        },
+      },
+      { $unwind: { path: '$subDepartment', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'reimbursements',
+          localField: 'reimbursement',
+          foreignField: '_id',
+          as: 'reimbursement',
+        },
+      },
+      { $unwind: { path: '$reimbursement', preserveNullAndEmptyArrays: true } },
+      { $sort: { createdAt: -1 } },
+    ];
+
+    // Get paginated data
+    const paginatedPipeline = [
+      ...aggregationPipeline,
+      { $skip: skip },
+      { $limit: safeLimit },
+      {
+        $project: {
+          _id: 1,
+          amount: 1,
+          fromAllocation: 1,
+          fromReimbursement: 1,
+          description: 1,
+          paymentMode: 1,
+          isReimbursed: 1,
+          isApproved: 1,
+          month: 1,
+          year: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          proof: 1,
+          user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
+          department: { _id: '$department._id', name: '$department.name' },
+          subDepartment: { _id: '$subDepartment._id', name: '$subDepartment.name' },
+          reimbursement: { _id: '$reimbursement._id', amount: '$reimbursement.amount', isReimbursed: '$reimbursement.isReimbursed' },
+        },
+      },
+    ];
+
+    // Get total count with location filter
+    const countPipeline = [
+      ...aggregationPipeline,
+      { $count: 'total' }
+    ];
+
+    const [data, totalResult, allExpenses] = await Promise.all([
+      this.expenseModal.aggregate(paginatedPipeline),
+      this.expenseModal.aggregate(countPipeline),
+      this.expenseModal.aggregate([
+        ...aggregationPipeline,
+        {
+          $project: {
+            _id: 1,
+            amount: 1,
+            fromAllocation: 1,
+            fromReimbursement: 1,
+            description: 1,
+            paymentMode: 1,
+            isReimbursed: 1,
+            isApproved: 1,
+            month: 1,
+            year: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            proof: 1,
+            user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
+            department: { _id: '$department._id', name: '$department.name' },
+            subDepartment: { _id: '$subDepartment._id', name: '$subDepartment.name' },
+            reimbursement: { _id: '$reimbursement._id', amount: '$reimbursement.amount', isReimbursed: '$reimbursement.isReimbursed' },
+          },
+        },
+      ]),
+    ]);
+
+    const total = totalResult[0]?.total || 0;
+
+    // Stats pipeline with location filter
+    const statsPipeline: PipelineStage[] = [
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ...this.buildLocationAggregationFilter(location),
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: '$amount' },
+          totalFromAllocation: { $sum: '$fromAllocation' },
+          totalFromReimbursement: { $sum: '$fromReimbursement' },
+        },
+      },
+    ];
+
+    const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
+    const stats = statsResult || {
+      totalSpent: 0,
+      totalFromAllocation: 0,
+      totalFromReimbursement: 0,
+    };
+
+    const result = {
+      message: 'Fetched expenses successfully',
+      meta: { total, page: safePage, limit: safeLimit },
+      stats,
+      data,
+      allExpenses,
+      location: location || 'OVERALL'
+    };
+
+    await this.cacheManager.set(cacheKey, result, 60_000);
+    return result;
+  }
+
+  async searchExpenses(filters: SearchExpensesDto, page = 1, limit = 20, location?: string) {
     const safePage = Math.max(Number(page), 1);
     const safeLimit = Math.max(Number(limit), 1);
     const skip = (safePage - 1) * safeLimit;
 
-    const cacheKey = `expenses:search:${JSON.stringify(filters)}:${safePage}:${safeLimit}`;
+    const cacheKey = `expenses:search:${location || 'overall'}:${JSON.stringify(filters)}:${safePage}:${safeLimit}`;
     const cached = await this.cacheManager.get(cacheKey);
     if (cached)
       return {
@@ -345,6 +533,8 @@ export class ExpensesService {
       };
 
     const matchStage: Record<string, any> = {};
+
+    // Existing filters
     if (filters.month !== undefined) matchStage.month = filters.month;
     if (filters.year !== undefined) matchStage.year = filters.year;
     if (filters.minAmount !== undefined || filters.maxAmount !== undefined) {
@@ -382,6 +572,7 @@ export class ExpensesService {
         },
       },
       { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ...this.buildLocationAggregationFilter(location), // Apply location filter
       {
         $lookup: {
           from: 'departments',
@@ -409,7 +600,7 @@ export class ExpensesService {
       });
     }
 
-    // Project only required fields
+    // Project with userLoc
     const projectionStage: PipelineStage = {
       $project: {
         _id: 1,
@@ -421,7 +612,7 @@ export class ExpensesService {
         year: 1,
         createdAt: 1,
         updatedAt: 1,
-        user: { _id: '$user._id', name: '$user.name' },
+        user: { _id: '$user._id', name: '$user.name', userLoc: '$user.userLoc' },
         department: { _id: '$department._id', name: '$department.name' },
         subDepartment: {
           _id: '$subDepartment._id',
@@ -432,7 +623,7 @@ export class ExpensesService {
 
     const pipeline = [...basePipeline, projectionStage];
 
-    // --- Stats aggregation
+    // --- Stats aggregation with location filter ---
     const statsPipeline = [
       ...pipeline,
       {
@@ -458,15 +649,9 @@ export class ExpensesService {
 
     const data = await this.expenseModal.aggregate(pipeline);
 
-    // Count total matching documents
-    const totalResult = await this.expenseModal.aggregate([
+    // Count total matching documents with location filter
+    const countPipeline = [
       { $match: matchStage },
-      { $count: 'total' },
-    ]);
-    const total = totalResult[0]?.total || 0;
-
-    // ✅ Fetch all expenses (allExpenses) without filters or pagination
-    const allExpensesPipeline: PipelineStage[] = [
       {
         $lookup: {
           from: 'users',
@@ -476,6 +661,26 @@ export class ExpensesService {
         },
       },
       { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ...this.buildLocationAggregationFilter(location),
+      { $count: 'total' }
+    ];
+
+    const totalResult = await this.expenseModal.aggregate(countPipeline);
+    const total = totalResult[0]?.total || 0;
+
+    // All expenses with location filter
+    const allExpensesPipeline: PipelineStage[] = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      ...this.buildLocationAggregationFilter(location),
       {
         $lookup: {
           from: 'departments',
@@ -504,102 +709,11 @@ export class ExpensesService {
       data,
       stats,
       allExpenses,
+      location: location || 'OVERALL',
       meta: { total, page: safePage, limit: safeLimit },
     };
   }
 
-  async getAllExpenses(page = 1, limit = 10) {
-    const safePage = Math.max(page, 1);
-    const safeLimit = Math.max(limit, 1);
-    const skip = (safePage - 1) * safeLimit;
-
-    const cacheKey = `expenses:all:${safePage}:${safeLimit}`;
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached)
-      return { message: 'Fetched expenses from cache', ...(cached as any) };
-
-    // --- Paginated expenses ---
-    const [expenses, total] = await Promise.all([
-      this.expenseModal
-        .find()
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeLimit)
-        .populate({ path: 'user', select: 'name _id' })
-        .populate({ path: 'department', select: 'name _id' })
-        .populate({ path: 'subDepartment', select: 'name _id' })
-        .populate({ path: "reimbursement", select: " _id amount isReimbursed" })
-        .lean(),
-      this.expenseModal.countDocuments(),
-    ]);
-
-    // --- Full dataset for charts/stats ---
-    const allExpenses = await this.expenseModal
-      .find()
-      .sort({ createdAt: -1 })
-      .populate({ path: 'user', select: 'name _id' })
-      .populate({ path: 'department', select: 'name _id' })
-      .populate({ path: 'subDepartment', select: 'name _id' })
-      .populate({ path: "reimbursement", select: " _id amount isReimbursed" })
-      .lean();
-
-    // --- Stats based on full dataset ---
-    const statsPipeline: PipelineStage[] = [
-      {
-        $group: {
-          _id: null,
-          totalSpent: {
-            $sum: {
-              $convert: {
-                input: '$amount',
-                to: 'double',
-                onError: 0,
-                onNull: 0,
-              },
-            },
-          },
-          totalFromAllocation: {
-            $sum: {
-              $convert: {
-                input: '$fromAllocation',
-                to: 'double',
-                onError: 0,
-                onNull: 0,
-              },
-            },
-          },
-          totalFromReimbursement: {
-            $sum: {
-              $convert: {
-                input: '$fromReimbursement',
-                to: 'double',
-                onError: 0,
-                onNull: 0,
-              },
-            },
-          },
-        },
-      },
-    ];
-
-    const [statsResult] = await this.expenseModal.aggregate(statsPipeline);
-    const stats = statsResult || {
-      totalSpent: 0,
-      totalFromAllocation: 0,
-      totalFromReimbursement: 0,
-    };
-
-    const result = {
-      message: 'Fetched expenses successfully',
-      meta: { total, page: safePage, limit: safeLimit },
-      stats,
-      data: expenses, // paginated
-      allExpenses, // full dataset
-    };
-
-    await this.cacheManager.set(cacheKey, result, 60_000);
-    return result;
-  }
 
   async getAllExpensesForUser(
     page = 1,

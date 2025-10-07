@@ -6,6 +6,8 @@ import { Reimbursement, ReimbursementSchema } from 'src/models/reimbursements.mo
 import { User, userSchema } from 'src/models/user.model';
 import { Expense, ExpenseSchema } from 'src/models/expense.model';
 import { Budget, BudgetSchema } from 'src/models/budget.model';
+import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { Budget, BudgetSchema } from 'src/models/budget.model';
     ])
   ],
   controllers: [ReimbursementController],
-  providers: [ReimbursementService],
+  providers: [ReimbursementService, NotificationsGateway, NotificationsService],
+  exports: [NotificationsGateway, NotificationsService]
 })
 export class ReimbursementModule { }

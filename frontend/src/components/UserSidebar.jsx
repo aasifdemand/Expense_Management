@@ -45,7 +45,7 @@ const UserSidebar = ({
         { text: "Dashboard", icon: <DashboardIcon />, path: "/user/dashboard" },
         { text: "Budgeting", icon: <PieChartIcon />, path: "/user/budgeting" },
         { text: "Expenses", icon: <AttachMoneyIcon />, path: "/user/expenses" },
-        // { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
+        { text: "Settings", icon: <SettingsIcon />, path: "/user/settings" }
     ];
 
     useEffect(() => {

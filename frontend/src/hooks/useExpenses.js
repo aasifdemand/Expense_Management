@@ -15,16 +15,20 @@ import {
 } from "../store/departmentSlice";
 import { useNavigate } from "react-router-dom";
 import { useToastMessage } from "./useToast";
+import { useLocation } from "../contexts/LocationContext";
 
 export const useExpenses = () => {
   const dispatch = useDispatch();
-  const { expenses, userExpenses, loading, meta, stats, allExpenses } = useSelector(
+  const { expenses, loading, meta, stats, allExpenses } = useSelector(
     (state) => state.expense
   );
   const { role, user, users } = useSelector((state) => state.auth);
   const { departments, subDepartments } = useSelector(
     (state) => state.department
   );
+
+  // Get location from context - this is already being set by navbar
+  const { currentLoc } = useLocation();
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
@@ -49,8 +53,8 @@ export const useExpenses = () => {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
 
-  const [currentDepartment, setCurrentDepartment] = useState(null); // null = "All Departments"
-  const [currentSubDepartment, setCurrentSubDepartment] = useState(null); // null = "All SubDepartments"
+  const [currentDepartment, setCurrentDepartment] = useState(null);
+  const [currentSubDepartment, setCurrentSubDepartment] = useState(null);
 
   // Fetch departments
   useEffect(() => {
@@ -72,7 +76,7 @@ export const useExpenses = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Fetch expenses with filters
+  // ✅ FIXED: Fetch expenses with filters and location
   useEffect(() => {
     const filters = {};
     if (debouncedSearch?.trim()) filters.userName = debouncedSearch;
@@ -85,9 +89,18 @@ export const useExpenses = () => {
 
     if (role === "superadmin") {
       if (hasFilters) {
-        dispatch(searchExpenses({ ...filters, page, limit }));
+        dispatch(searchExpenses({
+          ...filters,
+          page,
+          limit,
+          location: currentLoc // Pass current location to search
+        }));
       } else {
-        dispatch(fetchExpenses({ page, limit }));
+        dispatch(fetchExpenses({
+          page,
+          limit,
+          location: currentLoc // Pass current location to fetch
+        }));
       }
     } else {
       dispatch(fetchExpensesForUser({ page, limit }));
@@ -102,7 +115,15 @@ export const useExpenses = () => {
     role,
     currentDepartment,
     currentSubDepartment,
+    currentLoc, // ✅ CRITICAL FIX: Added location to dependencies
   ]);
+
+  // Reset to first page when location changes for better UX
+  useEffect(() => {
+    if (role === "superadmin" && currentLoc) {
+      setPage(1); // Reset to first page when location changes
+    }
+  }, [currentLoc, role]);
 
   // Modal handlers
   const handleOpen = (row) => {
@@ -127,11 +148,9 @@ export const useExpenses = () => {
     if (addExpense.fulfilled.match(response)) {
       await Promise.all([
         dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
-        dispatch(fetchExpenses({ page: 1, limit: 20 })),
+        dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc })), // Include current location
         dispatch(fetchExpensesForUser({ page, limit }))
       ]);
-
-
 
       setFormData({
         userId: "",
@@ -143,14 +162,12 @@ export const useExpenses = () => {
       });
 
       success("Expense added successfully")
-      setTimeout(() => { navigate("/user/expenses") }, 20000)
-
+      setTimeout(() => { navigate("/user/expenses") }, 2000)
     }
     else {
       error("Something went wrong, please try again later")
     }
   };
-
 
   const handleSubmit = async () => {
     if (!selectedExpense) return;
@@ -159,10 +176,9 @@ export const useExpenses = () => {
       if (updateExpense.fulfilled.match(resultAction)) {
         await Promise.all([
           dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
-          dispatch(fetchExpenses({ page: 1, limit: 20 })),
+          dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc })), // Include current location
           dispatch(fetchExpensesForUser({ page, limit }))
         ]);
-
       }
       setOpen(false);
     } catch (err) {
@@ -171,7 +187,6 @@ export const useExpenses = () => {
   };
 
   return {
-    userExpenses,
     departments,
     subDepartments,
     currentDepartment,
@@ -209,5 +224,6 @@ export const useExpenses = () => {
     filterYear,
     setFilterYear,
     getMonthByNumber,
+    currentLocation: currentLoc,
   };
 };

@@ -1,3 +1,5 @@
+// In useBudgeting hook - Add location support
+
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -9,12 +11,16 @@ import {
 } from "../store/budgetSlice";
 import { getMonthByNumber } from "../utils/get-month";
 import { fetchExpenses } from "../store/expenseSlice";
+import { useLocation } from "../contexts/LocationContext"; // Import location context
 
 export const useBudgeting = () => {
   const dispatch = useDispatch();
   const { budgets, loading, meta, allBudgets } = useSelector((state) => state?.budget);
   const { users } = useSelector((state) => state?.auth);
   const { user } = useSelector((state) => state?.auth);
+
+  // Get location from context
+  const { currentLoc } = useLocation();
 
   const year = new Date().getFullYear();
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
@@ -47,6 +53,7 @@ export const useBudgeting = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+  // ✅ FIXED: Add currentLoc to dependencies
   useEffect(() => {
     const hasFilters = debouncedSearch?.trim() || filterMonth || filterYear;
 
@@ -58,6 +65,7 @@ export const useBudgeting = () => {
           year: filterYear || undefined,
           page,
           limit,
+          location: currentLoc, // Pass current location
         })
       );
     } else {
@@ -66,14 +74,14 @@ export const useBudgeting = () => {
           fetchBudgets({
             page,
             limit,
+            location: currentLoc, // Pass current location
           })
         );
       } else {
-        // FIX: Make sure user._id is available and call fetchUserBudgets
         if (user?._id) {
           dispatch(
             fetchUserBudgets({
-              userId: user._id, // ✅ This was missing
+              userId: user._id,
               page,
               limit,
             })
@@ -88,10 +96,18 @@ export const useBudgeting = () => {
     debouncedSearch,
     filterMonth,
     filterYear,
-    user, // ✅ Added user to dependencies
-    user?._id, // ✅ Added user._id to ensure it triggers when user changes
-    user?.role // ✅ Added user.role to ensure it triggers when role changes
+    user,
+    user?._id,
+    user?.role,
+    currentLoc,
   ]);
+
+  // Reset to first page when location changes
+  useEffect(() => {
+    if (user?.role === "superadmin" && currentLoc) {
+      setPage(1);
+    }
+  }, [currentLoc, user?.role]);
 
   const handleOpen = (row) => {
     console.log("row: ", row);
@@ -123,13 +139,13 @@ export const useBudgeting = () => {
     const resultAction = await dispatch(allocateBudget(payload));
 
     if (allocateBudget.fulfilled.match(resultAction)) {
-      // FIX: Refetch based on user role after allocation
+      // Refetch with current location
       if (user?.role === "superadmin") {
-        await dispatch(fetchBudgets({ page: 1, limit: 10 }));
+        await dispatch(fetchBudgets({ page: 1, limit: 10, location: currentLoc }));
       } else {
         await dispatch(fetchUserBudgets({ userId: user?._id, page: 1, limit: 10 }));
       }
-      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
+      await dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc }));
       setFormData({
         userId: "",
         amount: "",
@@ -149,13 +165,13 @@ export const useBudgeting = () => {
     );
 
     if (updateBudget.fulfilled.match(res)) {
-      // FIX: Refetch based on user role after update
+      // Refetch with current location
       if (user?.role === "superadmin") {
-        await dispatch(fetchBudgets({ page: 1, limit: 10 }));
+        await dispatch(fetchBudgets({ page: 1, limit: 10, location: currentLoc }));
       } else {
         await dispatch(fetchUserBudgets({ userId: user?._id, page: 1, limit: 10 }));
       }
-      await dispatch(fetchExpenses({ page: 1, limit: 20 }));
+      await dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc }));
     }
 
     setOpen(false);
@@ -189,6 +205,7 @@ export const useBudgeting = () => {
     setFilterYear,
     getMonthByNumber,
     selectedMonth,
-    setSelectedMonth
+    setSelectedMonth,
+
   };
 };

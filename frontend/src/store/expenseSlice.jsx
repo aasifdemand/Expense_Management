@@ -16,6 +16,7 @@ const initialState = {
         page: 1,
         limit: 20,
     },
+
 };
 
 // ===================== ADD EXPENSE =====================
@@ -76,10 +77,14 @@ export const updateExpense = createAsyncThunk(
 // ===================== FETCH ALL EXPENSES =====================
 export const fetchExpenses = createAsyncThunk(
     "expenses/fetchAllExpenses",
-    async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
+    async ({ page = 1, limit = 20, location = 'OVERALL' }, { getState, rejectWithValue }) => {
         try {
             const csrf = getState().auth.csrf;
-            const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+            const query = new URLSearchParams({
+                page: String(page),
+                limit: String(limit),
+                location: String(location)
+            });
             const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses?${query}`, {
                 method: "GET",
                 credentials: "include",
@@ -92,6 +97,7 @@ export const fetchExpenses = createAsyncThunk(
                 allExpenses: data?.allExpenses || [],
                 stats: data?.stats || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 },
                 meta: data?.meta || { total: 0, page, limit },
+                location: data?.location || 'OVERALL',
             };
         } catch (error) {
             return rejectWithValue(error.message || "Unexpected error");
@@ -129,7 +135,20 @@ export const fetchExpensesForUser = createAsyncThunk(
 export const searchExpenses = createAsyncThunk(
     "expenses/search",
     async (
-        { userName = "", department = "", subDepartment = "", isReimbursed, isApproved, minAmount, maxAmount, month = "", year = "", page = 1, limit = 10 },
+        {
+            userName = "",
+            department = "",
+            subDepartment = "",
+            isReimbursed,
+            isApproved,
+            minAmount,
+            maxAmount,
+            month = "",
+            year = "",
+            page = 1,
+            limit = 10,
+            location = 'OVERALL'
+        },
         { getState, rejectWithValue }
     ) => {
         try {
@@ -146,6 +165,7 @@ export const searchExpenses = createAsyncThunk(
                 ...(year && { year }),
                 page: String(page),
                 limit: String(limit),
+                location: String(location),
             });
 
             const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/search?${query}`, {
@@ -160,6 +180,7 @@ export const searchExpenses = createAsyncThunk(
                 allExpenses: data?.allExpenses || [],
                 stats: data?.stats || { totalSpent: 0, totalReimbursed: 0, totalApproved: 0 },
                 meta: data?.meta || { total: 0, page, limit },
+                location: data?.location || 'OVERALL',
             };
         } catch (error) {
             return rejectWithValue(error.message || "Unexpected error");
@@ -171,7 +192,23 @@ export const searchExpenses = createAsyncThunk(
 const expenseSlice = createSlice({
     name: "expenses",
     initialState,
-    reducers: {},
+    reducers: {
+
+        clearExpenses: (state) => {
+            state.expenses = [];
+            state.allExpenses = [];
+            state.stats = {
+                totalSpent: 0,
+                totalReimbursed: 0,
+                totalApproved: 0,
+            };
+            state.meta = {
+                total: 0,
+                page: 1,
+                limit: 20,
+            };
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Add Expense
@@ -221,6 +258,7 @@ const expenseSlice = createSlice({
                 state.allExpenses = action.payload.allExpenses;
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
+                state.location = action.payload.location;
             })
             .addCase(fetchExpenses.rejected, (state, action) => {
                 state.loading = false;
@@ -255,6 +293,7 @@ const expenseSlice = createSlice({
                 state.allExpenses = action.payload.allExpenses;
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
+                state.location = action.payload.location;
             })
             .addCase(searchExpenses.rejected, (state, action) => {
                 state.loading = false;
@@ -263,4 +302,5 @@ const expenseSlice = createSlice({
     },
 });
 
+export const { setLocation, clearExpenses } = expenseSlice.actions;
 export default expenseSlice.reducer;
