@@ -31,6 +31,7 @@ import { DoneAll, AccountBalance, MonetizationOn, CreditCard, } from '@mui/icons
 import { fetchBudgets } from '../../store/budgetSlice';
 import { useLocation } from '../../contexts/LocationContext';
 import { fetchExpenses } from '../../store/expenseSlice';
+import { useBudgeting } from '../../hooks/useBudgeting';
 
 const ReimbursementManagement = () => {
     const { currentLoc } = useLocation()
@@ -39,7 +40,7 @@ const ReimbursementManagement = () => {
         reimbursements,
         loading,
         pagination,
-        stats,
+
 
     } = useSelector((state) => state.reimbursement)
 
@@ -49,11 +50,15 @@ const ReimbursementManagement = () => {
     const [itemsPerPage, setItemsPerPage] = useState(20);
 
     const { allExpenses } = useExpenses()
+    const { allBudgets } = useBudgeting()
 
-    const totalAllocated = allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0) || 0
+    const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0) || 0
     const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0) || 0
-    const totalReimbursed = reimbursements
+    const totalPendingReimbursed = reimbursements
         ?.filter(item => !item?.isReimbursed)
+        .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
+    const totalReimbursed = reimbursements
+        ?.filter(item => item?.isReimbursed)
         .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
 
     useEffect(() => {
@@ -109,19 +114,18 @@ const ReimbursementManagement = () => {
             subtitle: "Total expenses incurred",
         },
         {
-            title: "To Be Reimbursed",
+            title: "Total paid Reimbursements",
             value: `₹${totalReimbursed?.toLocaleString()}`,
+            color: "#8b5cf6",
+            icon: <DoneAll sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+            subtitle: "All reimbursement requests",
+        }, {
+            title: "To Be Reimbursed",
+            value: `₹${totalPendingReimbursed?.toLocaleString()}`,
             color: "#ef4444",
             icon: <CreditCard sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Pending reimbursement amount",
         },
-        {
-            title: "Total Reimbursements",
-            value: stats.totalReimbursements?.toLocaleString() || '0',
-            color: "#8b5cf6",
-            icon: <DoneAll sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
-            subtitle: "All reimbursement requests",
-        }
     ];
 
     // Enhanced StatCard Component with Amount near Icon

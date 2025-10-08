@@ -194,7 +194,9 @@ const Dashboard = () => {
     if (!user?._id) return
     if (user && user?._id) {
       dispatch(fetchExpensesForUser({ userId: user?._id, page: 1, limit: 20 }));
-      dispatch(fetchReimbursementsForUser(user?._id))
+      dispatch(fetchReimbursementsForUser({
+        id: user?._id
+      }))
       dispatch(fetchUserBudgets({
         userId: user._id
       }))
@@ -208,13 +210,15 @@ const Dashboard = () => {
 
   // console.log("user expenses: ", userExpenses);
 
+  console.log("userReimbursements: ", userReimbursements);
+
+
   // Budget Stats Calculations
-  const totalAllocated = Number(allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)) + Number(allExpenses?.reduce((acc, b) => {
-    const amount = b?.isReimbursed ? 0 : Number(b?.reimbursement?.amount || 0);
-    return acc + amount;
-  }, 0))
-  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.fromAllocation || 0), 0) || 0;
-  const totalReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
+  const totalAllocated = Number(allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0))
+  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
+  const totalPendinReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
+  const totalReimbursed = userReimbursements && userReimbursements?.filter(item => item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
+
 
   const budgetStats = [
     {
@@ -232,7 +236,14 @@ const Dashboard = () => {
       subtitle: "Total expenses amount",
     },
     {
-      title: "Total Reimbursement",
+      title: "Total Pending Reimbursement",
+      value: `₹${totalPendinReimbursed || 0}`,
+      icon: <CreditCardIcon />,
+      color: "#10b981",
+      subtitle: "Available funds",
+    },
+    {
+      title: "Total Reimbursement recieved",
       value: `₹${totalReimbursed || 0}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
