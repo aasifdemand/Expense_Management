@@ -399,72 +399,35 @@ export class ReimbursementService {
         const user = await this.userModel.findById(reimbursementDoc.requestedBy);
         if (!user) throw new NotFoundException("User not found");
 
-        // Convert user ID to string safely
         const userId = user._id?.toString ? user._id.toString() : String(user._id);
         console.log(`🔔 Processing reimbursement for user: ${userId}`);
 
-        // Only update when marking as reimbursed
+        // ✅ Only update the reimbursement status, no budget or expense modification
         if (isReimbursed && !reimbursementDoc.isReimbursed) {
-            // ✅ Update linked expense - convert reimbursement to allocation
-            if (reimbursementDoc.expense) {
-                const expense = await this.expenseModel.findById(reimbursementDoc.expense);
-                if (!expense) throw new NotFoundException("Linked expense not found");
-
-                // Convert reimbursement amount back to allocation
-                expense.fromAllocation = Number(expense.fromAllocation) + Number(reimbursementDoc.amount);
-                expense.fromReimbursement = Math.max(0, Number(expense.fromReimbursement) - Number(reimbursementDoc.amount));
-
-                await expense.save();
-            }
-
-            // ✅ Update linked user's balances
-            user.reimbursedAmount = Number(user.reimbursedAmount || 0) + Number(reimbursementDoc.amount);
-            user.budgetLeft = Number(user.budgetLeft || 0) + Number(reimbursementDoc.amount);
-
-            await user.save();
-
-            // ✅ Mark reimbursement as completed
             reimbursementDoc.isReimbursed = true;
             reimbursementDoc.reimbursedAt = new Date();
-
-            console.log(`💰 Reimbursement processed: ${reimbursementDoc.amount} converted to allocation`);
-
-        } else if (!isReimbursed && reimbursementDoc.isReimbursed) {
-            // Handle case where superadmin wants to undo reimbursement
-            // ✅ Revert expense changes
-            if (reimbursementDoc.expense) {
-                const expense = await this.expenseModel.findById(reimbursementDoc.expense);
-                if (expense) {
-                    // Revert allocation changes
-                    expense.fromAllocation = Math.max(0, Number(expense.fromAllocation) - Number(reimbursementDoc.amount));
-                    expense.fromReimbursement = Number(expense.fromReimbursement) + Number(reimbursementDoc.amount);
-
-                    await expense.save();
-                }
-            }
-
-            // ✅ Revert user's balances
-            user.reimbursedAmount = Math.max(0, Number(user.reimbursedAmount || 0) - Number(reimbursementDoc.amount));
-            user.budgetLeft = Math.max(0, Number(user.budgetLeft || 0) - Number(reimbursementDoc.amount));
-            await user.save();
-
+            console.log(`💰 Reimbursement marked as paid: ₹${reimbursementDoc.amount}`);
+        }
+        else if (!isReimbursed && reimbursementDoc.isReimbursed) {
+            // Allow reverting the paid status if needed
             reimbursementDoc.isReimbursed = false;
             reimbursementDoc.reimbursedAt = undefined;
-
-            console.log(`↩️ Reimbursement reverted: ${reimbursementDoc.amount}`);
+            console.log(`↩️ Reimbursement reverted: ₹${reimbursementDoc.amount}`);
         }
 
         await reimbursementDoc.save();
 
-        // Clear all reimbursement caches
+        // Clear reimbursement caches
         await this.clearAllReimbursementCaches();
 
         // Send notification
         const notificationMessage = isReimbursed
-            ? `Your reimbursement request for ₹${reimbursementDoc.amount} has been approved and processed. Amount has been added back to your budget allocation.`
+            ? `Your reimbursement request for ₹${reimbursementDoc.amount} has been approved and processed.`
             : `Your reimbursement request for ₹${reimbursementDoc.amount} has been reverted. Please contact administrator for more details.`;
 
-        const notificationType = isReimbursed ? 'REIMBURSEMENT_APPROVED' : 'REIMBURSEMENT_REVERTED';
+        const notificationType = isReimbursed
+            ? "REIMBURSEMENT_APPROVED"
+            : "REIMBURSEMENT_REVERTED";
 
         console.log(`📤 Attempting to send notification to user: ${userId}`);
         const success = this.notificationService.sendNotification(
@@ -481,8 +444,8 @@ export class ReimbursementService {
 
         return {
             message: isReimbursed
-                ? "Reimbursement processed - amount converted to budget allocation"
-                : "Reimbursement reverted - amount moved back to reimbursement",
+                ? "Reimbursement marked as paid successfully"
+                : "Reimbursement payment reverted successfully",
             reimbursement: reimbursementDoc,
         };
     }
