@@ -28,6 +28,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchUser, logout } from "../store/authSlice";
 import { useLocation } from "../contexts/LocationContext";
 
+
+
 const Navbar = ({
     onMenuClick,
     onProfileClick,

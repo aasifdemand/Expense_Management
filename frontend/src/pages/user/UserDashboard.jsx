@@ -1,141 +1,104 @@
-import { Box, Card, CardContent, Grid, Typography, alpha, useTheme } from "@mui/material";
+import { Box, alpha, useTheme, useMediaQuery } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
-
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import TabButtonsWithReport from "../../components/general/TabButtonsWithReport";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
-import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart"
+import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchReimbursementsForUser } from "../../store/reimbursementSlice";
 import { fetchExpensesForUser } from "../../store/expenseSlice";
 import { fetchUserBudgets } from "../../store/budgetSlice";
+import { Card, CardContent, Typography } from "@mui/material";
 
-
+// Single Stat Card
 const StatCard = ({ stat }) => (
-  <Card sx={{
-    background: '#ffffff',
-    borderRadius: "16px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-    border: "1px solid rgba(226, 232, 240, 0.8)",
-    height: { xs: "130px", sm: "140px", md: "150px" },
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    position: 'relative',
-    overflow: 'hidden',
-    flex: 1,
-    minWidth: { xs: "calc(50% - 10px)", sm: "200px", md: "240px" },
-    maxWidth: { xs: "calc(50% - 10px)", sm: "none" },
-    '&:hover': {
-      transform: { xs: "none", sm: "translateY(-4px)" },
-      boxShadow: { xs: "0 4px 20px rgba(0, 0, 0, 0.08)", sm: "0 8px 32px rgba(0, 0, 0, 0.12)" }
-    },
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: '3px',
-      background: `linear-gradient(90deg, ${stat.color} 0%, ${alpha(stat.color, 0.7)} 100%)`
-    }
-  }}>
-    <CardContent sx={{
-      p: { xs: 2, sm: 3 },
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between'
-    }}>
-      {/* Top Section - Icon, Amount and Trend */}
-      <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        mb: { xs: 1.5, sm: 2 }
-      }}>
-        {/* Left Side - Icon and Amount */}
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: { xs: 1, sm: 2 },
-          flex: 1,
-          minWidth: 0
-        }}>
-          <Box sx={{
+  <Card
+    sx={{
+      background: "#ffffff",
+      borderRadius: "16px",
+      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+      border: "1px solid rgba(226, 232, 240, 0.8)",
+      height: { xs: "auto", sm: "150px" },
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      position: "relative",
+      overflow: "hidden",
+      mb: 2,
+      "&:hover": {
+        transform: { xs: "none", sm: "translateY(-4px)" },
+        boxShadow: { xs: "0 4px 20px rgba(0, 0, 0, 0.08)", sm: "0 8px 32px rgba(0, 0, 0, 0.12)" },
+      },
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "3px",
+        background: `linear-gradient(90deg, ${stat.color} 0%, ${alpha(stat.color, 0.7)} 100%)`,
+      },
+    }}
+  >
+    <CardContent
+      sx={{
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        height: "100%",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+        <Box
+          sx={{
             backgroundColor: alpha(stat.color, 0.1),
-            borderRadius: { xs: "10px", sm: "12px" },
-            p: { xs: 1, sm: 1.5 },
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            borderRadius: "12px",
+            p: 1.5,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
             border: `1px solid ${alpha(stat.color, 0.2)}`,
-            flexShrink: 0
-          }}>
-            {React.cloneElement(stat.icon, {
-              sx: {
-                color: stat.color,
-                fontSize: { xs: 20, sm: 24 }
-              }
-            })}
-          </Box>
-          <Typography variant="h4" sx={{
+          }}
+        >
+          {React.cloneElement(stat.icon, { sx: { color: stat.color, fontSize: 28 } })}
+        </Box>
+        <Typography
+          variant="h4"
+          sx={{
             color: "#1e293b",
             fontWeight: 700,
-            fontSize: { xs: "1.1rem", sm: "1.4rem", md: "1.6rem", lg: "1.8rem" },
+            fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.6rem" },
             lineHeight: 1.1,
-            wordBreak: 'break-word',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
-            {stat.value}
-          </Typography>
-        </Box>
-
-        {/* Right Side - Trend */}
-        {/* <Box sx={{
-            backgroundColor: stat.trendColor === '#ef4444' ? alpha('#fef2f2', 0.8) : alpha('#f0fdf4', 0.8),
-            color: stat.trendColor,
-            padding: { xs: '4px 8px', sm: '6px 10px' },
-            borderRadius: '12px',
-            fontSize: { xs: '0.65rem', sm: '0.75rem' },
-            fontWeight: 700,
-            border: `1px solid ${alpha(stat.trendColor, 0.2)}`,
-            flexShrink: 0,
-            ml: 1
-          }}>
-            {stat.trend}
-          </Box> */}
+          }}
+        >
+          {stat.value}
+        </Typography>
       </Box>
-
-      {/* Bottom Section - Title and Subtitle */}
-      <Box sx={{ minWidth: 0 }}>
-        <Typography variant="h6" sx={{
-          color: "#1e293b",
-          fontWeight: 700,
-          fontSize: { xs: "0.8rem", sm: "0.9rem", md: "1rem" },
-          lineHeight: 1.2,
-          mb: 0.5,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
+      <Box>
+        <Typography
+          variant="h6"
+          sx={{
+            color: "#1e293b",
+            fontWeight: 700,
+            fontSize: { xs: "0.9rem", sm: "1rem" },
+            mb: 0.5,
+          }}
+        >
           {stat.title}
         </Typography>
-
-        <Typography variant="body2" sx={{
-          color: "#6b7280",
-          fontSize: { xs: "0.7rem", sm: "0.75rem", md: "0.8rem" },
-          fontWeight: 600,
-          lineHeight: 1.2,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "#6b7280",
+            fontSize: { xs: "0.75rem", sm: "0.8rem" },
+            fontWeight: 600,
+          }}
+        >
           {stat.subtitle}
         </Typography>
       </Box>
@@ -143,14 +106,43 @@ const StatCard = ({ stat }) => (
   </Card>
 );
 
+// Stats Cards Section
+const StatsCardsSection = ({ budgetStats }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  return (
+    <Box sx={{ mb: 4 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 2,
+          justifyContent: "flex-start",
+        }}
+      >
+        {budgetStats.map((stat, index) => (
+          <Box
+            key={index}
+            sx={{
+              flex: isMobile ? "1 1 100%" : { sm: "1 1 calc(50% - 10px)", md: "1 1 0" },
+              minWidth: isMobile ? "100%" : "240px",
+            }}
+          >
+            <StatCard stat={stat} />
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
 const Dashboard = () => {
   const theme = useTheme();
-  const dispatch = useDispatch()
-  const { user } = useSelector((state) => state?.auth)
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state?.auth);
   const [activeTab, setActiveTab] = useState("budget");
-  const { userReimbursements } = useSelector((state) => state?.reimbursement)
-  // console.log("userReimbursements: ", userReimbursements);
-
+  const { userReimbursements } = useSelector((state) => state?.reimbursement);
 
   const {
     allBudgets,
@@ -176,11 +168,10 @@ const Dashboard = () => {
     open: budgetOpen,
     selectedMonth: budgetSelectedMonth,
     setSelectedMonth: setBudgetSelectedMonth,
-    year
+    year,
   } = useBudgeting();
 
   const {
-
     allExpenses,
     loading: expenseLoading,
     meta: expenseMeta,
@@ -196,12 +187,8 @@ const Dashboard = () => {
     getMonthByNumber: getExpenseMonthByNumber,
     setLimit: setExpenseLimit,
     limit: expenseLimit,
-    // selectedMonth: expenseSelectedMonth,
     setSelectedMonth: setExpenseSelectedMonth,
   } = useExpenses();
-
-
-
 
   useEffect(() => {
     if (!user?._id) return
@@ -236,17 +223,13 @@ const Dashboard = () => {
       icon: <AccountBalanceIcon />,
       color: "#3b82f6",
       subtitle: "Total budget allocation",
-      trend: "+12.5%",
-      trendColor: "#10b981"
     },
     {
       title: "Total Expenses",
       value: `₹${totalExpenses || 0}`,
-      color: "#f63b3bff",
       icon: <MonetizationOnIcon />,
+      color: "#f63b3bff",
       subtitle: "Total expenses amount",
-      trend: "-2.1%",
-      trendColor: "#ef4444"
     },
     {
       title: "Total Reimbursement",
@@ -254,39 +237,26 @@ const Dashboard = () => {
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",
-      trend: "+15.7%",
-      trendColor: "#10b981"
     },
   ];
-  return (
-    <Box sx={{ py: 4 }}>
 
-      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
-        <Box sx={{
-          display: 'flex',
-          gap: { xs: 1.5, sm: 2, md: 2.5 },
-          flexWrap: 'wrap',
-          width: '100%',
-          justifyContent: { xs: 'space-between', sm: 'flex-start' }
-        }}>
-          {budgetStats.map((stat, index) => (
-            <StatCard key={index} stat={stat} />
-          ))}
-        </Box>
+  return (
+    <Box sx={{ py: 4, px: { xs: 2, sm: 3, md: 4 } }}>
+      {/* Responsive Stats Cards */}
+      <StatsCardsSection budgetStats={budgetStats} />
+
+      {/* Dashboard Chart */}
+      <Box sx={{ width: "100%", mb: { xs: 3, sm: 4 }, overflowX: "auto" }}>
+        <DashboardBudgetChart
+          budgets={allExpenses}
+          theme={theme}
+          year={year}
+          selectedMonth={budgetSelectedMonth}
+          setSelectedMonth={setBudgetSelectedMonth}
+        />
       </Box>
 
-      <DashboardBudgetChart
-
-
-        budgets={allExpenses}
-        theme={theme}
-        year={year}
-        selectedMonth={budgetSelectedMonth}
-        setSelectedMonth={setBudgetSelectedMonth}
-      />
-
-
-      {/* Tab Section */}
+      {/* Tabs Section */}
       <Box sx={{ my: { xs: 2, sm: 3 } }}>
         <TabButtonsWithReport
           activeTab={activeTab}
@@ -297,11 +267,10 @@ const Dashboard = () => {
       </Box>
 
       {/* Tables Section */}
-      <Box sx={{ mt: { xs: 2, sm: 3 } }}>
+      <Box sx={{ mt: { xs: 2, sm: 3 }, overflowX: "auto" }}>
         {activeTab === "budget" && (
           <>
             <BudgetTable
-
               showPagination
               limit={budgetLimit}
               setLimit={setBudgetLimit}
@@ -331,7 +300,6 @@ const Dashboard = () => {
 
         {activeTab === "expense" && (
           <ExpenseTable
-
             limit={expenseLimit}
             setLimit={setExpenseLimit}
             expenses={allExpenses}
