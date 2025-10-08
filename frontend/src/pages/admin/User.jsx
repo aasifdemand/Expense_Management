@@ -167,14 +167,14 @@ const UserDashboard = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            // zIndex: 1000,
             padding: '20px'
         },
         modalContent: styles.modalContent || {
             background: 'white',
             borderRadius: '16px',
             padding: '35px',
-            maxWidth: '500px',
+            maxWidth: '1200px',
             width: '100%',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
             border: '1px solid #e2e8f0'
