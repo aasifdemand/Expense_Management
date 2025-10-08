@@ -50,14 +50,13 @@ export class AuthService {
       }))
     });
 
-    // 🚨 CRITICAL SECURITY FIX: Only trust session deviceId, NEVER trust deviceName for verification
+
     const existingDevice = user.sessions?.find((s) => s.deviceId === currentSessionDeviceId);
 
     let qrCodeDataUrl: string | null = null;
     let deviceSecret: string | undefined;
     let deviceId: string;
 
-    // 🚨 SECURITY: Only allow 2FA bypass if EXACT session deviceId matches AND device is verified
     if (existingDevice && existingDevice.deviceId === currentSessionDeviceId) {
       deviceId = existingDevice.deviceId;
       deviceSecret = existingDevice.twoFactorSecret;
@@ -113,39 +112,52 @@ export class AuthService {
         qrCodeDataUrl = null; // No QR code for existing session devices
       }
     } else {
-      // 🆕 NEW device or DIFFERENT device: Always require 2FA with QR code
 
-      // 🚨 SECURITY: Check if device name exists but treat as NEW device for security
       const existingDeviceByName = user.sessions?.find((s) => s.deviceName === deviceName);
 
-      if (existingDeviceByName) {
-        // Device name exists but different session - REUSE the existing device but require 2FA
-        console.log('🔄 Device name exists but different session - reusing device but requiring 2FA');
+      if (existingDeviceByName && existingDeviceByName.twoFactorVerified) {
+
+        console.log('🔄 Verified device exists with same name - different browser on same device');
         deviceId = existingDeviceByName.deviceId;
         deviceSecret = existingDeviceByName.twoFactorSecret;
 
-        // Update last login
+
         existingDeviceByName.lastLogin = new Date();
 
-        // 🚨 SECURITY: Always require 2FA for different sessions, even if device was previously verified
-        if (existingDeviceByName.twoFactorVerified) {
-          console.log('🔒 Previously verified device but different session - requiring re-verification');
-          // Keep it verified but still require 2FA for this new session
-        }
 
-        // Generate QR code from existing secret
-        if (deviceSecret) {
-          const otpauthUrl = speakeasy.otpauthURL({
-            secret: deviceSecret,
-            label: `ExpenseManagement:${user.name}`,
-            issuer: 'ExpenseManagement',
-            encoding: 'base32'
-          });
-          qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl);
-          console.log('📱 QR code regenerated for existing device (different session)');
-        }
+        qrCodeDataUrl = null;
+        console.log('📱 Using existing device - no QR code needed');
+
+      } else if (existingDeviceByName && !existingDeviceByName.twoFactorVerified) {
+
+        console.log('⚠️ Device exists but not verified - treating as new device for security');
+
+
+        user.sessions = user.sessions?.filter(s => s.deviceId !== existingDeviceByName.deviceId) || [];
+
+
+        deviceId = uuidv4();
+        const secret = speakeasy.generateSecret({
+          name: `ExpenseManagement:${user.name}`,
+          issuer: 'ExpenseManagement',
+          length: 20,
+        });
+
+        const newSession = {
+          deviceId,
+          deviceName,
+          lastLogin: new Date(),
+          twoFactorVerified: false,
+          twoFactorSecret: secret.base32,
+        };
+
+        user.sessions.push(newSession);
+        deviceSecret = secret.base32;
+        qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+        console.log('🆕 Created new device (replaced unverified one) - QR code generated');
+
       } else {
-        // 🆕 COMPLETELY NEW device: Generate everything
+
         deviceId = uuidv4();
         const secret = speakeasy.generateSecret({
           name: `ExpenseManagement:${user.name}`,
@@ -175,7 +187,7 @@ export class AuthService {
 
     await user.save();
 
-    // Set up session for 2FA verification
+
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => {
         if (err) return reject(err);
@@ -191,7 +203,7 @@ export class AuthService {
       });
     });
 
-    console.log('⏳ 2FA required for security');
+
     return {
       qr: qrCodeDataUrl,
       deviceId,
@@ -206,8 +218,6 @@ export class AuthService {
     };
   }
   async verifyTwoFactorCode(token: string, req: Request) {
-
-
     if (!req?.session?.user || !req?.session?.deviceId) {
       throw new UnauthorizedException('Session expired or invalid');
     }
@@ -231,67 +241,27 @@ export class AuthService {
       throw new BadRequestException('Invalid OTP - must be 6 digits');
     }
 
-    // SIMPLIFIED VERIFICATION - More tolerant approach
-    const currentTime = Math.floor(Date.now() / 1000);
-    let verified = false;
-    let verificationMethod = '';
 
-    // Method 1: Try with very large window first (±5 minutes)
-    verified = speakeasy.totp.verify({
+
+
+    const isOtpValid = speakeasy.totp.verify({
       secret: deviceSession.twoFactorSecret,
       encoding: 'base32',
       token: cleanToken,
-      window: 10, // ±5 minutes - very tolerant
+      window: 0,
     });
 
-    if (verified) {
-      verificationMethod = 'large window 10';
-    } else {
-      // Method 2: Manual check across wider time range
-      console.log('Testing wide time range (±5 minutes):');
-      for (let i = -10; i <= 10; i++) {
-        const testTime = currentTime + (i * 30);
-        const testToken = speakeasy.totp({
-          secret: deviceSession.twoFactorSecret,
-          encoding: 'base32',
-          time: testTime,
-        });
 
-        const isMatch = cleanToken === testToken;
-        console.log(`  Offset ${i * 30}s: ${testToken} ${isMatch ? '<<< MATCH' : ''}`);
 
-        if (isMatch) {
-          verified = true;
-          verificationMethod = `time offset ${i * 30}s`;
-          console.log(`FOUND MATCH: Server is ${Math.abs(i * 30)} seconds ${i > 0 ? 'ahead' : 'behind'} authenticator app`);
-          break;
-        }
-      }
-    }
-
-    if (!verified) {
-      // Generate what SHOULD be the current token for debugging
-      const currentTestToken = speakeasy.totp({
-        secret: deviceSession.twoFactorSecret,
-        encoding: 'base32',
-        time: currentTime,
-      });
-
-      console.log('VERIFICATION FAILED - TIME SYNC ISSUE DETECTED');
-      console.log('Server time:', new Date().toISOString());
-      console.log('Current timestamp:', currentTime);
-      console.log('Token expected by server now:', currentTestToken);
-      console.log('Token you provided:', cleanToken);
-      console.log('Secret:', deviceSession.twoFactorSecret);
+    // 🚨 SECURITY: ONLY proceed if OTP is ACTUALLY valid
+    if (!isOtpValid) {
 
       throw new UnauthorizedException(
-        `Time synchronization issue detected. ` +
-        `Server expected: ${currentTestToken}, you provided: ${cleanToken}. ` +
-        'Please check that your server time is synchronized with internet time.'
+        'Invalid OTP code. Please use the current code from your authenticator app.'
       );
     }
 
-    console.log(`Token verified successfully using: ${verificationMethod}`);
+
 
     // Mark device as verified
     deviceSession.twoFactorVerified = true;
@@ -310,12 +280,11 @@ export class AuthService {
       req.session.save((err) => (err ? reject(err) : resolve())),
     );
 
-    console.log('=== 2FA VERIFICATION COMPLETED ===\n');
+
 
     return {
       message: '2FA verification successful',
       verified: true,
-      method: verificationMethod,
       session: {
         twoFactorPending: req.session.twoFactorPending,
         twoFactorVerified: req.session.twoFactorVerified,
