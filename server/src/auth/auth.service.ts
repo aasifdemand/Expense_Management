@@ -50,26 +50,15 @@ export class AuthService {
       }))
     });
 
-    // 🚨 FIX: Find device by BOTH session ID AND device name for better matching
-    let existingDevice = user.sessions?.find((s) => s.deviceId === currentSessionDeviceId);
-
-    // If no exact session match, try to find by device name (for returning users)
-    if (!existingDevice && deviceName) {
-      existingDevice = user.sessions?.find((s) =>
-        s.deviceName === deviceName && s.twoFactorVerified === true
-      );
-
-      if (existingDevice) {
-        console.log('✅ Found verified device by name:', deviceName);
-      }
-    }
+    // 🚨 CRITICAL SECURITY FIX: Only trust session deviceId, NEVER trust deviceName for verification
+    const existingDevice = user.sessions?.find((s) => s.deviceId === currentSessionDeviceId);
 
     let qrCodeDataUrl: string | null = null;
     let deviceSecret: string | undefined;
     let deviceId: string;
 
-    // 🚨 FIX: Simplified logic - focus on device verification status
-    if (existingDevice) {
+    // 🚨 SECURITY: Only allow 2FA bypass if EXACT session deviceId matches AND device is verified
+    if (existingDevice && existingDevice.deviceId === currentSessionDeviceId) {
       deviceId = existingDevice.deviceId;
       deviceSecret = existingDevice.twoFactorSecret;
 
@@ -77,21 +66,20 @@ export class AuthService {
         deviceId,
         currentSessionDeviceId,
         isVerified: existingDevice.twoFactorVerified,
-        deviceName: existingDevice.deviceName
+        deviceName: existingDevice.deviceName,
+        exactMatch: existingDevice.deviceId === currentSessionDeviceId
       });
 
-      // ✅ SIMPLIFIED: If device is verified, skip 2FA regardless of session
-      if (existingDevice.twoFactorVerified) {
+      // ✅ SECURE: Only skip 2FA if EXACT session deviceId matches AND device is verified
+      if (existingDevice.twoFactorVerified && existingDevice.deviceId === currentSessionDeviceId) {
         // Update last login
         existingDevice.lastLogin = new Date();
         await user.save();
 
-        // 🚨 FIX: Properly set session with deviceId for future logins
         await new Promise<void>((resolve, reject) => {
           req.session.regenerate((err) => {
             if (err) return reject(err);
 
-            // CRITICAL: Set the deviceId in session for future recognition
             req.session.deviceId = existingDevice.deviceId;
             req.session.twoFactorSecret = deviceSecret;
             req.session.twoFactorPending = false;
@@ -103,7 +91,7 @@ export class AuthService {
           });
         });
 
-        console.log('✅ Verified device login - skipping 2FA');
+        console.log('✅ Verified EXACT device session - skipping 2FA');
         return {
           qr: null,
           deviceId,
@@ -117,66 +105,81 @@ export class AuthService {
           },
         };
       } else {
-        // ❌ Device exists but not verified - require 2FA
-        console.log('⚠️ Device exists but not verified - requiring 2FA');
+        // ❌ Same session device but not verified - require 2FA
+        console.log('⚠️ Same session device but not verified - requiring 2FA');
 
-        // Update last login
         existingDevice.lastLogin = new Date();
-
         deviceSecret = existingDevice.twoFactorSecret;
-
-        // Only show QR code if it's a new device without secret (shouldn't happen)
-        if (!deviceSecret) {
-          const secret = speakeasy.generateSecret({
-            name: `ExpenseManagement:${user.name}`,
-            issuer: 'ExpenseManagement',
-            length: 20,
-          });
-          existingDevice.twoFactorSecret = secret.base32;
-          deviceSecret = secret.base32;
-          qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
-          console.log('🆕 Generated new secret for existing device');
-        } else {
-          qrCodeDataUrl = null; // No QR code for existing devices
-          console.log('ℹ️ Existing device - no QR code needed');
-        }
+        qrCodeDataUrl = null; // No QR code for existing session devices
       }
     } else {
-      // 🆕 NEW device: generate everything from scratch
-      deviceId = uuidv4();
-      const secret = speakeasy.generateSecret({
-        name: `ExpenseManagement:${user.name}`,
-        issuer: 'ExpenseManagement',
-        length: 20,
-      });
+      // 🆕 NEW device or DIFFERENT device: Always require 2FA with QR code
 
-      const newSession = {
-        deviceId,
-        deviceName,
-        lastLogin: new Date(),
-        twoFactorVerified: false,
-        twoFactorSecret: secret.base32,
-      };
+      // 🚨 SECURITY: Check if device name exists but treat as NEW device for security
+      const existingDeviceByName = user.sessions?.find((s) => s.deviceName === deviceName);
 
-      if (!user.sessions) {
-        user.sessions = [newSession];
+      if (existingDeviceByName) {
+        // Device name exists but different session - REUSE the existing device but require 2FA
+        console.log('🔄 Device name exists but different session - reusing device but requiring 2FA');
+        deviceId = existingDeviceByName.deviceId;
+        deviceSecret = existingDeviceByName.twoFactorSecret;
+
+        // Update last login
+        existingDeviceByName.lastLogin = new Date();
+
+        // 🚨 SECURITY: Always require 2FA for different sessions, even if device was previously verified
+        if (existingDeviceByName.twoFactorVerified) {
+          console.log('🔒 Previously verified device but different session - requiring re-verification');
+          // Keep it verified but still require 2FA for this new session
+        }
+
+        // Generate QR code from existing secret
+        if (deviceSecret) {
+          const otpauthUrl = speakeasy.otpauthURL({
+            secret: deviceSecret,
+            label: `ExpenseManagement:${user.name}`,
+            issuer: 'ExpenseManagement',
+            encoding: 'base32'
+          });
+          qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl);
+          console.log('📱 QR code regenerated for existing device (different session)');
+        }
       } else {
-        user.sessions.push(newSession);
-      }
+        // 🆕 COMPLETELY NEW device: Generate everything
+        deviceId = uuidv4();
+        const secret = speakeasy.generateSecret({
+          name: `ExpenseManagement:${user.name}`,
+          issuer: 'ExpenseManagement',
+          length: 20,
+        });
 
-      deviceSecret = secret.base32;
-      qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
-      console.log('🆕 QR code generated for NEW device');
+        const newSession = {
+          deviceId,
+          deviceName,
+          lastLogin: new Date(),
+          twoFactorVerified: false,
+          twoFactorSecret: secret.base32,
+        };
+
+        if (!user.sessions) {
+          user.sessions = [newSession];
+        } else {
+          user.sessions.push(newSession);
+        }
+
+        deviceSecret = secret.base32;
+        qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+        console.log('🆕 COMPLETELY NEW DEVICE - QR code generated');
+      }
     }
 
     await user.save();
 
-    // 🚨 FIX: Always set deviceId in session for future recognition
+    // Set up session for 2FA verification
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => {
         if (err) return reject(err);
 
-        // CRITICAL: Set deviceId so next login recognizes this device
         req.session.deviceId = deviceId;
         req.session.user = user;
         req.session.twoFactorSecret = deviceSecret;
@@ -188,7 +191,7 @@ export class AuthService {
       });
     });
 
-    console.log('⏳ 2FA required');
+    console.log('⏳ 2FA required for security');
     return {
       qr: qrCodeDataUrl,
       deviceId,
@@ -202,7 +205,6 @@ export class AuthService {
       },
     };
   }
-
   async verifyTwoFactorCode(token: string, req: Request) {
 
 
