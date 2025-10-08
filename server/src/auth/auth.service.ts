@@ -40,51 +40,58 @@ export class AuthService {
 
     const currentSessionDeviceId = req?.session.deviceId;
 
-    // CRITICAL FIX: Enhanced device detection
+    console.log('🔍 AUTH DEBUG:', {
+      currentSessionDeviceId,
+      deviceName,
+      userSessions: user.sessions?.map(s => ({
+        deviceId: s.deviceId,
+        deviceName: s.deviceName,
+        verified: s.twoFactorVerified
+      }))
+    });
+
+    // 🚨 FIX: Find device by BOTH session ID AND device name for better matching
     let existingDevice = user.sessions?.find((s) => s.deviceId === currentSessionDeviceId);
 
-    // If no device found by session ID, try to find by device name
+    // If no exact session match, try to find by device name (for returning users)
     if (!existingDevice && deviceName) {
-      existingDevice = user.sessions?.find((s) => s.deviceName === deviceName);
-    }
+      existingDevice = user.sessions?.find((s) =>
+        s.deviceName === deviceName && s.twoFactorVerified === true
+      );
 
-    // CRITICAL FIX: Always destroy session if device mismatch detected
-    if (currentSessionDeviceId && !existingDevice) {
-      // Session exists but doesn't belong to this user - destroy it
-      console.log('Destroying invalid session - device mismatch');
-      await new Promise<void>((resolve, reject) => {
-        req.session.destroy((err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-      // Reset after destruction
-      existingDevice = undefined;
+      if (existingDevice) {
+        console.log('✅ Found verified device by name:', deviceName);
+      }
     }
 
     let qrCodeDataUrl: string | null = null;
     let deviceSecret: string | undefined;
     let deviceId: string;
 
-    // CRITICAL FIX: Proper device identification
+    // 🚨 FIX: Simplified logic - focus on device verification status
     if (existingDevice) {
       deviceId = existingDevice.deviceId;
       deviceSecret = existingDevice.twoFactorSecret;
 
-      // Check if this is the SAME physical device (matching session + deviceId)
-      const isSamePhysicalDevice = currentSessionDeviceId === existingDevice.deviceId;
+      console.log('🔍 Device check:', {
+        deviceId,
+        currentSessionDeviceId,
+        isVerified: existingDevice.twoFactorVerified,
+        deviceName: existingDevice.deviceName
+      });
 
-      console.log(`Login debug - Device: ${deviceName}, Existing: ${!!existingDevice}, SamePhysicalDevice: ${isSamePhysicalDevice}, CurrentSession: ${currentSessionDeviceId}`);
-
-      // ONLY allow 2FA bypass if it's the exact same physical device with verified session
-      if (existingDevice.twoFactorVerified && isSamePhysicalDevice) {
-        // Verified EXACT SAME device: skip 2FA
+      // ✅ SIMPLIFIED: If device is verified, skip 2FA regardless of session
+      if (existingDevice.twoFactorVerified) {
+        // Update last login
         existingDevice.lastLogin = new Date();
         await user.save();
 
+        // 🚨 FIX: Properly set session with deviceId for future logins
         await new Promise<void>((resolve, reject) => {
           req.session.regenerate((err) => {
             if (err) return reject(err);
+
+            // CRITICAL: Set the deviceId in session for future recognition
             req.session.deviceId = existingDevice.deviceId;
             req.session.twoFactorSecret = deviceSecret;
             req.session.twoFactorPending = false;
@@ -96,7 +103,7 @@ export class AuthService {
           });
         });
 
-        console.log('Verified SAME physical device - skipping 2FA');
+        console.log('✅ Verified device login - skipping 2FA');
         return {
           qr: null,
           deviceId,
@@ -110,21 +117,32 @@ export class AuthService {
           },
         };
       } else {
-        // DIFFERENT device or mismatched session: ALWAYS require 2FA
-        console.log(`Different device or session mismatch - requiring 2FA. SamePhysicalDevice: ${isSamePhysicalDevice}, twoFactorVerified: ${existingDevice.twoFactorVerified}`);
+        // ❌ Device exists but not verified - require 2FA
+        console.log('⚠️ Device exists but not verified - requiring 2FA');
 
-        // Update last login but require 2FA verification
+        // Update last login
         existingDevice.lastLogin = new Date();
 
-        // CRITICAL: Reset verification for security
-        existingDevice.twoFactorVerified = false;
-        console.log('Security: Reset twoFactorVerified to false for different device login');
-
-        qrCodeDataUrl = null;
         deviceSecret = existingDevice.twoFactorSecret;
+
+        // Only show QR code if it's a new device without secret (shouldn't happen)
+        if (!deviceSecret) {
+          const secret = speakeasy.generateSecret({
+            name: `ExpenseManagement:${user.name}`,
+            issuer: 'ExpenseManagement',
+            length: 20,
+          });
+          existingDevice.twoFactorSecret = secret.base32;
+          deviceSecret = secret.base32;
+          qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
+          console.log('🆕 Generated new secret for existing device');
+        } else {
+          qrCodeDataUrl = null; // No QR code for existing devices
+          console.log('ℹ️ Existing device - no QR code needed');
+        }
       }
     } else {
-      // NEW device: generate secret & push to user.sessions
+      // 🆕 NEW device: generate everything from scratch
       deviceId = uuidv4();
       const secret = speakeasy.generateSecret({
         name: `ExpenseManagement:${user.name}`,
@@ -147,19 +165,18 @@ export class AuthService {
       }
 
       deviceSecret = secret.base32;
-
-      // Generate QR code ONLY for new devices
       qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url);
-      console.log('QR code generated for NEW device');
+      console.log('🆕 QR code generated for NEW device');
     }
 
     await user.save();
 
-    // Pending 2FA: regenerate session (for both new and existing unverified/different devices)
+    // 🚨 FIX: Always set deviceId in session for future recognition
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((err) => {
         if (err) return reject(err);
 
+        // CRITICAL: Set deviceId so next login recognizes this device
         req.session.deviceId = deviceId;
         req.session.user = user;
         req.session.twoFactorSecret = deviceSecret;
@@ -171,7 +188,7 @@ export class AuthService {
       });
     });
 
-    console.log('2FA pending - QR code provided only for new devices');
+    console.log('⏳ 2FA required');
     return {
       qr: qrCodeDataUrl,
       deviceId,
@@ -187,11 +204,7 @@ export class AuthService {
   }
 
   async verifyTwoFactorCode(token: string, req: Request) {
-    console.log('\n=== 2FA VERIFICATION STARTED ===');
-    console.log('Received token:', token);
-    console.log('Session userId:', req?.session?.user?._id);
-    console.log('Session deviceId:', req?.session?.deviceId);
-    console.log('Server time:', new Date().toISOString());
+
 
     if (!req?.session?.user || !req?.session?.deviceId) {
       throw new UnauthorizedException('Session expired or invalid');
@@ -308,7 +321,6 @@ export class AuthService {
       },
     };
   }
-  // Debug endpoint to check 2FA status
 
   async getSessionData(req: Request) {
     const { session } = req;
