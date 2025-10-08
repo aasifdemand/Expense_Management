@@ -10,6 +10,9 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import SavingsIcon from "@mui/icons-material/Savings";
+import GroupsIcon from "@mui/icons-material/Groups";
 import BudgetForm from "../../components/admin/budgeting/BudgetForm";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
@@ -72,12 +75,17 @@ const Budgeting = () => {
             color: "#ef4444",
             subtitle: "Total budget used",
             bgGradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+            icon: <MonetizationOnIcon />,
+            color: "#ef4444", // Red
+            subtitle: `Total budget used`,
+            trendColor: "#ef4444",
+            bgGradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
         },
         {
             title: "Remaining Balance",
             value: `₹${remainingBalance.toLocaleString()}`,
-            icon: <CreditCardIcon />,
-            color: "#10b981",
+            icon: <SavingsIcon />,
+            color: "#10b981", // Green
             subtitle: "Available funds",
             bgGradient: "linear-gradient(135deg, #10b981 0%, #047857 100%)",
         },
@@ -86,6 +94,8 @@ const Budgeting = () => {
             value: allBudgets?.length || 0,
             icon: <AttachMoneyIcon />,
             color: "#f59e0b",
+            icon: <GroupsIcon />,
+            color: "#f59e0b", // Amber
             subtitle: "Total allocations",
             bgGradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
         },
@@ -208,17 +218,27 @@ const Budgeting = () => {
     );
 
     return (
-        <Box
-            sx={{
-                p: { xs: 1, sm: 1.5, md: 2, lg: 3 },
-                width: "100%",
-                maxWidth: "100%",
-                background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-                minHeight: "100vh",
-            }}
-        >
-            {/* Budget Stats Section */}
-            <Box sx={{ mb: { xs: 2, sm: 2.5, md: 3, lg: 4 } }}>
+        <Box sx={{
+            p: {
+                xs: 1,
+                sm: 1.5,
+                md: 2,
+                lg: 3
+            },
+            width: "100%",
+            maxWidth: "100%",
+            minHeight: "100vh",
+            overflowX: "hidden"
+        }}>
+            {/* Stats Section */}
+            <Box sx={{
+                mb: {
+                    xs: 2,
+                    sm: 2.5,
+                    md: 3,
+                    lg: 4
+                }
+            }}>
                 <Box
                     sx={{
                         display: "flex",

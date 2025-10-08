@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchBudgets } from "../../store/budgetSlice";
 import { fetchExpenses } from "../../store/expenseSlice";
 import { fetchReimbursements } from "../../store/reimbursementSlice";
+import BusinessIcon from "@mui/icons-material/Business";
 
 const AdminDashboard = () => {
   const theme = useTheme();
@@ -101,19 +102,26 @@ const AdminDashboard = () => {
       color: "#f63b3bff",
       icon: <MonetizationOnIcon />,
       subtitle: "Total expenses amount",
+      subtitle: "Allocated expenses",
+      trend: "-2.1%",
+      trendColor: "#ef4444"
     },
     {
-      title: "Total Pending Reimbursement",
+      title: "To Be Reimbursed",
       value: `₹${totalPendingReimbursed.toLocaleString()}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",
+      color: "#b91091ff",
+      subtitle: "Pending funds",
+      trend: "+15.7%",
+      trendColor: "#10b981"
     },
     {
       title: "Total Reimbursed",
       value: `₹${totalReimbursed.toLocaleString()}`,
-      icon: <CreditCardIcon />,
-      color: "#10b981",
+      icon: <BusinessIcon />,
+      color: "#b96a10ff",
       subtitle: "Available funds",
     },
   ];

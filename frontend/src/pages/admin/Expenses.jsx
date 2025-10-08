@@ -110,9 +110,8 @@ const Expenses = () => {
         height: { xs: "130px", sm: "140px", md: "150px" },
         position: "relative",
         overflow: "hidden",
-        flex: 1,
+        width: "100%",
         minWidth: 0,
-        maxWidth: "100%",
         "&:hover": {
           transform: { xs: "none", sm: "translateY(-4px)" },
           boxShadow: {
@@ -127,8 +126,8 @@ const Expenses = () => {
           left: 0,
           right: 0,
           height: "4px",
-          background: stat.bgGradient,
-          boxShadow: `0 2px 8px ${alpha(stat.color, 0.3)}`,
+          background: stat.color, // Fixed: Use stat.color directly
+          zIndex: 1,
         },
       }}
     >
@@ -139,6 +138,7 @@ const Expenses = () => {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
+          pt: { xs: 2, sm: 2.5, md: 3, lg: 3.5 }, // Add top padding to account for the border
         }}
       >
         {/* Top Section - Icon + Value */}
@@ -214,7 +214,6 @@ const Expenses = () => {
       </CardContent>
     </Card>
   );
-
   return (
     <Box
       sx={{
@@ -222,23 +221,22 @@ const Expenses = () => {
         minHeight: "100vh",
       }}
     >
-      {/* Budget Stats Section */}
       <Box sx={{ mb: { xs: 2, sm: 2.5, md: 3, lg: 4 } }}>
         <Box
           sx={{
             display: "flex",
-            flexWrap: "wrap",
-            gap: { xs: 1, sm: 1.5, md: 2, lg: 2.5 },
+            flexDirection: { xs: "column", md: "row" }, // Column on mobile, row on desktop
+            flexWrap: { xs: "nowrap", md: "nowrap" },
+            gap: { xs: 1.5, sm: 2, md: 2, lg: 2.5 },
             width: "100%",
-            justifyContent: { xs: "center", sm: "flex-start" },
           }}
         >
           {expenseStats?.map((stat, index) => (
             <Box
               key={index}
               sx={{
-                flexGrow: 1,
-                flexBasis: { xs: "100%", sm: "48%", md: "23%" },
+                flex: { xs: "0 0 auto", md: "1" }, // Auto height on mobile, equal width on desktop
+                width: { xs: "100%", md: "auto" }, // Full width on mobile, auto on desktop
               }}
             >
               <StatCard stat={stat} />
