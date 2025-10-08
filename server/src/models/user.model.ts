@@ -12,7 +12,6 @@ export enum UserLocation {
   OVERALL = 'OVERALL',
 }
 
-
 export enum UserDepartment {
   SALES = "SALES",
   DATA = "DATA",
@@ -29,11 +28,8 @@ export class User extends Document {
   @Prop({ default: "" })
   email?: string;
 
-
   @Prop({ default: "" })
   phone?: string;
-
-
 
   @Prop({ required: true })
   password: string;
@@ -41,8 +37,9 @@ export class User extends Document {
   @Prop({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Prop({ default: '' })
-  twoFactorSecret?: string;
+  // 🚨 REMOVE this - secrets should only be in sessions
+  // @Prop({ default: '' })
+  // twoFactorSecret?: string;
 
   @Prop({ enum: UserDepartment, default: UserDepartment.GENERAL })
   department: UserDepartment
@@ -78,20 +75,18 @@ export class User extends Document {
     type: [
       {
         deviceId: { type: String, required: true },
-        deviceName: { type: String },
         lastLogin: { type: Date, default: Date.now },
         twoFactorVerified: { type: Boolean, default: false },
-        twoFactorSecret: { type: String },
+        twoFactorSecret: { type: String, required: true }, // 🚨 REQUIRED field
       },
     ],
     default: [],
   })
   sessions: {
     deviceId: string;
-    deviceName?: string;
     lastLogin: Date;
     twoFactorVerified: boolean;
-    twoFactorSecret?: string; // <- new field
+    twoFactorSecret: string; // 🚨 REQUIRED - no longer optional
   }[];
 }
 

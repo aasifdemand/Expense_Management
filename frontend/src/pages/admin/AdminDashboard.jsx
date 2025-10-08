@@ -83,7 +83,7 @@ const AdminDashboard = () => {
 
   // Budget Stats Calculations
   const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0); // 153,000
-  const totalAllocated = allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0)
+  const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)
   const totalReimbursementFromExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.fromReimbursement), 0);
 
   const budgetStats = [
