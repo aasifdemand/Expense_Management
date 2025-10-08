@@ -37,32 +37,25 @@ const BudgetTable = ({
     setLimit,
     showPagination = false,
 }) => {
-
-    const { role } = useSelector((state) => state?.auth)
+    const { role } = useSelector((state) => state?.auth);
     const [isOpen, setIsOpen] = useState(false);
     const [selectedBudget, setSelectedBudget] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedBudgetId, setSelectedBudgetId] = useState(null);
-
-
 
     const handleCloseModal = () => {
         setIsOpen(false);
         setSelectedBudget(null);
     };
 
-    // Handle budget type click to show dropdown
     const handleBudgetTypeClick = (event, budgetId) => {
         setAnchorEl(event.currentTarget);
         setSelectedBudgetId(budgetId);
     };
 
-    // Handle budget type change
     const handleBudgetTypeChange = (newType) => {
         if (selectedBudgetId) {
-            // You can implement the API call here to update the budget type
             console.log(`Updating budget ${selectedBudgetId} to type: ${newType}`);
-            // Example: updateBudgetType(selectedBudgetId, newType);
         }
         setAnchorEl(null);
         setSelectedBudgetId(null);
@@ -75,42 +68,39 @@ const BudgetTable = ({
 
     const getBudgetTypeStyle = (type) => {
         const baseStyle = {
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '14px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            display: 'inline-block',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-                opacity: 0.9,
-                transform: 'scale(1.05)',
-            }
-        };
 
-        if (type === 'normal') {
+            borderRadius: "20px",
+            fontSize: "0.8rem",
+            fontWeight: 500,
+            cursor: "pointer",
+            display: "inline-block",
+            transition: "all 0.2s ease",
+            "&:hover": {
+                opacity: 0.9,
+                transform: "scale(1.05)",
+            },
+        };
+        if (type === "normal") {
             return {
                 ...baseStyle,
-                backgroundColor: '#e8f5e9',
-                color: '#2e7d32',
-                border: '1px solid #c8e6c9',
+                backgroundColor: "#e8f5e9",
+                color: "#2e7d32",
+                border: "1px solid #c8e6c9",
             };
         } else {
             return {
                 ...baseStyle,
-                backgroundColor: '#e3f2fd',
-                color: '#1565c0',
-                border: '1px solid #bbdefb',
+                backgroundColor: "#e3f2fd",
+                color: "#1565c0",
+                border: "1px solid #bbdefb",
             };
         }
     };
 
-    const getBudgetTypeDisplay = (type) => {
-        return type === 'normal' ? 'Normal' : 'Reimbursed';
-    };
+    const getBudgetTypeDisplay = (type) => (type === "normal" ? "Normal" : "Reimbursed");
 
     const open = Boolean(anchorEl);
-    const popoverId = open ? 'budget-type-popover' : undefined;
+    const popoverId = open ? "budget-type-popover" : undefined;
 
     return (
         <SectionCard>
@@ -118,95 +108,93 @@ const BudgetTable = ({
             <Box
                 sx={{
                     display: "flex",
+                    flexDirection: "row",
                     flexWrap: "wrap",
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 2,
-                    p: 3,
+                    width: "100%"
                 }}
             >
-                {
-                    role === "superadmin" && <StyledTextField
+                {role === "superadmin" && (
+                    <StyledTextField
                         placeholder="Search By Name..."
                         size="medium"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        sx={{ flex: "1 1 250px", minWidth: "250px" }}
+                        sx={{ flex: "1 1 200px", minWidth: "150px" }}
                     />
-                }
+                )}
 
                 {setLimit && showPagination && (
-                    <StyledFormControl size="medium" sx={{ minWidth: "120px" }}>
+                    <StyledFormControl size="medium" >
                         <InputLabel>Rows per page</InputLabel>
                         <Select
                             value={limit}
                             onChange={(e) => setLimit(Number(e.target.value))}
                             label="Rows per page"
                         >
-                            <MenuItem value={5}>5</MenuItem>
-                            <MenuItem value={10}>10</MenuItem>
-                            <MenuItem value={20}>20</MenuItem>
-                            <MenuItem value={50}>50</MenuItem>
-                            <MenuItem value={70}>70</MenuItem>
+                            {[5, 10, 20, 50, 70].map((val) => (
+                                <MenuItem key={val} value={val}>
+                                    {val}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </StyledFormControl>
                 )}
             </Box>
 
-            <Divider />
+            <Divider sx={{ py: 2 }} />
 
             {/* Table */}
-            <TableContainer>
-                <Table>
+            <TableContainer sx={{ overflowX: "auto" }}>
+                <Table >
                     <TableHead>
                         <TableRow>
-                            {
-                                role === "superadmin" && <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
-                            }
+                            {role === "superadmin" && (
+                                <TableCell sx={{ fontWeight: "bold" }}>User Name</TableCell>
+                            )}
                             <TableCell sx={{ fontWeight: "bold" }}>Allocated</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Spent</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Remaining</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Company</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
-
                             <TableCell sx={{ fontWeight: "bold" }}>Budget Type</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {loading ? (
                             <TableRow>
-                                <TableCell colSpan={4} align="center">
+                                <TableCell colSpan={role === "superadmin" ? 7 : 6} align="center">
                                     <Typography>Loading...</Typography>
                                 </TableCell>
                             </TableRow>
                         ) : budgets?.length > 0 ? (
                             budgets.map((row) => (
                                 <TableRow key={row._id} hover>
-                                    {
-                                        role === "superadmin" && <TableCell>
-                                            <Box display="flex" alignItems="center" gap={2}>
-                                                <Avatar sx={{ bgcolor: "primary.main" }}>
+                                    {role === "superadmin" && (
+                                        <TableCell>
+                                            <Box display="flex" alignItems="center" gap={1}>
+                                                <Avatar sx={{ bgcolor: "primary.main", width: 30, height: 30, fontSize: 14 }}>
                                                     {row?.user?.name?.charAt(0).toUpperCase()}
                                                 </Avatar>
-                                                <Typography fontWeight={500}>
+                                                <Typography fontWeight={500} sx={{ fontSize: { xs: "0.8rem", sm: "0.9rem" } }}>
                                                     {row?.user?.name}
                                                 </Typography>
                                             </Box>
                                         </TableCell>
-                                    }
-                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                    )}
+                                    <TableCell sx={{ fontWeight: "bold", fontSize: { xs: "0.8rem", sm: "0.9rem" } }}>
                                         ₹{row?.allocatedAmount?.toLocaleString()}
                                     </TableCell>
-                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                    <TableCell sx={{ fontWeight: "bold", fontSize: { xs: "0.8rem", sm: "0.9rem" } }}>
                                         ₹{row?.spentAmount?.toLocaleString()}
                                     </TableCell>
-                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                    <TableCell sx={{ fontWeight: "bold", fontSize: { xs: "0.8rem", sm: "0.9rem" } }}>
                                         ₹{row?.remainingAmount?.toLocaleString()}
                                     </TableCell>
-                                    <TableCell sx={{ fontWeight: "bold" }}>
-                                        {row?.company}
-                                    </TableCell>
-                                    <TableCell>
+                                    <TableCell sx={{ fontSize: { xs: "0.8rem", sm: "0.9rem" } }}>{row?.company}</TableCell>
+                                    <TableCell sx={{ fontSize: { xs: "0.75rem", sm: "0.85rem" } }}>
                                         {row?.createdAt
                                             ? new Date(row.createdAt).toLocaleString("en-US", {
                                                 year: "numeric",
@@ -221,17 +209,17 @@ const BudgetTable = ({
                                     </TableCell>
                                     <TableCell>
                                         <Box
-                                            sx={getBudgetTypeStyle(row?.budgetType || 'normal')}
+                                            sx={getBudgetTypeStyle(row?.budgetType || "normal")}
                                             onClick={(e) => handleBudgetTypeClick(e, row._id)}
                                         >
-                                            {getBudgetTypeDisplay(row?.budgetType || 'normal')}
+                                            {getBudgetTypeDisplay(row?.budgetType || "normal")}
                                         </Box>
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} align="center">
+                                <TableCell colSpan={role === "superadmin" ? 7 : 6} align="center">
                                     <Typography>No budgets found</Typography>
                                 </TableCell>
                             </TableRow>
@@ -246,60 +234,40 @@ const BudgetTable = ({
                 open={open}
                 anchorEl={anchorEl}
                 onClose={handleClosePopover}
-                anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'left',
-                }}
-                transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left',
-                }}
-                sx={{
-                    '& .MuiPopover-paper': {
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                        minWidth: '120px',
-                    }
-                }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                transformOrigin={{ vertical: "top", horizontal: "left" }}
+                sx={{ "& .MuiPopover-paper": { borderRadius: 1, minWidth: 120, p: 0 } }}
             >
-                <Box sx={{ p: 0.5 }}>
-                    <Box
-                        sx={{
-                            p: 1.5,
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            '&:hover': {
-                                backgroundColor: '#f5f7fa',
-                            },
-                            color: '#2e7d32',
-                            fontWeight: 500,
-                        }}
-                        onClick={() => handleBudgetTypeChange('normal')}
-                    >
-                        Normal
-                    </Box>
-                    <Box
-                        sx={{
-                            p: 1.5,
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            '&:hover': {
-                                backgroundColor: '#f5f7fa',
-                            },
-                            color: '#1565c0',
-                            fontWeight: 500,
-                        }}
-                        onClick={() => handleBudgetTypeChange('reimbursed')}
-                    >
-                        Reimbursed
-                    </Box>
+                <Box>
+                    {["normal", "reimbursed"].map((type) => (
+                        <Box
+                            key={type}
+                            sx={{
+                                p: 1.5,
+                                cursor: "pointer",
+                                '&:hover': { backgroundColor: "#f5f7fa" },
+                                color: type === "normal" ? "#2e7d32" : "#1565c0",
+                                fontWeight: 500,
+                            }}
+                            onClick={() => handleBudgetTypeChange(type)}
+                        >
+                            {getBudgetTypeDisplay(type)}
+                        </Box>
+                    ))}
                 </Box>
             </Popover>
 
             {/* Pagination */}
             {showPagination && meta?.total > 0 && setPage && (
-                <Box display="flex" justifyContent="space-between" alignItems="center" p={3} flexWrap="wrap" gap={2}>
-                    <Typography variant="body2" color="text.secondary">
+                <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    flexWrap="wrap"
+                    gap={1.5}
+                    p={{ xs: 1.5, sm: 2 }}
+                >
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: "0.75rem", sm: "0.85rem" } }}>
                         Showing {(page - 1) * limit + 1}–{Math.min(page * limit, meta.total)} of {meta.total} entries
                     </Typography>
                     <Pagination
@@ -307,12 +275,12 @@ const BudgetTable = ({
                         page={page}
                         onChange={(e, val) => setPage(val)}
                         color="primary"
-                        size="large"
+                        size="small"
                     />
                 </Box>
             )}
 
-            {/* Modal - Optional: You can remove this if not needed */}
+            {/* Optional Modal */}
             <Modal open={isOpen} onClose={handleCloseModal}>
                 <Paper
                     sx={{
@@ -321,7 +289,7 @@ const BudgetTable = ({
                         left: "50%",
                         transform: "translate(-50%, -50%)",
                         width: { xs: "90%", sm: 400 },
-                        p: 4,
+                        p: 3,
                         borderRadius: 2,
                         boxShadow: 24,
                     }}

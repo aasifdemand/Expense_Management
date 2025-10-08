@@ -62,12 +62,8 @@ const ReimbursementManagement = () => {
         .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
 
     useEffect(() => {
-        dispatch(fetchReimbursements({
-            location: currentLoc,
-            page: currentPage,
-            limit: itemsPerPage
-        }))
-    }, [dispatch, currentLoc, currentPage, itemsPerPage])
+        dispatch(fetchReimbursements())
+    }, [dispatch])
 
     const handleMarkReimbursed = async (id) => {
         const res = await dispatch(markAsReimbursed({ id, isReimbursed: true }))
@@ -306,7 +302,7 @@ const ReimbursementManagement = () => {
                         justifyContent: { xs: "center", sm: "flex-start" },
                     }}
                 >
-                    {reimbursementStats.map((stat, index) => (
+                    {reimbursementStats?.map((stat, index) => (
                         <StatCard key={index} stat={stat} />
                     ))}
                 </Box>

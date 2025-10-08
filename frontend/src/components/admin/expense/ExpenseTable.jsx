@@ -417,19 +417,34 @@ const ExpenseTable = ({
     return (
         <>
             <SectionCard>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 3, alignItems: "center" }}>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, p: 2, alignItems: "center" }}>
 
-                    <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ width: "100%" }}>
-                        {/* Department */}
-                        {
-                            role === "superadmin" && <>
+                    <Stack
+                        direction="row"
+                        spacing={{ xs: 1, sm: 2, md: 3 }}
+                        flexWrap="wrap"
+                        sx={{ width: "100%" }}
+                        gap={2}
+                    >
+                        {/* Superadmin Filters */}
+                        {role === "superadmin" && (
+                            <>
                                 <StyledTextField
                                     placeholder="Search By Name..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    sx={{ flex: "1 1 300px", minWidth: "300px" }}
+                                    sx={{
+                                        flex: { xs: "1 1 100%", sm: "1 1 300px" },
+                                        minWidth: { xs: "100%", sm: "300px" },
+                                    }}
                                 />
-                                <StyledFormControl sx={{ flex: "1 1 200px", minWidth: 180 }}>
+
+                                <StyledFormControl
+                                    sx={{
+                                        flex: { xs: "1 1 100%", sm: "1 1 200px" },
+                                        minWidth: { xs: "100%", sm: "180px" },
+                                    }}
+                                >
                                     <InputLabel>Department</InputLabel>
                                     <StyledSelect
                                         value={currentDepartment?._id || ""}
@@ -440,42 +455,65 @@ const ExpenseTable = ({
                                         }}
                                         label="Department"
                                     >
-                                        <MenuItem value=""><em>All Departments</em></MenuItem>
-                                        {departments?.map((dept) => (
-                                            <MenuItem key={dept._id} value={dept._id}>{dept.name}</MenuItem>
+                                        <MenuItem value="">
+                                            <em>All Departments</em>
+                                        </MenuItem>
+                                        {departments.map((dept) => (
+                                            <MenuItem key={dept._id} value={dept._id}>
+                                                {dept.name}
+                                            </MenuItem>
                                         ))}
                                     </StyledSelect>
                                 </StyledFormControl>
 
-                                {/* Sub-Department */}
-                                <StyledFormControl sx={{ flex: "1 1 220px", minWidth: 200 }}>
+                                <StyledFormControl
+                                    sx={{
+                                        flex: { xs: "1 1 100%", sm: "1 1 220px" },
+                                        minWidth: { xs: "100%", sm: "200px" },
+                                    }}
+                                >
                                     <InputLabel>Sub-Department</InputLabel>
                                     <StyledSelect
                                         value={currentSubDepartment?._id || ""}
                                         onChange={(e) => {
-                                            const sub = subDepartments?.find((s) => s._id === e.target.value);
+                                            const sub = subDepartments.find((s) => s._id === e.target.value);
                                             setCurrentSubDepartment(sub || null);
                                         }}
                                         label="Sub-Department"
                                         disabled={!currentDepartment}
                                     >
-                                        <MenuItem value=""><em>All Sub-Departments</em></MenuItem>
+                                        <MenuItem value="">
+                                            <em>All Sub-Departments</em>
+                                        </MenuItem>
                                         {subDepartments.map((sub) => (
-                                            <MenuItem key={sub._id} value={sub._id}>{sub.name}</MenuItem>
+                                            <MenuItem key={sub._id} value={sub._id}>
+                                                {sub.name}
+                                            </MenuItem>
                                         ))}
                                     </StyledSelect>
                                 </StyledFormControl>
                             </>
-                        }
+                        )}
 
                         {/* Rows per page */}
-                        <StyledFormControl sx={{ flex: "0 1 150px", minWidth: 120 }}>
+                        <StyledFormControl
+                            sx={{
+                                flex: { xs: "1 1 100%", sm: "0 1 150px" },
+                                minWidth: { xs: "100%", sm: "120px" },
+                            }}
+                        >
                             <InputLabel>Rows per page</InputLabel>
                             <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-                                {[5, 10, 20, 50].map((n) => <MenuItem key={n} value={n}>{n}</MenuItem>)}
+                                {[5, 10, 20, 50].map((n) => (
+                                    <MenuItem key={n} value={n}>
+                                        {n}
+                                    </MenuItem>
+                                ))}
                             </Select>
                         </StyledFormControl>
                     </Stack>
+
+
                 </Box>
 
                 <Divider />

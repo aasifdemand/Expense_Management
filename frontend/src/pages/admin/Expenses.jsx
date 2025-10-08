@@ -100,7 +100,6 @@ const Expenses = () => {
     },
   ];
 
-  // ✅ Reuse StatCard from AdminDashboard (exact same design)
   const StatCard = ({ stat }) => (
     <Card
       sx={{
@@ -109,12 +108,11 @@ const Expenses = () => {
         boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
         border: "1px solid rgba(226, 232, 240, 0.8)",
         height: { xs: "130px", sm: "140px", md: "150px" },
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         position: "relative",
         overflow: "hidden",
         flex: 1,
-        minWidth: { xs: "calc(50% - 10px)", sm: "200px", md: "240px" },
-        maxWidth: { xs: "calc(50% - 10px)", sm: "none" },
+        minWidth: 0,
+        maxWidth: "100%",
         "&:hover": {
           transform: { xs: "none", sm: "translateY(-4px)" },
           boxShadow: {
@@ -128,94 +126,69 @@ const Expenses = () => {
           top: 0,
           left: 0,
           right: 0,
-          height: "3px",
-          background: `linear-gradient(90deg, ${stat.color} 0%, ${alpha(
-            stat.color,
-            0.7
-          )} 100%)`,
+          height: "4px",
+          background: stat.bgGradient,
+          boxShadow: `0 2px 8px ${alpha(stat.color, 0.3)}`,
         },
       }}
     >
       <CardContent
         sx={{
-          p: { xs: 2, sm: 3 },
+          p: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
           height: "100%",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
         }}
       >
-        {/* Top Section - Icon, Amount and Trend */}
+        {/* Top Section - Icon + Value */}
         <Box
           sx={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: { xs: 1.5, sm: 2 },
+            alignItems: "center",
+            gap: { xs: 0.8, sm: 1.2, md: 1.5, lg: 2 },
           }}
         >
-          {/* Left Side - Icon and Amount */}
           <Box
             sx={{
+              backgroundColor: alpha(stat.color, 0.1),
+              borderRadius: "12px",
+              p: 1,
               display: "flex",
               alignItems: "center",
-              gap: { xs: 1, sm: 2 },
-              flex: 1,
-              minWidth: 0,
+              justifyContent: "center",
+              color: stat.color,
+              minWidth: { xs: "40px", sm: "44px", md: "48px", lg: "52px" },
+              minHeight: { xs: "40px", sm: "44px", md: "48px", lg: "52px" },
             }}
           >
-            <Box
-              sx={{
-                backgroundColor: alpha(stat.color, 0.1),
-                borderRadius: { xs: "10px", sm: "12px" },
-                p: { xs: 1, sm: 1.5 },
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: `1px solid ${alpha(stat.color, 0.2)}`,
-                flexShrink: 0,
-              }}
-            >
-              {React.cloneElement(stat.icon, {
-                sx: {
-                  color: stat.color,
-                  fontSize: { xs: 20, sm: 24 },
-                },
-              })}
-            </Box>
-            <Typography
-              variant="h4"
-              sx={{
-                color: "#1e293b",
-                fontWeight: 700,
-                fontSize: {
-                  xs: "1.1rem",
-                  sm: "1.4rem",
-                  md: "1.6rem",
-                  lg: "1.8rem",
-                },
-                lineHeight: 1.1,
-                wordBreak: "break-word",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {stat.value}
-            </Typography>
+            {stat.icon}
           </Box>
-
+          <Typography
+            variant="h4"
+            sx={{
+              color: "#000000",
+              fontWeight: 700,
+              fontSize: { xs: "0.95rem", sm: "1.1rem", md: "1.3rem", lg: "1.5rem" },
+              lineHeight: 1.1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {stat.value}
+          </Typography>
         </Box>
 
-        {/* Bottom Section - Title and Subtitle */}
-        <Box sx={{ minWidth: 0 }}>
+        {/* Bottom Section - Title + Subtitle */}
+        <Box>
           <Typography
             variant="h6"
             sx={{
               color: "#1e293b",
               fontWeight: 700,
-              fontSize: { xs: "0.8rem", sm: "0.9rem", md: "1rem" },
-              lineHeight: 1.2,
-              mb: 0.5,
+              fontSize: { xs: "0.72rem", sm: "0.8rem", md: "0.85rem", lg: "0.95rem" },
+              mt: 1,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -223,17 +196,16 @@ const Expenses = () => {
           >
             {stat.title}
           </Typography>
-
           <Typography
             variant="body2"
             sx={{
               color: "#6b7280",
-              fontSize: { xs: "0.7rem", sm: "0.75rem", md: "0.8rem" },
+              fontSize: { xs: "0.62rem", sm: "0.68rem", md: "0.72rem", lg: "0.78rem" },
               fontWeight: 600,
-              lineHeight: 1.2,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              opacity: 0.8,
             }}
           >
             {stat.subtitle}
@@ -250,18 +222,27 @@ const Expenses = () => {
         minHeight: "100vh",
       }}
     >
-      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+      {/* Budget Stats Section */}
+      <Box sx={{ mb: { xs: 2, sm: 2.5, md: 3, lg: 4 } }}>
         <Box
           sx={{
             display: "flex",
-            gap: { xs: 1.5, sm: 2, md: 2.5 },
             flexWrap: "wrap",
+            gap: { xs: 1, sm: 1.5, md: 2, lg: 2.5 },
             width: "100%",
-            justifyContent: { xs: "space-between", sm: "flex-start" },
+            justifyContent: { xs: "center", sm: "flex-start" },
           }}
         >
-          {expenseStats.map((stat, index) => (
-            <StatCard key={index} stat={stat} />
+          {expenseStats?.map((stat, index) => (
+            <Box
+              key={index}
+              sx={{
+                flexGrow: 1,
+                flexBasis: { xs: "100%", sm: "48%", md: "23%" },
+              }}
+            >
+              <StatCard stat={stat} />
+            </Box>
           ))}
         </Box>
       </Box>
