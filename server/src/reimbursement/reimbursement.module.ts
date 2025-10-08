@@ -8,6 +8,9 @@ import { Expense, ExpenseSchema } from 'src/models/expense.model';
 import { Budget, BudgetSchema } from 'src/models/budget.model';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
+import { redisStore } from 'cache-manager-ioredis-yet';
 
 @Module({
   imports: [
@@ -28,7 +31,20 @@ import { NotificationsService } from 'src/notifications/notifications.service';
         name: Budget.name,
         schema: BudgetSchema
       }
-    ])
+    ]),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          socket: {
+            host: configService.get("REDIS_HOST") as string,
+            port: configService.get("REDIS_PORT") as string,
+          },
+        }),
+        ttl: 60,
+      }),
+    }),
   ],
   controllers: [ReimbursementController],
   providers: [ReimbursementService, NotificationsGateway, NotificationsService],

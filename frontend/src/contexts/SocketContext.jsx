@@ -24,7 +24,7 @@ export const SocketProvider = ({ children }) => {
 
         // Use auth instead of query for Socket.IO v4+
         const newSocket = io("http://localhost:5000", {
-            auth: { userId: user._id },
+            auth: { userId: user._id.toString() },
             transports: ["websocket", "polling"],
             reconnection: true,
         });
