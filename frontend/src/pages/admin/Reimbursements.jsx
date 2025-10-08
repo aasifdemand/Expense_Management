@@ -43,8 +43,6 @@ const ReimbursementManagement = () => {
 
     } = useSelector((state) => state.reimbursement)
 
-
-
     const [errorMessage, setErrorMessage] = useState('');
     const [success, setSuccess] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -95,8 +93,6 @@ const ReimbursementManagement = () => {
         setCurrentPage(1); // Reset to first page when changing items per page
     };
 
-
-
     const reimbursementStats = [
         {
             title: "Total Allocated",
@@ -128,7 +124,7 @@ const ReimbursementManagement = () => {
         }
     ];
 
-    // Enhanced StatCard Component with Icons
+    // Enhanced StatCard Component with Amount near Icon
     const StatCard = ({ stat }) => (
         <Card
             sx={{
@@ -182,45 +178,46 @@ const ReimbursementManagement = () => {
                         mb: { xs: 2, sm: 2.5 },
                     }}
                 >
-                    {/* Icon */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: { xs: 44, sm: 48, md: 52 },
-                            height: { xs: 44, sm: 48, md: 52 },
-                            borderRadius: "12px",
-                            backgroundColor: alpha(stat.color, 0.1),
-                            color: stat.color,
-                            flexShrink: 0,
-                            mr: 2,
-                        }}
-                    >
-                        {stat.icon}
-                    </Box>
-
-                    {/* Amount */}
-                    <Box sx={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
-                        <Typography
-                            variant="h4"
+                    {/* Icon with Amount */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                        <Box
                             sx={{
-                                color: "#1e293b",
-                                fontWeight: 700,
-                                fontSize: {
-                                    xs: "1.3rem",
-                                    sm: "1.5rem",
-                                    md: "1.7rem",
-                                    lg: "1.9rem",
-                                },
-                                lineHeight: 1.1,
-                                wordBreak: "break-word",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: { xs: 44, sm: 48, md: 52 },
+                                height: { xs: 44, sm: 48, md: 52 },
+                                borderRadius: "12px",
+                                backgroundColor: alpha(stat.color, 0.1),
+                                color: stat.color,
+                                flexShrink: 0,
                             }}
                         >
-                            {stat.value}
-                        </Typography>
+                            {stat.icon}
+                        </Box>
+
+                        {/* Amount */}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                                variant="h4"
+                                sx={{
+                                    color: "#1e293b",
+                                    fontWeight: 700,
+                                    fontSize: {
+                                        xs: "1.3rem",
+                                        sm: "1.5rem",
+                                        md: "1.7rem",
+                                        lg: "1.9rem",
+                                    },
+                                    lineHeight: 1.1,
+                                    wordBreak: "break-word",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                }}
+                            >
+                                {stat.value}
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
 

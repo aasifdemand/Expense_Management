@@ -9,7 +9,7 @@ export const styles = {
         overflow: 'hidden',
     },
     mainContent: {
-        maxWidth: '1400px',
+        // maxWidth: '1400px',
         margin: '0 auto',
         padding: '30px 20px',
         overflow: 'visible'

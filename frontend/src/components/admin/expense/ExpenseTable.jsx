@@ -441,7 +441,7 @@ const ExpenseTable = ({
                                         label="Department"
                                     >
                                         <MenuItem value=""><em>All Departments</em></MenuItem>
-                                        {departments.map((dept) => (
+                                        {departments?.map((dept) => (
                                             <MenuItem key={dept._id} value={dept._id}>{dept.name}</MenuItem>
                                         ))}
                                     </StyledSelect>
@@ -453,7 +453,7 @@ const ExpenseTable = ({
                                     <StyledSelect
                                         value={currentSubDepartment?._id || ""}
                                         onChange={(e) => {
-                                            const sub = subDepartments.find((s) => s._id === e.target.value);
+                                            const sub = subDepartments?.find((s) => s._id === e.target.value);
                                             setCurrentSubDepartment(sub || null);
                                         }}
                                         label="Sub-Department"

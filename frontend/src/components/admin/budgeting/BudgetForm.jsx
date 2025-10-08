@@ -60,7 +60,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                         label="Company"
                     >
                         <MenuItem value="Demand Curve Marketing">Demand Curve Marketing</MenuItem>
-                        <MenuItem value="Stackio">Stackio</MenuItem>
+                        <MenuItem value="Stackio">Stacko.io</MenuItem>
                     </StyledSelect>
                 </StyledFormControl>
 

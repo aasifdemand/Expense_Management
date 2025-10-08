@@ -428,14 +428,6 @@ const Navbar = ({
                         }} />
                         <Typography variant="body2">Profile</Typography>
                     </MenuItem> */}
- 
-                    {user?.role === "superadmin" && (
-    <MenuItem onClick={handleProfileClick} sx={{ transition: 'all 0.3s ease' }}>
-        <AccountIcon sx={{ mr: 2, fontSize: isMobile ? 18 : 20 }} />
-        <Typography variant="body2">Profile</Typography>
-    </MenuItem>
-)}
-
 
 
                     {/* Enhanced Dark Mode Toggle */}
