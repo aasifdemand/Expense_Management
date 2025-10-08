@@ -47,7 +47,6 @@ const AdminSidebar = ({
         { text: "Dashboard", icon: <DashboardIcon />, path: "/admin/dashboard" },
         { text: "Budgeting", icon: <MonetizationOn />, path: "/admin/budget" },
         { text: "Expenses", icon: <ExpensesIcon />, path: "/admin/expenses" },
-
         { text: "Reimbursement", icon: <AccountBalanceWallet />, path: "/admin/reimbursements" },
         { text: "Reports", icon: <ReportsIcon />, path: "/admin/report" },
         { text: "Users", icon: <UsersIcon />, path: "/admin/user" },
@@ -81,7 +80,7 @@ const AdminSidebar = ({
         >
             <Box
                 sx={{
-                    width: isSmallMobile ? '180px' : isMobile ? '200px' : '320px',
+                    width: isSmallMobile ? '180px' : isMobile ? '250px' : '320px',
                     height: isSmallMobile ? '80px' : isMobile ? '80px' : '90px',
                     display: 'flex',
                     alignItems: 'center',
@@ -89,8 +88,6 @@ const AdminSidebar = ({
                     overflow: 'hidden',
                     borderRadius: 2,
                     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: `1px solid rgba(0,0,0,0.05)`,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                     padding: '4px',
                 }}
             >
@@ -114,7 +111,7 @@ const AdminSidebar = ({
                         };
                     }}
                 />
-                <Box
+                {/* <Box
                     className="logo-fallback"
                     sx={{
                         display: 'none',
@@ -132,7 +129,7 @@ const AdminSidebar = ({
                     }}
                 >
                     Expense Manager
-                </Box>
+                </Box> */}
             </Box>
         </Box>
     );
@@ -158,7 +155,7 @@ const AdminSidebar = ({
                 position: 'relative',
                 minHeight: isSmallMobile ? '70px' : '90px',
                 background: 'rgba(255, 255, 255, 0.9)',
-                // borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
             }}>
                 <Logo />
             </Box>

@@ -105,20 +105,20 @@ const ReimbursementManagement = () => {
         {
             title: "Total Expenses",
             value: `₹${totalExpenses?.toLocaleString()}`,
-            color: "#10b981",
+            color: "#ef4444",
             icon: <MonetizationOn sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Total expenses incurred",
         },
         {
             title: "Total paid Reimbursements",
             value: `₹${totalReimbursed?.toLocaleString()}`,
-            color: "#8b5cf6",
+            color: "#29b8dfff",
             icon: <DoneAll sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "All reimbursement requests",
         }, {
             title: "To Be Reimbursed",
             value: `₹${totalPendingReimbursed?.toLocaleString()}`,
-            color: "#ef4444",
+            color: "#b91091ff",
             icon: <CreditCard sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Pending reimbursement amount",
         },
