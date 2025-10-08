@@ -1,4 +1,5 @@
 import {
+    Box,
     InputLabel,
     MenuItem,
 } from "@mui/material";
@@ -12,29 +13,20 @@ import {
 } from "../../../styles/budgeting.styles";
 import { Add as AddIcon } from "@mui/icons-material";
 
-// const types = [
-//     { value: "Normal", label: "Normal" },
-//     { value: "Reimbursement", label: "Reimbursement" },
-
-// ];
-
 const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loading }) => {
-
-
-
     return (
         <SectionCard>
             <SectionTitle>Allocate Budget</SectionTitle>
-            <div
-                style={{
+            <Box
+                sx={{
                     display: "flex",
                     flexWrap: "wrap",
-                    gap: 16,
+                    gap: { xs: 1.5, sm: 2 }, // responsive gap
                     alignItems: "center",
                 }}
             >
                 {/* User Dropdown */}
-                <StyledFormControl sx={{ flex: "1 1 300px" }}>
+                <StyledFormControl sx={{ flex: { xs: "1 1 100%", sm: "1 1 300px" } }}>
                     <InputLabel>User</InputLabel>
                     <StyledSelect
                         name="userId"
@@ -51,7 +43,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                 </StyledFormControl>
 
                 {/* Company Dropdown */}
-                <StyledFormControl sx={{ flex: "1 1 200px" }}>
+                <StyledFormControl sx={{ flex: { xs: "1 1 100%", sm: "1 1 200px" } }}>
                     <InputLabel>Company</InputLabel>
                     <StyledSelect
                         name="company"
@@ -72,7 +64,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     onChange={handleChange}
                     type="number"
                     fullWidth
-                    sx={{ flex: "1 1 200px" }}
+                    sx={{ flex: { xs: "1 1 100%", sm: "1 1 200px" } }}
                 />
 
                 {/* Add Button */}
@@ -81,20 +73,20 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     loading={loading}
                     onClick={handleAdd}
                     sx={{
-                        minWidth: "auto",
+                        flex: { xs: "1 1 100%", sm: "0 0 auto" },
                         p: 1.2,
                         borderRadius: 2,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
                         backgroundColor: "#1976d2",
-                        "&:hover": {
-                            backgroundColor: "#1565c0",
-                        },
+                        "&:hover": { backgroundColor: "#1565c0" },
                     }}
                 >
                     <AddIcon />
                 </PrimaryButton>
-            </div>
+            </Box>
         </SectionCard>
-
     );
 };
 
