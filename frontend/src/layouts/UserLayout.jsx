@@ -13,12 +13,23 @@ export default function UserLayout() {
     const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
 
     return (
-        <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
-            {/* Sidebar */}
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                minHeight: "100vh",
+                bgcolor: "background.default",
+                width: "100%",
+                overflowX: "hidden", // ✅ Prevents sideways scrolling on mobile
+            }}
+        >
+            {/* Sidebar for desktop */}
             <Box
                 sx={{
                     display: { xs: "none", md: "block" },
-                    flex: isDesktop ? "0 0 300px" : "0 0 auto", // fixed width only on desktop
+                    flexShrink: 0,
+                    width: 280,
+                    minWidth: 280,
                 }}
             >
                 <UserSidebar
@@ -32,7 +43,7 @@ export default function UserLayout() {
                 />
             </Box>
 
-            {/* Sidebar drawer on mobile */}
+            {/* Sidebar drawer for mobile */}
             {!isDesktop && (
                 <UserSidebar
                     open={sidebarOpen}
@@ -45,18 +56,30 @@ export default function UserLayout() {
                 />
             )}
 
-            {/* Main content flexes naturally */}
+            {/* Main content area */}
             <Box
                 component="main"
                 sx={{
                     flex: 1,
                     display: "flex",
                     flexDirection: "column",
-                    gap: 2
+                    width: "100%",
+                    overflowX: "hidden",
                 }}
             >
+                {/* Navbar always visible */}
                 <Navbar onMenuClick={() => setSidebarOpen(true)} />
-                <Box sx={{ flex: 1, p: 3, overflow: "auto" }}>
+
+                {/* Page content (Outlet) */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        p: { xs: 1.5, sm: 2, md: 3 }, // ✅ Adaptive padding
+                        width: "100%",
+                        overflowY: "auto",
+                        overflowX: "hidden",
+                    }}
+                >
                     <Outlet />
                 </Box>
             </Box>

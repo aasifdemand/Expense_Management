@@ -323,7 +323,7 @@ const UserSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                        : <LogoutIcon />
+                         <LogoutIcon />
                     </ListItemIcon>
                     <ListItemText
                         primary={"Logout"}
