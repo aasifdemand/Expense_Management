@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -17,6 +17,7 @@ import {
   Res,
   Param,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
@@ -35,7 +36,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async authUser(@Body() data: AuthDto, @Req() req: Request) {
     this.logger.log('Received login request');
-
     return await this.authService.auth(data, req);
   }
 
@@ -43,9 +43,14 @@ export class AuthController {
   @Post('2fa/verify')
   @HttpCode(HttpStatus.OK)
   async verify2FA(
-    @Body() body: { token: string; userId: string },
+    @Body() body: { token: string },
     @Req() req: Request,
   ) {
+    // Add validation
+    if (!body.token || body.token.length !== 6) {
+      throw new BadRequestException('Token must be 6 digits');
+    }
+
     return this.authService.verifyTwoFactorCode(body.token, req);
   }
 
@@ -66,22 +71,36 @@ export class AuthController {
     return this.authService.getSessionData(req);
   }
 
-  // Logout and clear session & cookie
+  // Logout from current device
   @Post('logout')
   @UseGuards(CsrfGuard)
   async logout(@Req() req: Request, @Res() res: Response) {
     try {
-      await this.authService.clearSession(req);
+      await this.authService.logout(req);
 
       res.clearCookie('connect.sid', {
         httpOnly: true,
         sameSite: 'lax',
       });
 
-      return res.json({ message: 'Session destroyed, logged out' });
+      return res.json({ message: 'Logged out successfully' });
     } catch (err: any) {
       return res.status(500).json({ message: 'Failed to logout' });
     }
+  }
+
+  // Logout from all other devices
+  @Post('logout-all')
+  @UseGuards(CsrfGuard)
+  async logoutAll(@Req() req: Request) {
+    return this.authService.logoutAllDevices(req);
+  }
+
+  // Get active sessions
+  @Get('sessions')
+  @UseGuards(CsrfGuard)
+  async getSessions(@Req() req: Request) {
+    return this.authService.getActiveSessions(req);
   }
 
   // Get list of users (superadmin only)
@@ -128,8 +147,6 @@ export class AuthController {
     }
     return this.authService.resetUserPassword(id, newPass);
   }
-
-
 
   @Patch('profile/:id')
   @UseGuards(CsrfGuard)

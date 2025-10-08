@@ -23,10 +23,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReimbursements, markAsReimbursed } from '../../store/reimbursementSlice';
 import { DoneAll, AccountBalance, MonetizationOn, CreditCard } from '@mui/icons-material';
 import { fetchBudgets } from '../../store/budgetSlice';
+import { useLocation } from '../../contexts/LocationContext';
+import { fetchExpenses } from '../../store/expenseSlice';
 // import { fetchBudgets } from '../../store/budgetSlice';
 // import { fetchExpenses, fetchExpensesForUser } from '../../store/expenseSlice';
 
 const ReimbursementManagement = () => {
+
+    const { currentLoc } = useLocation()
     const dispatch = useDispatch()
     const { reimbursements } = useSelector((state) => state.reimbursement)
 
@@ -51,8 +55,8 @@ const ReimbursementManagement = () => {
         if (markAsReimbursed.fulfilled.match(res)) {
             dispatch(fetchReimbursements())
             await Promise.all([
-                dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false })),
-                // dispatch(fetchExpenses({ page: 1, limit: 20 })),
+                dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false, location: currentLoc })),
+                dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc })),
                 // dispatch(fetchExpensesForUser({ page: 1, limit: 20 }))
             ]);
         }

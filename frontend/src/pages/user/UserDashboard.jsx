@@ -222,7 +222,10 @@ const Dashboard = () => {
   // console.log("user expenses: ", userExpenses);
 
   // Budget Stats Calculations
-  const totalAllocated = Number(allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)) + Number(allExpenses?.reduce((acc, b) => acc + Number(b?.reimbursement?.amount || 0), 0))
+  const totalAllocated = Number(allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)) + Number(allExpenses?.reduce((acc, b) => {
+    const amount = b?.isReimbursed ? 0 : Number(b?.reimbursement?.amount || 0);
+    return acc + amount;
+  }, 0))
   const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.fromAllocation || 0), 0) || 0;
   const totalReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
 
