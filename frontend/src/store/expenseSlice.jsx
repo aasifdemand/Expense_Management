@@ -108,11 +108,11 @@ export const fetchExpenses = createAsyncThunk(
 // ===================== FETCH EXPENSES FOR USER =====================
 export const fetchExpensesForUser = createAsyncThunk(
     "expenses/fetchUserExpenses",
-    async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
+    async ({ userId, page = 1, limit = 20 }, { getState, rejectWithValue }) => {
         try {
             const csrf = getState().auth.csrf;
             const query = new URLSearchParams({ page: String(page), limit: String(limit) });
-            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/user?${query}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/user/${userId}?${query}`, {
                 method: "GET",
                 credentials: "include",
                 headers: { "Content-Type": "application/json", "x-csrf-token": csrf },

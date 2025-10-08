@@ -28,7 +28,7 @@ export class BudgetService {
 
 
   async allocateBudget(data: AllocateBudgetDto) {
-    const { amount, userId } = data;
+    const { amount, userId, company } = data;
 
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
@@ -76,6 +76,7 @@ export class BudgetService {
       remainingAmount: amount,
       month: Number(new Date().getMonth() + 1),
       year: Number(new Date().getFullYear()),
+      company
     });
 
     // Update user

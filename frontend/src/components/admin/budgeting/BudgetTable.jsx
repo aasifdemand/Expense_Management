@@ -165,7 +165,9 @@ const BudgetTable = ({
                             <TableCell sx={{ fontWeight: "bold" }}>Allocated</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Spent</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Remaining</TableCell>
+                            <TableCell sx={{ fontWeight: "bold" }}>Company</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
+
                             <TableCell sx={{ fontWeight: "bold" }}>Budget Type</TableCell>
                         </TableRow>
                     </TableHead>
@@ -199,6 +201,9 @@ const BudgetTable = ({
                                     </TableCell>
                                     <TableCell sx={{ fontWeight: "bold" }}>
                                         ₹{row?.remainingAmount?.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: "bold" }}>
+                                        {row?.company}
                                     </TableCell>
                                     <TableCell>
                                         {row?.createdAt

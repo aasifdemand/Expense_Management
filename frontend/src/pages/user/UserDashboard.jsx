@@ -206,7 +206,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user?._id) return
     if (user && user?._id) {
-      dispatch(fetchExpensesForUser({ page: 1, limit: 20 }));
+      dispatch(fetchExpensesForUser({ userId: user?._id, page: 1, limit: 20 }));
       dispatch(fetchReimbursementsForUser(user?._id))
       dispatch(fetchUserBudgets({
         userId: user._id
@@ -217,13 +217,13 @@ const Dashboard = () => {
 
 
 
-  console.log("AllBudgets: ", allBudgets);
+  // console.log("AllBudgets: ", allBudgets);
 
   // console.log("user expenses: ", userExpenses);
 
   // Budget Stats Calculations
-  const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0) || allExpenses?.reduce((acc, b) => acc + Number(b?.fromAllocation), 0)
-  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.amount || 0), 0) || 0;
+  const totalAllocated = Number(allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)) + Number(allExpenses?.reduce((acc, b) => acc + Number(b?.reimbursement?.amount || 0), 0))
+  const totalExpenses = allExpenses?.reduce((acc, e) => acc + Number(e?.fromAllocation || 0), 0) || 0;
   const totalReimbursed = userReimbursements && userReimbursements?.filter(item => !item?.isReimbursed).reduce((acc, b) => acc + Number(b.amount), 0)
 
   const budgetStats = [

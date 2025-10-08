@@ -32,6 +32,9 @@ export class Expense extends Document {
   paymentMode?: string;
 
 
+  @Prop({ default: "", })
+  vendor?: string
+
   @Prop({ default: "" })
   proof?: string;
 

@@ -128,11 +128,12 @@ export class ExpensesController {
     );
   }
 
-  @Get('user')
+  @Get('user/:id')
   @UseGuards(CsrfGuard)
   async getExpensesForUser(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Param("id") id: string,
     @Req() req: Request,
   ) {
     const { session } = req;
@@ -149,7 +150,7 @@ export class ExpensesController {
     return this.expensesService.getAllExpensesForUser(
       Number(page),
       Number(limit),
-      req,
+      id
     );
   }
 
