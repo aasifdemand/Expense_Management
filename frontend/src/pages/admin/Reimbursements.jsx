@@ -16,26 +16,39 @@ import {
     Avatar,
     IconButton,
     Chip,
-    Tooltip
+    Tooltip,
+    Pagination,
+    Stack,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem
 } from "@mui/material";
 import { useExpenses } from '../../hooks/useExpenses';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReimbursements, markAsReimbursed } from '../../store/reimbursementSlice';
-import { DoneAll, AccountBalance, MonetizationOn, CreditCard } from '@mui/icons-material';
+import { DoneAll, AccountBalance, MonetizationOn, CreditCard, } from '@mui/icons-material';
 import { fetchBudgets } from '../../store/budgetSlice';
 import { useLocation } from '../../contexts/LocationContext';
 import { fetchExpenses } from '../../store/expenseSlice';
-// import { fetchBudgets } from '../../store/budgetSlice';
-// import { fetchExpenses, fetchExpensesForUser } from '../../store/expenseSlice';
 
 const ReimbursementManagement = () => {
-
     const { currentLoc } = useLocation()
     const dispatch = useDispatch()
-    const { reimbursements } = useSelector((state) => state.reimbursement)
+    const {
+        reimbursements,
+        loading,
+        pagination,
+        stats,
 
-    const [error, setError] = useState('');
+    } = useSelector((state) => state.reimbursement)
+
+
+
+    const [errorMessage, setErrorMessage] = useState('');
     const [success, setSuccess] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     const { allExpenses } = useExpenses()
 
@@ -46,21 +59,43 @@ const ReimbursementManagement = () => {
         .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
 
     useEffect(() => {
-        dispatch(fetchReimbursements())
-    }, [dispatch])
+        dispatch(fetchReimbursements({
+            location: currentLoc,
+            page: currentPage,
+            limit: itemsPerPage
+        }))
+    }, [dispatch, currentLoc, currentPage, itemsPerPage])
 
     const handleMarkReimbursed = async (id) => {
         const res = await dispatch(markAsReimbursed({ id, isReimbursed: true }))
 
         if (markAsReimbursed.fulfilled.match(res)) {
-            dispatch(fetchReimbursements())
+            // Refresh data with current filters
+            dispatch(fetchReimbursements({
+                location: currentLoc,
+                page: currentPage,
+                limit: itemsPerPage
+            }))
             await Promise.all([
                 dispatch(fetchBudgets({ page: 1, limit: 10, month: "", year: "", all: false, location: currentLoc })),
                 dispatch(fetchExpenses({ page: 1, limit: 20, location: currentLoc })),
-                // dispatch(fetchExpensesForUser({ page: 1, limit: 20 }))
             ]);
+            setSuccess('Reimbursement marked as paid successfully!');
+        } else {
+            setErrorMessage('Failed to mark reimbursement as paid');
         }
     }
+
+    const handlePageChange = (event, value) => {
+        setCurrentPage(value);
+    };
+
+    const handleItemsPerPageChange = (event) => {
+        setItemsPerPage(event.target.value);
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
+
+
 
     const reimbursementStats = [
         {
@@ -69,8 +104,6 @@ const ReimbursementManagement = () => {
             color: "#3b82f6",
             icon: <AccountBalance sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Total budget allocation",
-            trend: "+5.2%",
-            trendColor: "#10b981",
         },
         {
             title: "Total Expenses",
@@ -78,8 +111,6 @@ const ReimbursementManagement = () => {
             color: "#10b981",
             icon: <MonetizationOn sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Total expenses incurred",
-            trend: "+12.3%",
-            trendColor: "#10b981",
         },
         {
             title: "To Be Reimbursed",
@@ -87,8 +118,13 @@ const ReimbursementManagement = () => {
             color: "#ef4444",
             icon: <CreditCard sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
             subtitle: "Pending reimbursement amount",
-            trend: "-8.7%",
-            trendColor: "#ef4444",
+        },
+        {
+            title: "Total Reimbursements",
+            value: stats.totalReimbursements?.toLocaleString() || '0',
+            color: "#8b5cf6",
+            icon: <DoneAll sx={{ fontSize: { xs: 24, sm: 28, md: 32 } }} />,
+            subtitle: "All reimbursement requests",
         }
     ];
 
@@ -230,7 +266,6 @@ const ReimbursementManagement = () => {
             sx={{
                 p: { xs: 2, sm: 3, md: 4 },
                 minHeight: "100vh",
-                // backgroundColor: '#f8fafc',
                 width: '100%',
                 overflowX: 'hidden',
             }}
@@ -238,13 +273,13 @@ const ReimbursementManagement = () => {
 
             {/* Notifications */}
             <Snackbar
-                open={!!error}
+                open={!!errorMessage}
                 autoHideDuration={6000}
-                onClose={() => setError('')}
+                onClose={() => setErrorMessage('')}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-                <Alert onClose={() => setError('')} severity="error" sx={{ width: '100%' }}>
-                    {error}
+                <Alert onClose={() => setErrorMessage('')} severity="error" sx={{ width: '100%' }}>
+                    {errorMessage}
                 </Alert>
             </Snackbar>
 
@@ -258,30 +293,6 @@ const ReimbursementManagement = () => {
                     {success}
                 </Alert>
             </Snackbar>
-
-            {/* Header */}
-            {/* <Box sx={{ mb: 4 }}>
-                <Typography
-                    variant="h4"
-                    sx={{
-                        fontWeight: 700,
-                        color: "#1e293b",
-                        fontSize: { xs: "1.5rem", sm: "2rem", md: "2.25rem" },
-                        mb: 1
-                    }}
-                >
-                    Reimbursement Management
-                </Typography>
-                <Typography
-                    variant="body1"
-                    sx={{
-                        color: "#6b7280",
-                        fontSize: { xs: "0.9rem", sm: "1rem" }
-                    }}
-                >
-                    Manage and track all reimbursement requests
-                </Typography>
-            </Box> */}
 
             {/* Stats Cards */}
             <Box sx={{ mb: 4 }}>
@@ -299,6 +310,34 @@ const ReimbursementManagement = () => {
                     ))}
                 </Box>
             </Box>
+
+            {/* Filters and Controls */}
+            <Card sx={{ mb: 3, p: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+
+
+                    <FormControl size="small" sx={{ minWidth: 100 }}>
+                        <InputLabel>Per Page</InputLabel>
+                        <Select
+                            value={itemsPerPage}
+                            label="Per Page"
+                            onChange={handleItemsPerPageChange}
+                        >
+                            <MenuItem value={5}>5</MenuItem>
+                            <MenuItem value={10}>10</MenuItem>
+                            <MenuItem value={20}>20</MenuItem>
+                            <MenuItem value={50}>50</MenuItem>
+                            <MenuItem value={100}>100</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <Box sx={{ flexGrow: 1 }} />
+
+                    <Typography variant="body2" color="text.secondary">
+                        Showing {reimbursements.length} of {pagination.totalItems} reimbursements
+                    </Typography>
+                </Box>
+            </Card>
 
             {/* Reimbursements Table */}
             <Card
@@ -321,6 +360,15 @@ const ReimbursementManagement = () => {
                         }}
                     >
                         Reimbursement Requests
+                        {currentLoc !== 'OVERALL' && (
+                            <Chip
+                                label={currentLoc}
+                                size="small"
+                                sx={{ ml: 1 }}
+                                color="primary"
+                                variant="outlined"
+                            />
+                        )}
                     </Typography>
                 </Box>
 
@@ -328,88 +376,39 @@ const ReimbursementManagement = () => {
                     <Table sx={{ minWidth: 650 }} stickyHeader>
                         <TableHead>
                             <TableRow>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     User
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     Amount Allocated
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     Total Expenses
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     To Be Reimbursed
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     Date
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2 }}>
                                     Description
                                 </TableCell>
-                                <TableCell
-                                    sx={{
-                                        fontWeight: "bold",
-                                        fontSize: { xs: "0.875rem", sm: "1rem" },
-                                        color: "#1e293b",
-                                        textAlign: "center",
-                                        backgroundColor: '#f8fafc',
-                                        py: 2
-                                    }}
-                                >
+                                <TableCell sx={{ fontWeight: "bold", backgroundColor: '#f8fafc', py: 2, textAlign: "center" }}>
                                     Status
                                 </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {reimbursements?.length > 0 ? (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                        <Typography variant="h6" color="text.secondary">
+                                            Loading...
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : reimbursements?.length > 0 ? (
                                 reimbursements.map((item) => (
                                     <TableRow
                                         key={item?._id}
@@ -430,27 +429,23 @@ const ReimbursementManagement = () => {
                                                 >
                                                     {item?.requestedBy?.name?.charAt(0).toUpperCase()}
                                                 </Avatar>
-                                                <Typography
-                                                    fontWeight={500}
-                                                    sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
-                                                >
-                                                    {item?.requestedBy?.name}
-                                                </Typography>
+                                                <Box>
+                                                    <Typography fontWeight={500}>
+                                                        {item?.requestedBy?.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {item?.requestedBy?.userLoc}
+                                                    </Typography>
+                                                </Box>
                                             </Box>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography
-                                                fontWeight={500}
-                                                sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
-                                            >
+                                            <Typography fontWeight={500}>
                                                 ₹{Number(item?.expense?.fromAllocation || 0)?.toLocaleString()}
                                             </Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography
-                                                fontWeight={500}
-                                                sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
-                                            >
+                                            <Typography fontWeight={500}>
                                                 ₹{Number(item?.expense?.amount || 0)?.toLocaleString()}
                                             </Typography>
                                         </TableCell>
@@ -458,7 +453,6 @@ const ReimbursementManagement = () => {
                                             <Typography
                                                 fontWeight={500}
                                                 sx={{
-                                                    fontSize: { xs: "0.875rem", sm: "1rem" },
                                                     color: item?.isReimbursed ? 'text.secondary' : '#ef4444'
                                                 }}
                                             >
@@ -466,9 +460,7 @@ const ReimbursementManagement = () => {
                                             </Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography
-                                                sx={{ fontSize: { xs: "0.875rem", sm: "0.9rem" } }}
-                                            >
+                                            <Typography variant="body2">
                                                 {item?.createdAt
                                                     ? new Date(item.createdAt).toLocaleString("en-US", {
                                                         year: "numeric",
@@ -484,8 +476,8 @@ const ReimbursementManagement = () => {
                                         </TableCell>
                                         <TableCell>
                                             <Typography
+                                                variant="body2"
                                                 sx={{
-                                                    fontSize: { xs: "0.875rem", sm: "0.9rem" },
                                                     maxWidth: { xs: '120px', sm: '200px' },
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis',
@@ -524,11 +516,7 @@ const ReimbursementManagement = () => {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                        <Typography
-                                            variant="h6"
-                                            color="text.secondary"
-                                            sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
-                                        >
+                                        <Typography variant="h6" color="text.secondary">
                                             No reimbursement requests found
                                         </Typography>
                                     </TableCell>
@@ -538,16 +526,29 @@ const ReimbursementManagement = () => {
                     </Table>
                 </TableContainer>
 
-                {/* Footer Info */}
+                {/* Pagination */}
                 {reimbursements?.length > 0 && (
                     <Box sx={{ p: 3, borderTop: '1px solid rgba(0, 0, 0, 0.12)' }}>
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                        >
-                            Showing {reimbursements.length} reimbursement request{reimbursements.length !== 1 ? 's' : ''}
-                        </Typography>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                            <Typography variant="body2" color="text.secondary">
+                                Showing {reimbursements.length} of {pagination.totalItems} reimbursements
+                                {currentLoc !== 'OVERALL' && ` in ${currentLoc}`}
+                            </Typography>
+
+                            <Pagination
+                                count={pagination.totalPages}
+                                page={currentPage}
+                                onChange={handlePageChange}
+                                color="primary"
+                                showFirstButton
+                                showLastButton
+                                sx={{
+                                    '& .MuiPaginationItem-root': {
+                                        borderRadius: 2
+                                    }
+                                }}
+                            />
+                        </Stack>
                     </Box>
                 )}
             </Card>

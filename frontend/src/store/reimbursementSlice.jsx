@@ -2,10 +2,20 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export const fetchReimbursements = createAsyncThunk(
     "reimbursement/fetchReimbursements",
-    async (_, { rejectWithValue, getState }) => {
+    async ({ location, page, limit } = {}, { rejectWithValue, getState }) => {
         try {
             const csrf = getState().auth.csrf;
-            const res = await fetch(`${import.meta.env.VITE_API_BASEURL}/reimbursement`, {
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (location) params.append('location', location);
+            if (page) params.append('page', page);
+            if (limit) params.append('limit', limit);
+
+            const queryString = params.toString();
+            const url = `${import.meta.env.VITE_API_BASEURL}/reimbursement${queryString ? `?${queryString}` : ''}`;
+
+            const res = await fetch(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -21,12 +31,23 @@ export const fetchReimbursements = createAsyncThunk(
         }
     }
 );
+
 export const fetchReimbursementsForUser = createAsyncThunk(
     "reimbursement/fetchReimbursementsforuser",
-    async (id, { rejectWithValue, getState }) => {
+    async ({ id, location, page, limit } = {}, { rejectWithValue, getState }) => {
         try {
             const csrf = getState().auth.csrf;
-            const res = await fetch(`${import.meta.env.VITE_API_BASEURL}/reimbursement/${id}`, {
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (location) params.append('location', location);
+            if (page) params.append('page', page);
+            if (limit) params.append('limit', limit);
+
+            const queryString = params.toString();
+            const url = `${import.meta.env.VITE_API_BASEURL}/reimbursement/${id}${queryString ? `?${queryString}` : ''}`;
+
+            const res = await fetch(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -76,34 +97,64 @@ const initialState = {
     userReimbursements: [],
     loading: false,
     error: null,
+    pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 20
+    },
+    stats: {
+        totalReimbursements: 0,
+        totalAmount: 0,
+        totalReimbursed: 0,
+        totalPending: 0,
+        totalReimbursedAmount: 0,
+        totalPendingAmount: 0,
+    },
+    location: 'OVERALL'
 };
 
 export const reimbursementSlice = createSlice({
     name: "reimbursement",
     initialState,
-    reducers: {},
+    reducers: {
+        clearError: (state) => {
+            state.error = null;
+        },
+        setLocation: (state, action) => {
+            state.location = action.payload;
+        }
+    },
     extraReducers: (builder) => {
         builder
-            // ---- FETCH ----
+            // ---- FETCH ALL REIMBURSEMENTS ----
             .addCase(fetchReimbursements.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(fetchReimbursements.fulfilled, (state, action) => {
                 state.loading = false;
-                state.reimbursements = action.payload;
+                state.reimbursements = action.payload.data || action.payload.reimbursements || [];
+                state.stats = action.payload.stats || initialState.stats;
+                state.pagination = action.payload.meta || initialState.pagination;
+                state.location = action.payload.location || 'OVERALL';
             })
             .addCase(fetchReimbursements.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
+
+            // ---- FETCH USER REIMBURSEMENTS ----
             .addCase(fetchReimbursementsForUser.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(fetchReimbursementsForUser.fulfilled, (state, action) => {
                 state.loading = false;
-                state.userReimbursements = action.payload;
+                state.userReimbursements = action.payload.data || action.payload.reimbursements || [];
+                state.stats = action.payload.stats || initialState.stats;
+                state.pagination = action.payload.meta || initialState.pagination;
+                state.location = action.payload.location || 'OVERALL';
             })
             .addCase(fetchReimbursementsForUser.rejected, (state, action) => {
                 state.loading = false;
@@ -132,4 +183,5 @@ export const reimbursementSlice = createSlice({
     },
 });
 
+export const { clearError, setLocation } = reimbursementSlice.actions;
 export default reimbursementSlice.reducer;
