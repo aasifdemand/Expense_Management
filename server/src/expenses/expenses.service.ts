@@ -6,7 +6,6 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
@@ -21,8 +20,6 @@ import { SearchExpensesDto } from './dtos/search-expense.dto';
 import { Department } from 'src/models/department.model';
 import { SubDepartment } from 'src/models/sub-department.model';
 import { Reimbursement } from 'src/models/reimbursements.model';
-
-import type { Request } from 'express';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { MailService } from 'src/services/mail.service';
@@ -65,6 +62,7 @@ export class ExpensesService {
       isReimbursed,
       subDepartment,
       paymentMode,
+      vendor
     } = data;
 
     const user = await this.userModal
@@ -204,6 +202,7 @@ export class ExpensesService {
       year,
       month,
       paymentMode,
+      vendor,
       budgets: currentMonthBudgets.map(b => b._id),
       reimbursement: reimbursement ? reimbursement._id : undefined,
     });
@@ -551,24 +550,19 @@ export class ExpensesService {
   async getAllExpensesForUser(
     page = 1,
     limit = 10,
-    req: Request,
+    userId: string
   ) {
-    const { session } = req
-    if (!session?.user?._id)
-      throw new UnauthorizedException('Unauthorized: User not logged in');
 
-    let userIdObj: Types.ObjectId;
-    try {
-      userIdObj = new Types.ObjectId(session.user?._id as string);
-    } catch (err: any) {
-      throw new UnauthorizedException('Invalid user ID in session', err);
-    }
+
+
+    const userIdObj = new Types.ObjectId(userId);
+
 
     const safePage = Math.max(page, 1);
     const safeLimit = Math.max(limit, 1);
     const skip = (safePage - 1) * safeLimit;
 
-    const cacheKey = this.EXPENSE_USER_KEY(session?.user?._id as string, safePage, safeLimit);
+    const cacheKey = this.EXPENSE_USER_KEY(userIdObj.toString(), safePage, safeLimit);
     const cached = await this.cacheManager.get(cacheKey);
     if (cached)
       return {

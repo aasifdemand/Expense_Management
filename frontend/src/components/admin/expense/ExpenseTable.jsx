@@ -276,7 +276,7 @@ const ExpenseTable = ({
                 return expense.proof;
             }
             // Construct URL from filename
-            return `${process.env.REACT_APP_API_URL || window.location.origin}/uploads/${expense.proof}`;
+            return `${import.meta.env.REACT_APP_API_URL || window.location.origin}/uploads/${expense.proof}`;
         }
         return null;
     };
@@ -296,11 +296,7 @@ const ExpenseTable = ({
         return 'Document';
     };
 
-    // Check if file is previewable in browser
-    const isPreviewable = (fileName) => {
-        if (!fileName) return true;
-        return true;
-    };
+
 
     // Check specific file types for better handling (for tooltips)
     const isImageFile = (fileName) => {
@@ -342,7 +338,7 @@ const ExpenseTable = ({
         if (!previewUrl) return null;
 
         const fileName = previewUrl.split('/').pop() || 'document';
-        const extension = fileName.split('.').pop()?.toLowerCase();
+
 
         if (isImageFile(fileName)) {
             return (
@@ -501,6 +497,9 @@ const ExpenseTable = ({
                                     Sub-Department
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
+                                    Vendor
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                                     Date
                                 </TableCell>
                                 <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
@@ -572,6 +571,16 @@ const ExpenseTable = ({
                                                 }}
                                             >
                                                 {row?.subDepartment?.name || "-"}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            <Typography
+                                                sx={{
+                                                    textTransform: 'capitalize',
+                                                    color: 'text.secondary'
+                                                }}
+                                            >
+                                                {row?.vendor || "-"}
                                             </Typography>
                                         </TableCell>
                                         <TableCell align="left">

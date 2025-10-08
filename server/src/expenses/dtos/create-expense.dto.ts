@@ -13,6 +13,11 @@ export class CreateExpenseDto {
   @IsOptional()
   description?: string;
 
+
+  @IsString()
+  @IsOptional()
+  vendor?: string;
+
   @Type(() => Number)
   @IsNumber()
   amount: number;
@@ -49,4 +54,4 @@ export class CreateExpenseDto {
   isApproved?: boolean;
 }
 
-export class UpdateExpenseDto extends PartialType(CreateExpenseDto) {}
+export class UpdateExpenseDto extends PartialType(CreateExpenseDto) { }

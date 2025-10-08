@@ -103,7 +103,7 @@ export const useExpenses = () => {
         }));
       }
     } else {
-      dispatch(fetchExpensesForUser({ page, limit }));
+      dispatch(fetchExpensesForUser({ userId: user?._id, page, limit }));
     }
   }, [
     dispatch,
@@ -115,7 +115,8 @@ export const useExpenses = () => {
     role,
     currentDepartment,
     currentSubDepartment,
-    currentLoc, // ✅ CRITICAL FIX: Added location to dependencies
+    currentLoc,
+    user?._id
   ]);
 
   // Reset to first page when location changes for better UX

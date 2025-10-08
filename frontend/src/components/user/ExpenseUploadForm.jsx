@@ -98,7 +98,7 @@ export default function CreateExpenseForm() {
         if (
             !form.amount ||
             !form.department ||
-            !form.paymentMode
+            !form.paymentMode || !form.vendorName
         ) {
             setError("Please fill all required fields");
             setLoading(false);
@@ -112,7 +112,7 @@ export default function CreateExpenseForm() {
         }
 
         try {
-            const resultAction = await dispatch(addExpense(form));
+            const resultAction = await dispatch(addExpense({ ...form, vendor: form?.vendorName }));
             if (addExpense.rejected.match(resultAction)) {
                 throw new Error(resultAction.payload || "Failed to add expense");
             }

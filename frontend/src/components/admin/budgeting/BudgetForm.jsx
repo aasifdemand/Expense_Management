@@ -20,7 +20,7 @@ import { Add as AddIcon } from "@mui/icons-material";
 
 const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loading }) => {
 
-    // console.log("form data: ", formData);
+
 
     return (
         <SectionCard>
@@ -55,7 +55,7 @@ const BudgetForm = ({ users, formData, setFormData, handleChange, handleAdd, loa
                     <InputLabel>Company</InputLabel>
                     <StyledSelect
                         name="company"
-                        value={formData.company || "Demand Curve"}
+                        value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                         label="Company"
                     >
