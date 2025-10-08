@@ -51,8 +51,7 @@ const Budgeting = () => {
         allBudgets?.reduce((acc, b) => acc + (b.spentAmount || 0), 0) || 0;
 
     const remainingBalance = totalAllocated - totalSpent;
-    const budgetUsagePercentage =
-        totalAllocated > 0 ? ((totalSpent / totalAllocated) * 100).toFixed(1) : 0;
+
 
     // Budget Stats Cards with improved color scheme
     const budgetStats = [

@@ -68,6 +68,8 @@ const AdminDashboard = () => {
     setSelectedMonth: setExpenseSelectedMonth,
   } = useExpenses();
 
+  const { reimbursements } = useSelector((state) => state?.reimbursement)
+
 
   const dispatch = useDispatch()
 
@@ -77,14 +79,19 @@ const AdminDashboard = () => {
     dispatch(fetchReimbursements())
   }, [dispatch]);
 
-
+  const totalPendingReimbursed = reimbursements
+    ?.filter(item => !item?.isReimbursed)
+    .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
+  const totalReimbursed = reimbursements
+    ?.filter(item => item?.isReimbursed)
+    .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
 
   // console.log("All expenses: ", allExpenses);
 
   // Budget Stats Calculations
-  const totalExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.amount), 0); // 153,000
+  const totalExpenses = allBudgets?.reduce((acc, b) => acc + Number(b?.spentAmount), 0); // 153,000
   const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0)
-  const totalReimbursementFromExpenses = allExpenses?.reduce((acc, b) => acc + Number(b?.fromReimbursement), 0);
+
 
   const budgetStats = [
     {
@@ -106,8 +113,17 @@ const AdminDashboard = () => {
       trendColor: "#ef4444"
     },
     {
-      title: "Total Reimbursement",
-      value: `₹${totalReimbursementFromExpenses.toLocaleString()}`,
+      title: "Total Pending Reimbursement",
+      value: `₹${totalPendingReimbursed.toLocaleString()}`,
+      icon: <CreditCardIcon />,
+      color: "#10b981",
+      subtitle: "Available funds",
+      trend: "+15.7%",
+      trendColor: "#10b981"
+    },
+    {
+      title: "Total  Reimbursed",
+      value: `₹${totalReimbursed.toLocaleString()}`,
       icon: <CreditCardIcon />,
       color: "#10b981",
       subtitle: "Available funds",
