@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import Login from "./pages/auth/Login";
 import Qr from "./pages/auth/qr";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -9,38 +9,69 @@ import AdminLayout from "./layouts/AdminLayout";
 import Settings from "./pages/admin/Settings";
 import { useDispatch, useSelector } from "react-redux";
 import UserLayout from "./layouts/UserLayout";
-import UserDashboard from "./pages/user/UserDashboard"
+import UserDashboard from "./pages/user/UserDashboard";
 import MyExpenses from "./pages/user/MyExpenses";
-// import UserSettings from "./pages/user/UserSettings";
 import Budgeting from "./pages/admin/Budgeting";
 import { useEffect } from "react";
-import { fetchAllUsers, fetchUser } from "./store/authSlice";
+import { fetchAllUsers, fetchUser, logout } from "./store/authSlice";
 import ExpenseUploadForm from "./components/user/ExpenseUploadForm";
 import Budgetings from "./pages/user/Budgetings";
 import Reimbursements from "./pages/admin/Reimbursements";
-import { SocketProvider } from "../src/contexts/SocketContext"
-
-
+import { SocketProvider } from "../src/contexts/SocketContext";
+import { Toaster, toast } from "react-hot-toast";
 
 const App = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const dispatch = useDispatch()
-  const { isAuthenticated, isTwoFactorPending, isTwoFactorVerified, role, } = useSelector((state) => state?.auth)
+  const {
+    isAuthenticated,
+    isTwoFactorPending,
+    isTwoFactorVerified,
+    role,
+  } = useSelector((state) => state?.auth);
 
-
-
+  // Fetch session on mount
   useEffect(() => {
-    if (role === "superadmin") {
-      dispatch(fetchAllUsers())
+    dispatch(fetchUser());
+  }, [dispatch]);
+
+  // Fetch all users for admin
+  useEffect(() => {
+    if (
+      role === "superadmin" &&
+      isAuthenticated &&
+      !isTwoFactorPending &&
+      isTwoFactorVerified
+    ) {
+      dispatch(fetchAllUsers());
     }
-  }, [dispatch, role])
+  }, [dispatch, role, isAuthenticated, isTwoFactorPending, isTwoFactorVerified]);
 
-
+  // 🕒 Auto session check every 5 minutes
   useEffect(() => {
-    dispatch(fetchUser())
-  }, [dispatch])
+    if (!isAuthenticated) return;
 
-  // console.log("users ans user: ", user, users);
+    const interval = setInterval(async () => {
+      try {
+        const resultAction = await dispatch(fetchUser()).unwrap();
+
+        if (!resultAction) {
+          throw new Error("Session expired");
+        }
+      } catch (err) {
+        // If session expired or unauthorized
+        console.log("err: ", err);
+
+        toast.error("Session expired. Please log in again.");
+        dispatch(logout());
+        navigate("/login");
+      }
+    }, 5 * 60 * 1000); // every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [dispatch, isAuthenticated, navigate]);
+
   const canAccessAdminRoutes =
     isAuthenticated &&
     isTwoFactorVerified &&
@@ -52,87 +83,114 @@ const App = () => {
     isTwoFactorVerified &&
     !isTwoFactorPending &&
     role === "user";
-  // console.log("user: ", user);
 
   return (
-    <SocketProvider >
+    <SocketProvider>
+      <Toaster position="top-right" />
       <Routes>
-
-
         <Route path="user" element={<UserLayout />}>
-          <Route path="dashboard" element={
-            isRedirectToUserDashboard ? <UserDashboard /> : <Navigate to="/login" />
-          } />
-          <Route path="expenses" element={
-            isRedirectToUserDashboard ? <MyExpenses /> : <Navigate to="/login" />
-          } />
-
-          <Route
-            path="budgeting"
-            element={
-              isRedirectToUserDashboard ? <Budgetings /> : <Navigate to="/login" />
-            }
-          />
-
-
-          <Route path="add" element={
-            isRedirectToUserDashboard ? <ExpenseUploadForm /> : <Navigate to="/login" />
-          } />
-          <Route path="settings" element={
-            isRedirectToUserDashboard ? <Settings /> : <Navigate to="/login" />
-          } />
-        </Route>
-
-
-        <Route path="admin" element={<AdminLayout />}>
-          {/* Admin Dashboard Route */}
           <Route
             path="dashboard"
             element={
-              canAccessAdminRoutes ? <AdminDashboard /> : <Navigate to="/login" />
+              isRedirectToUserDashboard ? (
+                <UserDashboard />
+              ) : (
+                <Navigate to="/login" />
+              )
             }
           />
+          <Route
+            path="expenses"
+            element={
+              isRedirectToUserDashboard ? (
+                <MyExpenses />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="budgeting"
+            element={
+              isRedirectToUserDashboard ? (
+                <Budgetings />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="add"
+            element={
+              isRedirectToUserDashboard ? (
+                <ExpenseUploadForm />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              isRedirectToUserDashboard ? (
+                <Settings />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+        </Route>
 
-
+        <Route path="admin" element={<AdminLayout />}>
+          <Route
+            path="dashboard"
+            element={
+              canAccessAdminRoutes ? (
+                <AdminDashboard />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
           <Route
             path="budget"
             element={
               canAccessAdminRoutes ? <Budgeting /> : <Navigate to="/login" />
             }
           />
-
-
-
-
-          {/* Expenses Management */}
           <Route
             path="expenses"
-            element={canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />}
+            element={
+              canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />
+            }
           />
-
-          <Route path="reimbursements" element={
-            canAccessAdminRoutes ? <Reimbursements /> : <Navigate to="/login" />
-          } />
-
-
-
-          {/* Users */}
+          <Route
+            path="reimbursements"
+            element={
+              canAccessAdminRoutes ? (
+                <Reimbursements />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
           <Route
             path="user"
             element={canAccessAdminRoutes ? <User /> : <Navigate to="/login" />}
           />
-
-          {/* Reports */}
           <Route
             path="report"
-            element={canAccessAdminRoutes ? <Report /> : <Navigate to="/login" />}
+            element={
+              canAccessAdminRoutes ? <Report /> : <Navigate to="/login" />
+            }
           />
           <Route
             path="settings"
-            element={canAccessAdminRoutes ? <Settings /> : <Navigate to="/login" />}
+            element={
+              canAccessAdminRoutes ? <Settings /> : <Navigate to="/login" />
+            }
           />
         </Route>
-
 
         {/* 2FA */}
         <Route

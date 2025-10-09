@@ -9,6 +9,7 @@ const safeJSONParse = (key, fallback = null) => {
   }
 };
 
+// ===================== LOGOUT =====================
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { getState, rejectWithValue }) => {
@@ -37,7 +38,7 @@ export const logout = createAsyncThunk(
   }
 );
 
-// Fetch all users
+// ===================== FETCH ALL USERS =====================
 export const fetchAllUsers = createAsyncThunk(
   "auth/fetch-users",
   async (_, { getState, rejectWithValue }) => {
@@ -67,7 +68,7 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
-// Create new user
+// ===================== CREATE USER =====================
 export const createUser = createAsyncThunk(
   "auth/create-user",
   async (userData, { getState, rejectWithValue }) => {
@@ -96,7 +97,7 @@ export const createUser = createAsyncThunk(
   }
 );
 
-// Reset user password
+// ===================== RESET USER PASSWORD =====================
 export const resetUserPassword = createAsyncThunk(
   "auth/reset-user-password",
   async ({ userId, password }, { getState, rejectWithValue }) => {
@@ -125,7 +126,7 @@ export const resetUserPassword = createAsyncThunk(
   }
 );
 
-// For updating own profile
+// ===================== UPDATE PROFILE =====================
 export const updateUserProfile = createAsyncThunk(
   "auth/update-profile",
   async (updateData, { getState, rejectWithValue }) => {
@@ -154,10 +155,10 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
-// Fetch single user (session)
+// ===================== FETCH SESSION USER =====================
 export const fetchUser = createAsyncThunk(
   "auth/fetch-user",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { getState, dispatch, rejectWithValue }) => {
     try {
       const csrf = getState().auth.csrf;
       const response = await fetch(
@@ -172,6 +173,12 @@ export const fetchUser = createAsyncThunk(
         }
       );
 
+      // Detect expired Redis session
+      if (response.status === 401 || response.status === 403) {
+        dispatch({ type: "auth/forceLogout" });
+        return rejectWithValue("Session expired. Please log in again.");
+      }
+
       if (!response.ok) {
         throw new Error("Failed to fetch user");
       }
@@ -184,6 +191,7 @@ export const fetchUser = createAsyncThunk(
   }
 );
 
+// ===================== INITIAL STATE =====================
 const initialState = {
   isAuthenticated: safeJSONParse("authenticated", false),
   isTwoFactorVerified: safeJSONParse("twoFactorVerified", false),
@@ -198,9 +206,10 @@ const initialState = {
   userLoading: false,
   userError: null,
   updateProfileLoading: false,
-  updateProfileError: null
+  updateProfileError: null,
 };
 
+// ===================== LOCAL STORAGE HELPER =====================
 const persistToLocalStorage = (state) => {
   localStorage.setItem("authenticated", JSON.stringify(state.isAuthenticated));
   localStorage.setItem("twoFactorVerified", JSON.stringify(state.isTwoFactorVerified));
@@ -212,6 +221,7 @@ const persistToLocalStorage = (state) => {
   localStorage.setItem("user", JSON.stringify(state.user));
 };
 
+// ===================== SLICE =====================
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -224,7 +234,27 @@ const authSlice = createSlice({
       state.error = null;
       state.userError = null;
       state.updateProfileError = null;
-    }
+    },
+    forceLogout: (state) => {
+      state.isAuthenticated = false;
+      state.isTwoFactorVerified = false;
+      state.isTwoFactorPending = false;
+      state.role = null;
+      state.qr = null;
+      state.csrf = null;
+      state.users = [];
+      state.user = null;
+
+      // Clear localStorage
+      localStorage.removeItem("authenticated");
+      localStorage.removeItem("twoFactorVerified");
+      localStorage.removeItem("twoFactorPending");
+      localStorage.removeItem("role");
+      localStorage.removeItem("qr");
+      localStorage.removeItem("csrf");
+      localStorage.removeItem("users");
+      localStorage.removeItem("user");
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -243,21 +273,13 @@ const authSlice = createSlice({
         state.users = [];
         state.user = null;
 
-        // Clear localStorage
-        localStorage.removeItem("authenticated");
-        localStorage.removeItem("twoFactorVerified");
-        localStorage.removeItem("twoFactorPending");
-        localStorage.removeItem("role");
-        localStorage.removeItem("qr");
-        localStorage.removeItem("csrf");
-        localStorage.removeItem("users");
-        localStorage.removeItem("user");
+        localStorage.clear();
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch all users
+      // Fetch All Users
       .addCase(fetchAllUsers.pending, (state) => {
         state.userLoading = true;
         state.userError = null;
@@ -271,7 +293,7 @@ const authSlice = createSlice({
         state.userLoading = false;
         state.userError = action.payload;
       })
-      // Fetch single user
+      // Fetch User
       .addCase(fetchUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -285,7 +307,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Create user
+      // Create User
       .addCase(createUser.pending, (state) => {
         state.userLoading = true;
         state.userError = null;
@@ -299,37 +321,29 @@ const authSlice = createSlice({
         state.userLoading = false;
         state.userError = action.payload;
       })
-      // Reset user password
+      // Reset Password
       .addCase(resetUserPassword.pending, (state) => {
         state.userLoading = true;
         state.userError = null;
       })
       .addCase(resetUserPassword.fulfilled, (state) => {
         state.userLoading = false;
-        state.userError = null;
         persistToLocalStorage(state);
       })
       .addCase(resetUserPassword.rejected, (state, action) => {
         state.userLoading = false;
         state.userError = action.payload;
       })
-      // Update user profile
+      // Update Profile
       .addCase(updateUserProfile.pending, (state) => {
         state.updateProfileLoading = true;
         state.updateProfileError = null;
       })
       .addCase(updateUserProfile.fulfilled, (state, action) => {
         state.updateProfileLoading = false;
-        state.updateProfileError = null;
-        // Update both the user object and potentially the current user in state
         state.user = action.payload;
-
-        // If the updated user is in the users list, update it there too
-        const userIndex = state.users.findIndex(user => user.id === action.payload.id);
-        if (userIndex !== -1) {
-          state.users[userIndex] = action.payload;
-        }
-
+        const index = state.users.findIndex((u) => u.id === action.payload.id);
+        if (index !== -1) state.users[index] = action.payload;
         persistToLocalStorage(state);
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
@@ -339,5 +353,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuthState, clearErrors } = authSlice.actions;
+export const { setAuthState, clearErrors, forceLogout } = authSlice.actions;
 export default authSlice.reducer;
