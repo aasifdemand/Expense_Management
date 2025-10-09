@@ -75,7 +75,7 @@ const UserSidebar = ({
         >
             <Box
                 sx={{
-                    width: isSmallMobile ? '180px' : isMobile ? '200px' : '320px',
+                    width: isSmallMobile ? '180px' : isMobile ? '250px' : '320px',
                     height: isSmallMobile ? '80px' : isMobile ? '80px' : '90px',
                     display: 'flex',
                     alignItems: 'center',
@@ -83,8 +83,6 @@ const UserSidebar = ({
                     overflow: 'hidden',
                     borderRadius: 2,
                     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: `1px solid rgba(0,0,0,0.05)`,
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                     padding: '4px',
                 }}
             >
@@ -94,7 +92,7 @@ const UserSidebar = ({
                     style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'contain',
+                        // objectFit: 'contain',
                     }}
                     onError={(e) => {
                         e.target.src = "/image.svg";
@@ -108,25 +106,6 @@ const UserSidebar = ({
                         };
                     }}
                 />
-                <Box
-                    className="logo-fallback"
-                    sx={{
-                        display: 'none',
-                        width: '100%',
-                        height: '100%',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: isSmallMobile ? '1rem' : '1.2rem',
-                        borderRadius: 1,
-                        textAlign: 'center',
-                        padding: '4px',
-                    }}
-                >
-                    Expense Manager
-                </Box>
             </Box>
         </Box>
     );
@@ -323,7 +302,7 @@ const UserSidebar = ({
                         transition: 'all 0.3s ease',
                         transform: hoveredItem === 'logout' ? 'scale(1.1)' : 'scale(1)'
                     }}>
-                         <LogoutIcon />
+                        <LogoutIcon />
                     </ListItemIcon>
                     <ListItemText
                         primary={"Logout"}

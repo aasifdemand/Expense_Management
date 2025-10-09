@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Card,
@@ -20,10 +20,7 @@ import {
     Chip,
     CircularProgress,
     Divider,
-    Stack,
-    Grid,
-    useTheme,
-    useMediaQuery
+    Stack
 } from '@mui/material';
 import {
     Download as DownloadIcon,
@@ -43,24 +40,11 @@ import autoTable from "jspdf-autotable";
 import { StyledTextField } from '../../styles/budgeting.styles';
 
 const Reports = () => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-
     const { allBudgets, budgets } = useBudgeting();
     const { allExpenses, expenses } = useExpenses();
     const { reimbursements } = useSelector((state) => state?.reimbursement);
     const { departments: reduxDeps } = useSelector((state) => state.department);
 
-    // Debug logging to see what data we have
-    console.log('Redux Data:', {
-        allBudgets: allBudgets,
-        budgets: budgets,
-        allExpenses: allExpenses,
-        expenses: expenses,
-        reimbursements: reimbursements,
-        reduxDeps: reduxDeps
-    });
 
     // Get current date for proper date initialization
     const getCurrentDateRange = () => {
@@ -141,7 +125,7 @@ const Reports = () => {
                 const logo = "/image.png";
                 doc.addImage(logo, "PNG", 14, 15, 40, 15);
             } catch (logoError) {
-                console.warn("Logo not found, continuing without logo", logoError);
+                console.warn("Logo not found, continuing without logo");
             }
 
             // Title Section
@@ -284,7 +268,7 @@ const Reports = () => {
                 }
                 else if (generatedReport.type === 'comparison') {
                     columns = ["Department", "Total Budget", "Total Expense"];
-                    generatedReport.items.forEach((item) => {
+                    generatedReport.items.forEach((item, index) => {
                         rows.push([
                             item.department || "N/A",
                             `${(item.totalBudget || 0)}`,
@@ -386,7 +370,7 @@ const Reports = () => {
                 });
             } else if (generatedReport.type === 'comparison') {
                 headers.push('Department', 'Total Budget', 'Total Expense');
-                generatedReport.items.forEach((item) => {
+                generatedReport.items.forEach((item, index) => {
                     rows.push([
                         `"${item.department || 'N/A'}"`,
                         item.totalBudget || 0,
@@ -733,118 +717,144 @@ const Reports = () => {
 
     return (
         <Box sx={{
-            p: { xs: 1, sm: 2, md: 3 },
+            p: 3,
             minHeight: '100vh',
-            width: '100%',
-            overflowX: 'hidden'
+            // background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         }}>
             {/* Main Container */}
             <Box sx={{
                 maxWidth: '1750px',
-                margin: '0 auto',
-                width: '100%'
+                margin: '0 auto'
             }}>
                 {/* Report Generator Section */}
                 <Card sx={{
-                    mb: { xs: 2, sm: 3 },
+                    mb: 3,
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                    borderRadius: { xs: '12px', sm: '16px' },
+                    borderRadius: '16px',
                     background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    width: '100%'
+                    border: '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
-                    <CardContent sx={{
-                        p: { xs: 2, sm: 3, md: 4 },
-                        '&:last-child': { pb: { xs: 2, sm: 3, md: 4 } }
-                    }}>
+                    <CardContent sx={{ p: 4 }}>
                         <Typography variant="h4" gutterBottom sx={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: 2,
                             fontWeight: 'bold',
                             color: '#2D3748',
-                            mb: 4,
-                            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
+                            mb: 4
                         }}>
-                            <AnalyticsIcon sx={{
-                                fontSize: { xs: 24, sm: 28, md: 32 },
-                                color: '#4F46E5'
-                            }} />
+                            <AnalyticsIcon sx={{ fontSize: 32, color: '#4F46E5' }} />
                             Report Generator
                         </Typography>
 
                         {/* Filter Controls */}
                         <Stack spacing={3}>
                             {/* First Row - Report Type and Department */}
-                            <Grid container spacing={2}>
+                            <Box sx={{
+                                display: 'flex',
+                                gap: 3,
+                                flexWrap: 'wrap'
+                            }}>
                                 {/* Report Type */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                                        <InputLabel sx={{
-                                            fontWeight: '600',
-                                            color: '#4A5568'
-                                        }}>
-                                            Report Type
-                                        </InputLabel>
-                                        <Select
-                                            value={filter.type}
-                                            onChange={(e) => setFilter({ ...filter, type: e.target.value })}
-                                            label="Report Type"
-                                            sx={{
-                                                borderRadius: '12px',
-                                                '& .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#E2E8F0',
-                                                },
-                                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#4F46E5',
-                                                },
-                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                    borderColor: '#4F46E5',
-                                                    borderWidth: '2px'
-                                                }
-                                            }}
-                                        >
-                                            {reportTypes.map(type => (
-                                                <MenuItem key={type.value} value={type.value}>
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 2,
-                                                        py: 0.5
-                                                    }}>
-                                                        {type.icon}
-                                                        <Typography variant="body1" fontWeight="500">
-                                                            {type.label}
-                                                        </Typography>
-                                                    </Box>
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
+                                <FormControl sx={{ minWidth: 250, flex: 1 }}>
+                                    <InputLabel sx={{
+                                        fontWeight: '600',
+                                        color: '#4A5568'
+                                    }}>
+                                        Report Type
+                                    </InputLabel>
+                                    <Select
+                                        value={filter.type}
+                                        onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+                                        label="📋 Report Type"
+                                        sx={{
+                                            borderRadius: '12px',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#E2E8F0',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#4F46E5',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#4F46E5',
+                                                borderWidth: '2px'
+                                            }
+                                        }}
+                                    >
+                                        {reportTypes.map(type => (
+                                            <MenuItem key={type.value} value={type.value}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    {type.icon}
+                                                    <Typography variant="body1" fontWeight="500">
+                                                        {type.label}
+                                                    </Typography>
+                                                </Box>
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
 
                                 {/* Department */}
-                                <Grid item xs={12} md={6}>
-                                    <FormControl
-                                        fullWidth
-                                        size={isMobile ? "small" : "medium"}
-                                        disabled={filter.type === 'budgets'}
+                                <FormControl sx={{ minWidth: 250, flex: 1 }} disabled={filter.type === 'budgets'}>
+                                    <InputLabel sx={{
+                                        fontWeight: '600',
+                                        color: '#4A5568'
+                                    }}>
+                                        Department
+                                    </InputLabel>
+                                    <Select
+                                        value={filter.type === 'budgets' ? 'all' : filter.department}
+                                        onChange={(e) => {
+                                            if (filter.type !== 'budgets') {
+                                                setFilter({ ...filter, department: e.target.value })
+                                            }
+                                        }}
+                                        label="🏢 Department"
+                                        sx={{
+                                            borderRadius: '12px',
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#E2E8F0',
+                                            },
+                                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#4F46E5',
+                                            },
+                                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: '#4F46E5',
+                                                borderWidth: '2px'
+                                            }
+                                        }}
                                     >
+                                        {departments.map(dept => (
+                                            <MenuItem key={dept} value={dept.toLowerCase()}>
+                                                <Typography variant="body1" fontWeight="500">
+                                                    {dept === 'all' ? 'All Departments' : dept}
+                                                </Typography>
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Box>
+
+                            {/* Second Row - Reimbursement Status and Date Range */}
+                            <Box sx={{
+                                display: 'flex',
+                                gap: 3,
+                                flexWrap: 'wrap'
+                            }}>
+                                {/* Reimbursement Status */}
+                                {filter.type === 'reimbursement' && (
+                                    <FormControl sx={{ minWidth: 250, flex: 1 }}>
                                         <InputLabel sx={{
                                             fontWeight: '600',
                                             color: '#4A5568'
                                         }}>
-                                            Department
+                                            Reimbursement Status
                                         </InputLabel>
                                         <Select
-                                            value={filter.type === 'budgets' ? 'all' : filter.department}
-                                            onChange={(e) => {
-                                                if (filter.type !== 'budgets') {
-                                                    setFilter({ ...filter, department: e.target.value })
-                                                }
-                                            }}
-                                            label="Department"
+                                            value={filter.reimbursementStatus}
+                                            onChange={(e) => setFilter({ ...filter, reimbursementStatus: e.target.value })}
+                                            label=" Reimbursement Status"
                                             sx={{
                                                 borderRadius: '12px',
                                                 '& .MuiOutlinedInput-notchedOutline': {
@@ -859,127 +869,60 @@ const Reports = () => {
                                                 }
                                             }}
                                         >
-                                            {departments.map(dept => (
-                                                <MenuItem key={dept} value={dept.toLowerCase()}>
+                                            {reimbursementStatuses.map(status => (
+                                                <MenuItem key={status} value={status}>
                                                     <Typography variant="body1" fontWeight="500">
-                                                        {dept === 'all' ? 'All Departments' : dept}
+                                                        {status === 'paid' ? '✅ Paid' :
+                                                            status === 'unpaid' ? '⏳ Unpaid' :
+                                                                ' All Status'}
                                                     </Typography>
                                                 </MenuItem>
                                             ))}
                                         </Select>
                                     </FormControl>
-                                </Grid>
-                            </Grid>
-
-                            {/* Second Row - Reimbursement Status and Date Range */}
-                            <Grid container spacing={2}>
-                                {/* Reimbursement Status */}
-                                {filter.type === 'reimbursement' && (
-                                    <Grid item xs={12} md={6}>
-                                        <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                                            <InputLabel sx={{
-                                                fontWeight: '600',
-                                                color: '#4A5568'
-                                            }}>
-                                                Reimbursement Status
-                                            </InputLabel>
-                                            <Select
-                                                value={filter.reimbursementStatus}
-                                                onChange={(e) => setFilter({ ...filter, reimbursementStatus: e.target.value })}
-                                                label="Reimbursement Status"
-                                                sx={{
-                                                    borderRadius: '12px',
-                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: '#E2E8F0',
-                                                    },
-                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: '#4F46E5',
-                                                    },
-                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: '#4F46E5',
-                                                        borderWidth: '2px'
-                                                    }
-                                                }}
-                                            >
-                                                {reimbursementStatuses.map(status => (
-                                                    <MenuItem key={status} value={status}>
-                                                        <Typography variant="body1" fontWeight="500">
-                                                            {status === 'paid' ? 'Paid' :
-                                                                status === 'unpaid' ? 'Unpaid' :
-                                                                    'All Status'}
-                                                        </Typography>
-                                                    </MenuItem>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
                                 )}
 
                                 {/* Date Range */}
-                                <Grid item xs={12} md={filter.type === 'reimbursement' ? 6 : 12}>
-                                    <Box>
-                                        <Typography variant="body2" sx={{
-                                            mb: 1,
-                                            fontWeight: '600',
-                                            color: '#4A5568',
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                        }}>
-                                            Date Range
+                                <Box sx={{ flex: 1, minWidth: 300 }}>
+
+                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                        <StyledTextField
+                                            type="date"
+                                            value={filter.dateRange.start}
+                                            onChange={(e) => setFilter({
+                                                ...filter,
+                                                dateRange: { ...filter.dateRange, start: e.target.value }
+                                            })}
+                                            size="small"
+                                            sx={{
+                                                flex: 1,
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '12px',
+                                                },
+
+                                            }}
+                                        />
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: '600' }}>
+                                            to
                                         </Typography>
-                                        <Box sx={{
-                                            display: 'flex',
-                                            gap: { xs: 1, sm: 2 },
-                                            alignItems: 'center',
-                                            flexDirection: { xs: 'column', sm: 'row' }
-                                        }}>
-                                            <StyledTextField
-                                                type="date"
-                                                value={filter.dateRange.start}
-                                                onChange={(e) => setFilter({
-                                                    ...filter,
-                                                    dateRange: { ...filter.dateRange, start: e.target.value }
-                                                })}
-                                                size={isMobile ? "small" : "medium"}
-                                                sx={{
-                                                    flex: 1,
-                                                    width: { xs: '100%', sm: 'auto' },
-                                                    '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '12px',
-                                                    },
-                                                }}
-                                                InputLabelProps={{
-                                                    shrink: true,
-                                                }}
-                                            />
-                                            <Typography variant="body2" color="text.secondary" sx={{
-                                                fontWeight: '600',
-                                                mx: { xs: 0, sm: 1 }
-                                            }}>
-                                                to
-                                            </Typography>
-                                            <StyledTextField
-                                                type="date"
-                                                value={filter.dateRange.end}
-                                                onChange={(e) => setFilter({
-                                                    ...filter,
-                                                    dateRange: { ...filter.dateRange, end: e.target.value }
-                                                })}
-                                                size={isMobile ? "small" : "medium"}
-                                                sx={{
-                                                    flex: 1,
-                                                    width: { xs: '100%', sm: 'auto' },
-                                                    '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '12px',
-                                                    }
-                                                }}
-                                                InputLabelProps={{
-                                                    shrink: true,
-                                                }}
-                                            />
-                                        </Box>
+                                        <StyledTextField
+                                            type="date"
+                                            value={filter.dateRange.end}
+                                            onChange={(e) => setFilter({
+                                                ...filter,
+                                                dateRange: { ...filter.dateRange, end: e.target.value }
+                                            })}
+                                            size="small"
+                                            sx={{
+                                                flex: 1,
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: '12px',
+                                                }
+                                            }}
+                                        />
                                     </Box>
-                                </Grid>
-                            </Grid>
+                                </Box>
+                            </Box>
 
                             {filter.type === 'budgets' && (
                                 <Typography variant="caption" color="text.secondary" sx={{
@@ -988,8 +931,7 @@ const Reports = () => {
                                     textAlign: 'center',
                                     p: 1,
                                     backgroundColor: '#F7FAFC',
-                                    borderRadius: '8px',
-                                    fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                    borderRadius: '8px'
                                 }}>
                                     Department filter is disabled for Budget Reports
                                 </Typography>
@@ -1001,18 +943,17 @@ const Reports = () => {
                             display: 'flex',
                             gap: 2,
                             mt: 4,
-                            justifyContent: 'center',
-                            flexDirection: { xs: 'column', sm: 'row' }
+                            justifyContent: 'center'
                         }}>
                             <Button
                                 variant="contained"
                                 onClick={generateReport}
                                 disabled={loading}
                                 startIcon={loading ? <CircularProgress size={20} /> : <AnalyticsIcon />}
-                                size={isMobile ? "medium" : "large"}
+                                size="large"
                                 sx={{
-                                    px: { xs: 3, sm: 4 },
-                                    py: { xs: 1, sm: 1.5 },
+                                    px: 4,
+                                    py: 1.5,
                                     borderRadius: '12px',
                                     background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                     boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.4)',
@@ -1022,8 +963,7 @@ const Reports = () => {
                                         transform: 'translateY(-1px)'
                                     },
                                     fontWeight: '600',
-                                    fontSize: { xs: '14px', sm: '16px' },
-                                    minWidth: { xs: '100%', sm: 'auto' }
+                                    fontSize: '16px'
                                 }}
                             >
                                 {loading ? 'Generating Report...' : 'Generate Report'}
@@ -1032,16 +972,15 @@ const Reports = () => {
                                 variant="outlined"
                                 onClick={resetFilters}
                                 startIcon={<RefreshIcon />}
-                                size={isMobile ? "medium" : "large"}
+                                size="large"
                                 sx={{
-                                    px: { xs: 3, sm: 4 },
-                                    py: { xs: 1, sm: 1.5 },
+                                    px: 4,
+                                    py: 1.5,
                                     borderRadius: '12px',
                                     borderColor: '#E2E8F0',
                                     color: '#4A5568',
                                     fontWeight: '600',
-                                    fontSize: { xs: '14px', sm: '16px' },
-                                    minWidth: { xs: '100%', sm: 'auto' },
+                                    fontSize: '16px',
                                     '&:hover': {
                                         borderColor: '#4F46E5',
                                         backgroundColor: 'rgba(79, 70, 229, 0.04)',
@@ -1059,45 +998,35 @@ const Reports = () => {
                 {generatedReport && (
                     <Card sx={{
                         boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                        borderRadius: { xs: '12px', sm: '16px' },
+                        borderRadius: '16px',
                         background: 'rgba(255, 255, 255, 0.95)',
                         backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        width: '100%'
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
                     }}>
-                        <CardContent sx={{
-                            p: { xs: 2, sm: 3, md: 4 },
-                            '&:last-child': { pb: { xs: 2, sm: 3, md: 4 } }
-                        }}>
+                        <CardContent sx={{ p: 4 }}>
                             {/* Report Header */}
                             <Box sx={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
-                                alignItems: { xs: 'flex-start', sm: 'center' },
+                                alignItems: 'flex-start',
                                 mb: 4,
-                                flexDirection: { xs: 'column', sm: 'row' },
-                                gap: 2,
-                                width: '100%'
+                                flexWrap: 'wrap',
+                                gap: 2
                             }}>
-                                <Box sx={{
-                                    width: '100%',
-                                    textAlign: { xs: 'center', sm: 'left' }
-                                }}>
+                                <Box>
                                     <Typography variant="h5" gutterBottom sx={{
                                         fontWeight: 'bold',
                                         color: '#2D3748',
                                         background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                         backgroundClip: 'text',
                                         WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }
+                                        WebkitTextFillColor: 'transparent'
                                     }}>
                                         {generatedReport.title}
                                     </Typography>
                                     <Typography variant="body2" sx={{
                                         color: '#718096',
-                                        fontWeight: '500',
-                                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                                        fontWeight: '500'
                                     }}>
                                         Generated on {formatDate(generatedReport.date)} •
                                         {generatedReport.type === 'reimbursement' ?
@@ -1106,166 +1035,128 @@ const Reports = () => {
                                         } • {generatedReport.items.length} records found
                                     </Typography>
                                 </Box>
-                                <Box sx={{
-                                    display: 'flex',
-                                    gap: 1,
-                                    flexWrap: 'wrap',
-                                    justifyContent: { xs: 'center', sm: 'flex-end' },
-                                    width: { xs: '100%', sm: 'auto' }
-                                }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     <Button
                                         variant="outlined"
                                         onClick={exportCSV}
                                         startIcon={<DownloadIcon />}
-                                        size={isMobile ? "small" : "medium"}
+                                        size="medium"
                                         sx={{
                                             borderRadius: '10px',
-                                            fontWeight: '600',
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                            minWidth: { xs: '48%', sm: 'auto' }
+                                            fontWeight: '600'
                                         }}
                                     >
-                                        {isMobile ? 'CSV' : 'Download CSV'}
+                                        Download CSV
                                     </Button>
                                     <Button
                                         variant="contained"
                                         onClick={exportPDF}
                                         startIcon={<PdfIcon />}
-                                        size={isMobile ? "small" : "medium"}
+                                        size="medium"
                                         sx={{
                                             borderRadius: '10px',
                                             background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                                             fontWeight: '600',
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                            minWidth: { xs: '48%', sm: 'auto' },
                                             '&:hover': {
                                                 background: 'linear-gradient(135deg, #047857 0%, #0D9488 100%)'
                                             }
                                         }}
                                     >
-                                        {isMobile ? 'PDF' : 'Export PDF'}
+                                        Export PDF
                                     </Button>
                                 </Box>
                             </Box>
 
-                            {/* Summary Cards */}
-                            <Grid container spacing={2} sx={{ mb: 4 }}>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper
-                                        sx={{
-                                            p: { xs: 2, sm: 3 },
-                                            textAlign: 'center',
-                                            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                                            color: 'white',
-                                            borderRadius: '12px',
-                                            boxShadow: '0 4px 14px 0 rgba(79, 70, 229, 0.4)',
-                                            height: '100%',
-                                            minHeight: { xs: '80px', sm: '100px' }
-                                        }}
-                                    >
-                                        <Typography variant="subtitle2" sx={{
-                                            opacity: 0.9,
-                                            fontWeight: "600",
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                        }}>
-                                            Report Type
-                                        </Typography>
-                                        <Typography variant="h6" fontWeight="bold" sx={{
-                                            mt: 1,
-                                            fontSize: { xs: '1rem', sm: '1.25rem' }
-                                        }}>
-                                            {getReportTypeLabel(generatedReport.type)}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper
-                                        sx={{
-                                            p: { xs: 2, sm: 3 },
-                                            textAlign: 'center',
-                                            background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
-                                            color: 'white',
-                                            borderRadius: '12px',
-                                            boxShadow: '0 4px 14px 0 rgba(5, 150, 105, 0.4)',
-                                            height: '100%',
-                                            minHeight: { xs: '80px', sm: '100px' }
-                                        }}
-                                    >
-                                        <Typography variant="subtitle2" sx={{
-                                            opacity: 0.9,
-                                            fontWeight: "600",
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                        }}>
-                                            Total Amount
-                                        </Typography>
-                                        <Typography variant="h6" fontWeight="bold" sx={{
-                                            mt: 1,
-                                            fontSize: { xs: '1rem', sm: '1.25rem' }
-                                        }}>
-                                            ₹{generatedReport.totalAmount?.toLocaleString()}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper
-                                        sx={{
-                                            p: { xs: 2, sm: 3 },
-                                            textAlign: 'center',
-                                            background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
-                                            color: 'white',
-                                            borderRadius: '12px',
-                                            boxShadow: '0 4px 14px 0 rgba(220, 38, 38, 0.4)',
-                                            height: '100%',
-                                            minHeight: { xs: '80px', sm: '100px' }
-                                        }}
-                                    >
-                                        <Typography variant="subtitle2" sx={{
-                                            opacity: 0.9,
-                                            fontWeight: "600",
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                        }}>
-                                            Records
-                                        </Typography>
-                                        <Typography variant="h6" fontWeight="bold" sx={{
-                                            mt: 1,
-                                            fontSize: { xs: '1rem', sm: '1.25rem' }
-                                        }}>
-                                            {generatedReport.summary.totalReports}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                            </Grid>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 2,
+                                    mb: 4,
+                                    justifyContent: "center",
+                                    width: "100%",
+                                }}
+                            >
+                                {/* Common card style for reusability */}
+                                <Paper
+                                    sx={{
+                                        flex: "1 1 30%", // ✅ Each card takes equal width (approx 1/3rd)
+                                        minWidth: "280px", // Prevents shrinking too small
+                                        p: 3,
+                                        textAlign: "center",
+                                        background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                                        color: "white",
+                                        borderRadius: "12px",
+                                        boxShadow: "0 4px 14px 0 rgba(79, 70, 229, 0.4)",
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ opacity: 0.9, fontWeight: "600" }}>
+                                        Report Type
+                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                        {getReportTypeLabel(generatedReport.type)}
+                                    </Typography>
+                                </Paper>
+
+                                <Paper
+                                    sx={{
+                                        flex: "1 1 30%",
+                                        minWidth: "280px",
+                                        p: 3,
+                                        textAlign: "center",
+                                        background: "linear-gradient(135deg, #059669 0%, #10B981 100%)",
+                                        color: "white",
+                                        borderRadius: "12px",
+                                        boxShadow: "0 4px 14px 0 rgba(5, 150, 105, 0.4)",
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ opacity: 0.9, fontWeight: "600" }}>
+                                        Total Amount
+                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                        ₹{generatedReport.totalAmount?.toLocaleString()}
+                                    </Typography>
+                                </Paper>
+
+                                <Paper
+                                    sx={{
+                                        flex: "1 1 30%",
+                                        minWidth: "280px",
+                                        p: 3,
+                                        textAlign: "center",
+                                        background: "linear-gradient(135deg, #DC2626 0%, #EF4444 100%)",
+                                        color: "white",
+                                        borderRadius: "12px",
+                                        boxShadow: "0 4px 14px 0 rgba(220, 38, 38, 0.4)",
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" sx={{ opacity: 0.9, fontWeight: "600" }}>
+                                        Records
+                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold" sx={{ mt: 1 }}>
+                                        {generatedReport.summary.totalReports}
+                                    </Typography>
+                                </Paper>
+                            </Box>
+
 
                             <Divider sx={{ my: 4 }} />
 
                             {/* Data Table */}
                             {generatedReport.items.length > 0 ? (
-                                <TableContainer
-                                    component={Paper}
-                                    variant="outlined"
-                                    sx={{
-                                        borderRadius: '12px',
-                                        overflow: 'auto',
-                                        maxWidth: '100%'
-                                    }}
-                                >
-                                    <Table sx={{
-                                        minWidth: 650,
-                                        '& .MuiTableCell-root': {
-                                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                            py: { xs: 1, sm: 1.5 },
-                                            px: { xs: 1, sm: 2 }
-                                        }
-                                    }}>
+                                <TableContainer component={Paper} variant="outlined" sx={{
+                                    borderRadius: '12px',
+                                    overflow: 'hidden'
+                                }}>
+                                    <Table>
                                         <TableHead>
                                             <TableRow sx={{
                                                 backgroundColor: '#4F46E5',
                                                 '& th': {
                                                     color: 'white',
                                                     fontWeight: 'bold',
-                                                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                                    padding: { xs: '8px', sm: '16px' },
-                                                    whiteSpace: 'nowrap'
+                                                    fontSize: '14px',
+                                                    padding: '16px'
                                                 }
                                             }}>
                                                 {generatedReport.type === 'expenses' && (
@@ -1285,7 +1176,7 @@ const Reports = () => {
                                                         <TableCell>Name</TableCell>
                                                         <TableCell>Allocated</TableCell>
                                                         <TableCell>Company</TableCell>
-                                                        <TableCell>Month</TableCell>
+                                                        <TableCell>Months</TableCell>
                                                         <TableCell>Year</TableCell>
                                                         <TableCell>Spent</TableCell>
                                                         <TableCell>Remaining</TableCell>
@@ -1337,14 +1228,7 @@ const Reports = () => {
                                                                     ₹{item.amount?.toLocaleString()}
                                                                 </Typography>
                                                             </TableCell>
-                                                            <TableCell sx={{
-                                                                maxWidth: { xs: '100px', sm: '200px' },
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap'
-                                                            }}>
-                                                                {item.description}
-                                                            </TableCell>
+                                                            <TableCell>{item.description}</TableCell>
                                                             <TableCell>
                                                                 <Chip
                                                                     label={item.paymentMode}
@@ -1411,19 +1295,14 @@ const Reports = () => {
                             ) : (
                                 <Box sx={{
                                     textAlign: 'center',
-                                    py: { xs: 4, sm: 6, md: 8 },
+                                    py: 8,
                                     backgroundColor: '#F7FAFC',
                                     borderRadius: '12px'
                                 }}>
-                                    <Typography variant="h6" color="text.secondary" gutterBottom sx={{
-                                        fontWeight: '600',
-                                        fontSize: { xs: '1rem', sm: '1.25rem' }
-                                    }}>
+                                    <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontWeight: '600' }}>
                                         📭 No reports found
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{
-                                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                                    }}>
+                                    <Typography variant="body2" color="text.secondary">
                                         Try adjusting your filters to see more results
                                     </Typography>
                                 </Box>
