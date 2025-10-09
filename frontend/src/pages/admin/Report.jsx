@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     Box,
     Card,
@@ -45,8 +45,7 @@ import { StyledTextField } from '../../styles/budgeting.styles';
 const Reports = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-    const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+
 
     const { allBudgets, budgets } = useBudgeting();
     const { allExpenses, expenses } = useExpenses();
@@ -142,7 +141,7 @@ const Reports = () => {
                 const logo = "/image.png";
                 doc.addImage(logo, "PNG", 14, 15, 40, 15);
             } catch (logoError) {
-                console.warn("Logo not found, continuing without logo");
+                console.warn("Logo not found, continuing without logo", logoError);
             }
 
             // Title Section
@@ -285,7 +284,7 @@ const Reports = () => {
                 }
                 else if (generatedReport.type === 'comparison') {
                     columns = ["Department", "Total Budget", "Total Expense"];
-                    generatedReport.items.forEach((item, index) => {
+                    generatedReport.items.forEach((item) => {
                         rows.push([
                             item.department || "N/A",
                             `${(item.totalBudget || 0)}`,
@@ -387,7 +386,7 @@ const Reports = () => {
                 });
             } else if (generatedReport.type === 'comparison') {
                 headers.push('Department', 'Total Budget', 'Total Expense');
-                generatedReport.items.forEach((item, index) => {
+                generatedReport.items.forEach((item) => {
                     rows.push([
                         `"${item.department || 'N/A'}"`,
                         item.totalBudget || 0,

@@ -1,66 +1,170 @@
 import { useMemo } from "react";
-import { BarChart } from "@mui/x-charts/BarChart";
-import { Box, Typography, FormControl, Select, MenuItem, InputLabel } from "@mui/material";
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    Legend,
+} from "recharts";
+import {
+    Box,
+    Typography,
+    FormControl,
+    InputLabel,
+    MenuItem,
+} from "@mui/material";
+import { StyledSelect } from "../../../styles/budgeting.styles";
 
 const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ];
 
-const DashboardBudgetBarChart = ({ theme, budgets, selectedMonth, setSelectedMonth, year }) => {
+const DashboardBudgetAreaChart = ({
+    theme,
+    budgets,
+    selectedMonth,
+    setSelectedMonth,
+    year,
+}) => {
     const currentMonth = new Date().getMonth() + 1;
     const monthNumber = Number(selectedMonth) || currentMonth;
 
-    // Filter budgets for the selected month/year
-    const filteredBudgets = useMemo(() =>
-        budgets?.filter(b => {
-            const date = new Date(b.createdAt);
-            return date.getMonth() + 1 === monthNumber && date.getFullYear() === Number(year);
-        }) || [], [budgets, monthNumber, year]
+    // ✅ Filter data for the selected month/year
+    const filteredBudgets = useMemo(
+        () =>
+            budgets?.filter((b) => {
+                const date = new Date(b.createdAt);
+                return (
+                    date.getMonth() + 1 === monthNumber &&
+                    date.getFullYear() === Number(year)
+                );
+            }) || [],
+        [budgets, monthNumber, year]
     );
 
     const daysInMonth = new Date(Number(year), monthNumber, 0).getDate();
 
-    // Initialize daily arrays
-    const allocatedPerDay = Array.from({ length: daysInMonth }, () => 0);
-    const spentPerDay = Array.from({ length: daysInMonth }, () => 0);
-    const reimbursedPerDay = Array.from({ length: daysInMonth }, () => 0);
+    // ✅ Compute totals per day
+    const data = Array.from({ length: daysInMonth }, (_, i) => ({
+        day: i + 1,
+        Allocated: 0,
+        Spent: 0,
+        Reimbursed: 0,
+    }));
 
-    filteredBudgets.forEach(b => {
+    filteredBudgets.forEach((b) => {
         const day = new Date(b.createdAt).getDate() - 1;
         if (day >= 0 && day < daysInMonth) {
-            allocatedPerDay[day] += Number(b.fromAllocation || 0);
-            spentPerDay[day] += Number(b.amount || 0);
-            reimbursedPerDay[day] += Number(b.fromReimbursement || 0);
+            data[day].Allocated += Number(b.fromAllocation || 0);
+            data[day].Spent += Number(b.amount || 0);
+            data[day].Reimbursed += Number(b.fromReimbursement || 0);
         }
     });
 
-    const xLabels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
-
     return (
-        <Box sx={{ mt: 4, p: 3, borderRadius: 3, bgcolor: "background.paper", boxShadow: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography variant="h6" fontWeight="bold">Daily Budget – {year}</Typography>
+        <Box
+            sx={{
+                mt: 4,
+                overflow: "hidden",
+                borderRadius: 3,
+                // bgcolor: "background.paper",
+
+                width: "100%",
+                p: 4
+            }}
+        >
+            {/* Header Section */}
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    justifyContent: "space-between",
+                    alignItems: { xs: "flex-start", sm: "center" },
+                    mb: 2,
+                    gap: 2,
+
+                }}
+            >
+                <Typography variant="h6" fontWeight="bold">
+                    Daily Budget Overview – {months[monthNumber - 1]} {year}
+                </Typography>
+
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                     <InputLabel>Select Month</InputLabel>
-                    <Select value={monthNumber} label="Select Month" onChange={e => setSelectedMonth(Number(e.target.value))}>
-                        {months.map((m, i) => <MenuItem key={i} value={i + 1}>{m}</MenuItem>)}
-                    </Select>
+                    <StyledSelect
+                        value={monthNumber}
+                        label="Select Month"
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        MenuProps={{ disableScrollLock: true }}
+                    >
+                        {months.map((m, i) => (
+                            <MenuItem key={i} value={i + 1}>
+                                {m}
+                            </MenuItem>
+                        ))}
+                    </StyledSelect>
                 </FormControl>
             </Box>
 
-            <BarChart
-                series={[
-                    { label: "Allocated", data: allocatedPerDay, color: theme.palette.primary.main },
-                    { label: "Spent", data: spentPerDay, color: theme.palette.error.main },
-                    { label: "Reimbursed", data: reimbursedPerDay, color: theme.palette.success.main },
-                ]}
-                xAxis={[{ data: xLabels }]}
-                height={300}
-                margin={{ top: 0, bottom: 0, left: 0, right: 0 }}
-            />
+            {/* ✅ Vibrant Area Chart */}
+            <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={data} >
+                    <defs>
+                        <linearGradient id="colorAllocated" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="colorSpent" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.error.main} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={theme.palette.error.main} stopOpacity={0.1} />
+                        </linearGradient>
+                        <linearGradient id="colorReimbursed" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.1} />
+                        </linearGradient>
+                    </defs>
+
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                    <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip
+                        contentStyle={{
+                            backgroundColor: theme.palette.background.paper,
+                            borderRadius: 8,
+                            boxShadow: theme.shadows[3],
+                        }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+
+                    <Area
+                        type="monotone"
+                        dataKey="Allocated"
+                        stroke={theme.palette.primary.main}
+                        fill="url(#colorAllocated)"
+                        strokeWidth={2}
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="Spent"
+                        stroke={theme.palette.error.main}
+                        fill="url(#colorSpent)"
+                        strokeWidth={2}
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="Reimbursed"
+                        stroke={theme.palette.success.main}
+                        fill="url(#colorReimbursed)"
+                        strokeWidth={2}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
         </Box>
     );
 };
 
-export default DashboardBudgetBarChart;
+export default DashboardBudgetAreaChart;

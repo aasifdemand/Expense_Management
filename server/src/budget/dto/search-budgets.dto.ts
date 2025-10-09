@@ -13,6 +13,11 @@ export class SearchBudgetAllocationsDto {
     @IsString()
     userName?: string;
 
+
+    @IsOptional()
+    @IsString()
+    company?: string;
+
     @IsOptional()
     @IsNumber()
     @Type(() => Number)

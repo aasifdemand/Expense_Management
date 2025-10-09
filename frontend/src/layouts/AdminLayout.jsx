@@ -1,26 +1,23 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Box, useMediaQuery } from "@mui/material";
+import { Box } from "@mui/material";
 import AdminSidebar from "../components/AdminSidebar";
 import Navbar from "../components/Navbar";
 
 export default function AdminLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const isDesktop = useMediaQuery("(min-width:900px)");
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                minHeight: "100vh",
-                bgcolor: "background.default",
-                overflow: "hidden",
-            }}
-        >
+        <Box sx={{
+            display: "flex",
+            minHeight: "100vh",
+            bgcolor: "background.default",
+            overflow: "hidden"
+        }}>
             {/* Sidebar */}
             <AdminSidebar
-                open={isDesktop ? true : sidebarOpen}
+                open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
                 handleLogout={() => { }}
                 loading={loading}
@@ -36,11 +33,17 @@ export default function AdminLayout() {
                     flexGrow: 1,
                     display: "flex",
                     flexDirection: "column",
-                    width: "100%",
-                    transition: "margin 0.3s ease, width 0.3s ease",
-                    ml: isDesktop ? "300px" : 0,
+                    width: {
+                        xs: sidebarOpen ? "calc(100% - 300px)" : "100%",
+                        md: "calc(100% - 300px)"
+                    },
+                    ml: {
+                        xs: sidebarOpen ? "300px" : 0,
+                        md: "300px"
+                    },
+                    transition: "all 0.3s ease",
                     position: "relative",
-                    overflow: "hidden",
+                    overflow: "hidden"
                 }}
             >
                 <Navbar
@@ -48,28 +51,32 @@ export default function AdminLayout() {
                     sidebarOpen={sidebarOpen}
                 />
 
-                {/* Scrollable Content Area */}
-                <Box
-                    sx={{
-                        flexGrow: 1,
-                        p: { xs: 2, sm: 3 },
-                        overflowY: "auto",
-                        maxHeight: "calc(100vh - 64px)",
-                        "&::-webkit-scrollbar": {
-                            width: "0px",
-                        },
-                        "&::-webkit-scrollbar-thumb": {
-                            background: "#c1c1c1",
-                            borderRadius: "4px",
-                        },
-                    }}
-                >
+                {/* Content Area with proper scrolling */}
+                <Box sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    overflow: "auto",
+                    maxHeight: "calc(100vh - 64px)",
+                    '&::-webkit-scrollbar': {
+                        width: '0px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                        background: '#f1f1f1',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                        background: '#c1c1c1',
+                        borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                        background: '#a8a8a8',
+                    }
+                }}>
                     <Outlet />
                 </Box>
             </Box>
 
-            {/* Mobile Overlay */}
-            {!isDesktop && sidebarOpen && (
+            {/* Overlay for mobile when sidebar is open */}
+            {sidebarOpen && (
                 <Box
                     sx={{
                         position: "fixed",
@@ -79,7 +86,7 @@ export default function AdminLayout() {
                         bottom: 0,
                         bgcolor: "rgba(0, 0, 0, 0.5)",
                         zIndex: 1199,
-                        display: "block",
+                        display: { xs: "block", md: "none" }
                     }}
                     onClick={() => setSidebarOpen(false)}
                 />

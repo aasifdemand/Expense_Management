@@ -27,12 +27,12 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUser, logout } from "../store/authSlice";
 import { useLocation } from "../contexts/LocationContext";
+import { StyledSelect } from "../styles/budgeting.styles";
 
 
 
 const Navbar = ({
     onMenuClick,
-    onProfileClick,
     darkMode,
     onDarkModeToggle,
 }) => {
@@ -60,10 +60,6 @@ const Navbar = ({
         setAnchorEl(null);
     };
 
-    const handleProfileClick = () => {
-        handleMenuClose();
-        if (onProfileClick) onProfileClick();
-    };
 
 
 
@@ -186,10 +182,11 @@ const Navbar = ({
                                 }
                             }}
                         >
-                            <Select
+                            <StyledSelect
                                 value={currentLoc || "OVERALL"}
                                 onChange={handleDesktopLocationChange}
                                 displayEmpty
+                                MenuProps={{ disableScrollLock: true }}
                                 inputProps={{ 'aria-label': 'Select company location' }}
                                 sx={{
                                     fontSize: '0.875rem',
@@ -243,49 +240,11 @@ const Navbar = ({
                                         </Box>
                                     </MenuItem>
                                 ))}
-                            </Select>
+                            </StyledSelect>
                         </FormControl>
                     )}
 
-                    {/* Enhanced Dark Mode Toggle */}
-                    {/* {!isMobile && (
-                        <IconButton
-                            size="medium"
-                            aria-label="toggle dark mode"
-                            color="inherit"
-                            onClick={handleDarkModeToggle}
-                            sx={{
-                                p: 1,
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                    transform: 'scale(1.1)',
-                                }
-                            }}
-                        >
-                            {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-                        </IconButton>
-                    )} */}
 
-                    {/* Enhanced Notifications */}
-                    {/* <IconButton
-                        size={isMobile ? "small" : "medium"}
-                        aria-label="show notifications"
-                        color="inherit"
-                        onClick={handleNotificationClick}
-                        sx={{
-                            p: { xs: 0.5, sm: 1 },
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                                backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                transform: 'scale(1.1)',
-                            }
-                        }}
-                    >
-                        <Badge badgeContent={4} color="error" size={isMobile ? "small" : "medium"}>
-                            <NotificationsIcon fontSize={isMobile ? "small" : "medium"} />
-                        </Badge>
-                    </IconButton> */}
 
                     {/* Enhanced Three dots menu */}
                     <IconButton

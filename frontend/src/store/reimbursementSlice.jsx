@@ -34,13 +34,13 @@ export const fetchReimbursements = createAsyncThunk(
 
 export const fetchReimbursementsForUser = createAsyncThunk(
     "reimbursement/fetchReimbursementsforuser",
-    async ({ id, location, page, limit } = {}, { rejectWithValue, getState }) => {
+    async ({ id, page, limit } = {}, { rejectWithValue, getState }) => {
         try {
             const csrf = getState().auth.csrf;
 
             // Build query parameters
             const params = new URLSearchParams();
-            if (location) params.append('location', location);
+
             if (page) params.append('page', page);
             if (limit) params.append('limit', limit);
 
@@ -134,9 +134,19 @@ export const reimbursementSlice = createSlice({
             })
             .addCase(fetchReimbursements.fulfilled, (state, action) => {
                 state.loading = false;
-                state.reimbursements = action.payload.data || action.payload.reimbursements || [];
+                state.reimbursements = action.payload.data || [];
                 state.stats = action.payload.stats || initialState.stats;
-                state.pagination = action.payload.meta || initialState.pagination;
+
+                const meta = action.payload.meta || {};
+
+                // ✅ Correctly compute pagination
+                state.pagination = {
+                    currentPage: meta.page || 1,
+                    itemsPerPage: meta.limit || 20,
+                    totalItems: meta.total || 0,
+                    totalPages: Math.max(1, Math.ceil((meta.total || 0) / (meta.limit || 20))),
+                };
+
                 state.location = action.payload.location || 'OVERALL';
             })
             .addCase(fetchReimbursements.rejected, (state, action) => {
@@ -149,13 +159,13 @@ export const reimbursementSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
+
             .addCase(fetchReimbursementsForUser.fulfilled, (state, action) => {
-                state.loading = false;
-                state.userReimbursements = action.payload.data || action.payload.reimbursements || [];
-                state.stats = action.payload.stats || initialState.stats;
-                state.pagination = action.payload.meta || initialState.pagination;
-                state.location = action.payload.location || 'OVERALL';
+                state.loading = false
+                state.userReimbursements = action.payload.data || [];
             })
+
+
             .addCase(fetchReimbursementsForUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
@@ -169,11 +179,19 @@ export const reimbursementSlice = createSlice({
             .addCase(markAsReimbursed.fulfilled, (state, action) => {
                 state.loading = false;
 
+                // ✅ More reliable state update
+                const updatedReimbursement = action.payload;
                 const index = state.reimbursements.findIndex(
-                    (r) => r._id === action.payload._id
+                    (r) => r._id === updatedReimbursement._id
                 );
+
                 if (index !== -1) {
-                    state.reimbursements[index] = action.payload;
+                    // Create a new array to ensure re-render
+                    state.reimbursements = [
+                        ...state.reimbursements.slice(0, index),
+                        { ...state.reimbursements[index], ...updatedReimbursement },
+                        ...state.reimbursements.slice(index + 1)
+                    ];
                 }
             })
             .addCase(markAsReimbursed.rejected, (state, action) => {

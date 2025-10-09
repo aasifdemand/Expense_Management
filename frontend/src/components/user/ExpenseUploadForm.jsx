@@ -14,18 +14,21 @@ import {
     Alert,
     Fade,
     Paper,
+    InputAdornment,
+    CircularProgress,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AddIcon from "@mui/icons-material/Add";
 import PaymentIcon from "@mui/icons-material/Payment";
 import { useDispatch, useSelector } from "react-redux";
 import { addExpense } from "../../store/expenseSlice";
-import { PrimaryButton, SectionCard, StyledSelect, StyledTextField } from "../../styles/budgeting.styles";
+import { PrimaryButton, StyledSelect, StyledTextField } from "../../styles/budgeting.styles";
 import {
     fetchDepartments,
     fetchSubDepartments,
 } from "../../store/departmentSlice";
 import { useNavigate } from "react-router-dom";
+import { AccountBalance, Add, Business, Check, CheckCircle, Description, FolderSpecial, UploadFile } from "@mui/icons-material";
 
 const paymentModes = [
     "Cash",
@@ -88,6 +91,8 @@ export default function CreateExpenseForm() {
         setLoading(true);
         setError(null);
         setResponse(null);
+        console.log("form: ", form);
+
 
         if (!form.proof) {
             setError("Please upload proof/bill for the expense");
@@ -139,12 +144,59 @@ export default function CreateExpenseForm() {
     };
 
     return (
-        <SectionCard>
+        <Card sx={{
+            borderRadius: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            overflow: 'visible',
+            margin: { xs: 1, sm: 1, md: 4 }
+        }}>
             <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
                 <Box component="form" onSubmit={handleSubmit} noValidate>
                     <Stack spacing={4}>
-                        {/* Amount Only */}
-                        <Box sx={{ width: '100%' }}>
+                        {/* Header */}
+                        <Box>
+                            <Typography
+                                variant="h5"
+                                sx={{
+                                    fontWeight: 700,
+                                    color: 'text.primary',
+                                    mb: 1
+                                }}
+                            >
+                                Create New Expense
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: 'text.secondary',
+                                    opacity: 0.8
+                                }}
+                            >
+                                Fill in the details below to record your expense
+                            </Typography>
+                        </Box>
+
+                        {/* Amount Section - More Prominent */}
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 3,
+                                backgroundColor: 'primary.lightest',
+                                border: '2px solid',
+                                borderColor: 'primary.light',
+                                borderRadius: 2
+                            }}
+                        >
+                            <Typography
+                                variant="subtitle2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'primary.dark',
+                                    mb: 1
+                                }}
+                            >
+                                AMOUNT
+                            </Typography>
                             <StyledTextField
                                 fullWidth
                                 label="Amount"
@@ -155,32 +207,62 @@ export default function CreateExpenseForm() {
                                 required
                                 variant="outlined"
                                 placeholder="0.00"
-                                sx={{ maxWidth: { sm: '100%' } }}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Typography variant="h6" color="primary.main">
+                                                ₹
+                                            </Typography>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{
+                                    maxWidth: { sm: '100%' },
+                                    '& .MuiOutlinedInput-root': {
+                                        backgroundColor: 'white',
+                                        fontSize: '1.2rem',
+                                        fontWeight: 600
+                                    }
+                                }}
                             />
-                        </Box>
+                        </Paper>
 
                         {/* First Row: Department + Payment Mode */}
                         <Box
                             sx={{
                                 display: 'flex',
                                 flexDirection: { xs: 'column', sm: 'row' },
-                                gap: 2,
+                                gap: 3,
                                 width: '100%'
                             }}
                         >
                             {/* Department Dropdown */}
                             <FormControl fullWidth required sx={{ flex: 1 }}>
-                                <InputLabel>Department</InputLabel>
+                                <InputLabel sx={{ fontWeight: 600 }}>Department</InputLabel>
                                 <StyledSelect
                                     name="department"
                                     value={form.department}
                                     onChange={handleChange}
                                     label="Department"
                                     variant="outlined"
+                                    sx={{
+                                        '& .MuiSelect-select': {
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                        }
+                                    }}
                                 >
                                     {departments.map((dept) => (
                                         <MenuItem key={dept._id} value={dept._id}>
-                                            {dept.name}
+                                            <Box sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5,
+                                                width: '100%'
+                                            }}>
+                                                <AccountBalance sx={{ fontSize: 20, color: 'primary.main' }} />
+                                                <Typography>{dept.name}</Typography>
+                                            </Box>
                                         </MenuItem>
                                     ))}
                                 </StyledSelect>
@@ -188,7 +270,7 @@ export default function CreateExpenseForm() {
 
                             {/* Payment Mode Dropdown */}
                             <FormControl fullWidth required sx={{ flex: 1 }}>
-                                <InputLabel>Payment Mode</InputLabel>
+                                <InputLabel sx={{ fontWeight: 600 }}>Payment Mode</InputLabel>
                                 <StyledSelect
                                     name="paymentMode"
                                     value={form.paymentMode}
@@ -198,8 +280,13 @@ export default function CreateExpenseForm() {
                                 >
                                     {paymentModes.map((mode) => (
                                         <MenuItem key={mode} value={mode}>
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <PaymentIcon sx={{ fontSize: 18 }} /> {mode}
+                                            <Box sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5
+                                            }}>
+                                                <PaymentIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
+                                                <Typography>{mode}</Typography>
                                             </Box>
                                         </MenuItem>
                                     ))}
@@ -207,31 +294,39 @@ export default function CreateExpenseForm() {
                             </FormControl>
                         </Box>
 
-                        {/* Second Row: Vendor Name + Sub-Department in same line with same size */}
+                        {/* Second Row: Vendor Name + Sub-Department */}
                         <Box
                             sx={{
                                 display: 'flex',
                                 flexDirection: { xs: 'column', sm: 'row' },
-                                gap: 2,
+                                gap: 3,
                                 width: '100%'
                             }}
                         >
                             {/* Vendor Name */}
-                            <StyledTextField
-                                fullWidth
-                                label="Vendor Name"
-                                name="vendorName"
-                                value={form.vendorName}
-                                onChange={handleChange}
-                                variant="outlined"
-                                placeholder="Enter vendor name"
-                                sx={{ flex: 1 }}
-                            />
+                            <FormControl fullWidth sx={{ flex: 1 }}>
+                                <StyledTextField
+                                    fullWidth
+                                    label="Vendor Name"
+                                    name="vendorName"
+                                    value={form.vendorName}
+                                    onChange={handleChange}
+                                    variant="outlined"
+                                    placeholder="Enter vendor name"
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <Business color="action" />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                            </FormControl>
 
                             {/* Sub-Department Dropdown */}
                             {reduxSubDept.length > 0 ? (
                                 <FormControl fullWidth required sx={{ flex: 1 }}>
-                                    <InputLabel>Sub-Department</InputLabel>
+                                    <InputLabel sx={{ fontWeight: 600 }}>Sub-Department</InputLabel>
                                     <StyledSelect
                                         name="subDepartment"
                                         value={form.subDepartment}
@@ -241,7 +336,14 @@ export default function CreateExpenseForm() {
                                     >
                                         {reduxSubDept.map((sub) => (
                                             <MenuItem key={sub._id} value={sub._id}>
-                                                {sub.name}
+                                                <Box sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1.5
+                                                }}>
+                                                    <FolderSpecial sx={{ fontSize: 20, color: 'info.main' }} />
+                                                    <Typography>{sub.name}</Typography>
+                                                </Box>
                                             </MenuItem>
                                         ))}
                                     </StyledSelect>
@@ -252,29 +354,34 @@ export default function CreateExpenseForm() {
                         </Box>
 
                         {/* Description Section */}
-                        <Paper elevation={0}>
-                            {/* <Typography
-                                variant="h6"
+                        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+                            <Typography
+                                variant="subtitle1"
                                 sx={{
                                     mb: 2,
                                     fontWeight: 600,
-                                    color: "text.primary"
+                                    color: "text.primary",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
                                 }}
                             >
+                                <Description color="primary" />
                                 Description
-                            </Typography> */}
+                            </Typography>
                             <StyledTextField
                                 fullWidth
                                 name="description"
                                 value={form.description}
                                 onChange={handleChange}
                                 variant="outlined"
-                                placeholder="Enter expense description"
+                                placeholder="Provide a detailed description of this expense..."
                                 multiline
                                 rows={4}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
                                         backgroundColor: 'background.paper',
+                                        fontSize: '1rem'
                                     }
                                 }}
                             />
@@ -285,66 +392,118 @@ export default function CreateExpenseForm() {
                             variant="outlined"
                             sx={{
                                 border: "3px dashed",
-                                borderColor: form.proof ? "success.main" : "primary.main",
-                                backgroundColor: form.proof
-                                    ? "success.lightest"
-                                    : "primary.lightest",
+                                borderColor: form.proof ? "success.main" : "grey.300",
+                                backgroundColor: form.proof ? "success.50" : "grey.50",
                                 borderRadius: 3,
                                 cursor: "pointer",
-                                transition: 'all 0.3s ease',
+                                transition: 'all 0.3s ease-in-out',
                                 '&:hover': {
-                                    borderColor: form.proof ? "success.dark" : "primary.dark",
-                                    backgroundColor: form.proof
-                                        ? "success.light"
-                                        : "primary.light",
+                                    borderColor: form.proof ? "success.dark" : "primary.main",
+                                    backgroundColor: form.proof ? "success.100" : "grey.100",
+                                    transform: 'translateY(-2px)'
                                 }
                             }}
                         >
-                            <CardContent sx={{ textAlign: "center", py: 4 }}>
-                                <Typography
-                                    variant="h6"
-                                    sx={{
-                                        mb: 2,
-                                        fontWeight: 600,
-                                        color: form.proof ? "success.dark" : "primary.dark"
-                                    }}
-                                >
-                                    UPLOAD BILL PROOF
-                                </Typography>
-                                <input
-                                    type="file"
-                                    hidden
-                                    id="proof-upload"
-                                    name="proof"
-                                    onChange={handleChange}
-                                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                                />
-                                <label htmlFor="proof-upload" style={{ cursor: "pointer" }}>
-                                    <Button
-                                        component="span"
-                                        startIcon={<UploadFileIcon />}
-                                        variant={form.proof ? "contained" : "outlined"}
-                                        color={form.proof ? "success" : "primary"}
-                                        size="large"
+                            <CardContent sx={{ textAlign: "center", py: 5 }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: 2
+                                }}>
+                                    <Box
                                         sx={{
-                                            px: 4,
-                                            py: 1.5,
-                                            fontSize: '1.1rem',
-                                            fontWeight: 600,
+                                            p: 2,
+                                            borderRadius: '50%',
+                                            backgroundColor: form.proof ? "success.main" : "primary.main",
+                                            color: 'white',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
                                         }}
                                     >
-                                        {form.proof ? "Proof Uploaded" : "Upload Bill Proof"}
-                                    </Button>
-                                </label>
-                                {form.proof && (
-                                    <Typography
-                                        variant="body2"
-                                        color="success.main"
-                                        sx={{ mt: 2, fontWeight: 600 }}
-                                    >
-                                        ✅ {form.proof.name}
-                                    </Typography>
-                                )}
+                                        {form.proof ? (
+                                            <Check sx={{ fontSize: 30 }} />
+                                        ) : (
+                                            <UploadFile sx={{ fontSize: 30 }} />
+                                        )}
+                                    </Box>
+
+                                    <Box>
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                mb: 1,
+                                                fontWeight: 600,
+                                                color: form.proof ? "success.dark" : "text.primary"
+                                            }}
+                                        >
+                                            {form.proof ? "Bill Proof Uploaded" : "Upload Bill Proof"}
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: "text.secondary",
+                                                mb: 2
+                                            }}
+                                        >
+                                            {form.proof
+                                                ? "Your document has been successfully uploaded"
+                                                : "Supported formats: JPG, PNG, PDF, DOC (Max 10MB)"
+                                            }
+                                        </Typography>
+                                    </Box>
+
+                                    <input
+                                        type="file"
+                                        hidden
+                                        id="proof-upload"
+                                        name="proof"
+                                        onChange={handleChange}
+                                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                                    />
+                                    <label htmlFor="proof-upload" style={{ cursor: "pointer" }}>
+                                        <Button
+                                            component="span"
+                                            startIcon={form.proof ? <Check /> : <UploadFile />}
+                                            variant={form.proof ? "outlined" : "contained"}
+                                            color={form.proof ? "success" : "primary"}
+                                            size="large"
+                                            sx={{
+                                                px: 4,
+                                                py: 1.5,
+                                                fontSize: '1rem',
+                                                fontWeight: 600,
+                                                borderRadius: 2
+                                            }}
+                                        >
+                                            {form.proof ? "Change File" : "Choose File"}
+                                        </Button>
+                                    </label>
+
+                                    {form.proof && (
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            mt: 2,
+                                            p: 2,
+                                            backgroundColor: 'success.50',
+                                            borderRadius: 2,
+                                            border: '1px solid',
+                                            borderColor: 'success.200'
+                                        }}>
+                                            <CheckCircle sx={{ color: 'success.main', fontSize: 20 }} />
+                                            <Typography
+                                                variant="body2"
+                                                color="success.main"
+                                                sx={{ fontWeight: 600 }}
+                                            >
+                                                {form.proof.name}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Box>
                             </CardContent>
                         </Card>
 
@@ -352,17 +511,23 @@ export default function CreateExpenseForm() {
                         <PrimaryButton
                             type="submit"
                             variant="contained"
-                            startIcon={<AddIcon />}
+                            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Add />}
                             disabled={
                                 loading || !form.proof || (reduxSubDept.length > 0 && !form.subDepartment)
                             }
                             fullWidth
                             size="large"
                             sx={{
-                                py: 2,
+                                py: 2.5,
                                 fontSize: '1.1rem',
                                 fontWeight: 700,
                                 borderRadius: 2,
+                                boxShadow: '0 4px 14px 0 rgba(0,0,0,0.2)',
+                                '&:hover': {
+                                    boxShadow: '0 6px 20px 0 rgba(0,0,0,0.25)',
+                                    transform: 'translateY(-1px)'
+                                },
+                                transition: 'all 0.3s ease'
                             }}
                         >
                             {loading ? "Creating Expense..." : "CREATE EXPENSE"}
@@ -372,24 +537,38 @@ export default function CreateExpenseForm() {
                         {response && (
                             <Alert
                                 severity="success"
-                                sx={{ borderRadius: 2, fontSize: '1rem' }}
+                                sx={{
+                                    borderRadius: 2,
+                                    fontSize: '1rem',
+                                    alignItems: 'center',
+                                    '& .MuiAlert-message': {
+                                        py: 1
+                                    }
+                                }}
                                 onClose={() => setResponse(null)}
                             >
-                                {response}
+                                <Typography fontWeight={600}>{response}</Typography>
                             </Alert>
                         )}
                         {error && (
                             <Alert
                                 severity="error"
-                                sx={{ borderRadius: 2, fontSize: '1rem' }}
+                                sx={{
+                                    borderRadius: 2,
+                                    fontSize: '1rem',
+                                    alignItems: 'center',
+                                    '& .MuiAlert-message': {
+                                        py: 1
+                                    }
+                                }}
                                 onClose={() => setError(null)}
                             >
-                                {error}
+                                <Typography fontWeight={600}>{error}</Typography>
                             </Alert>
                         )}
                     </Stack>
                 </Box>
             </Box>
-        </SectionCard>
+        </Card>
     );
 }

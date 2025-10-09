@@ -39,11 +39,12 @@ export default function MyExpenses() {
 
     useEffect(() => {
         dispatch(fetchExpensesForUser({
+            userId: user?._id,
             search,
             month: filterMonth,
             year: filterYear
         }))
-    }, [dispatch, search, filterMonth, filterYear])
+    }, [dispatch, search, filterMonth, filterYear, user])
 
 
     // console.log("user expenses: ", userExpenses);
@@ -52,7 +53,7 @@ export default function MyExpenses() {
 
 
     return (
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ margin: { xs: 1, sm: 1, md: 4 } }}>
             <Box
                 sx={{
                     display: "flex",

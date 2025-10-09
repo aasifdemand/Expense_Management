@@ -24,13 +24,14 @@ export const addExpense = createAsyncThunk(
     "expenses/addExpense",
     async (data, { getState, rejectWithValue }) => {
         try {
-            const { description, amount, department, proof, subDepartment, paymentMode, budget } = data;
+            const { description, amount, department, proof, subDepartment, paymentMode, budget, vendor } = data;
             const formData = new FormData();
             formData.append("description", description);
             formData.append("amount", amount);
             formData.append("department", department);
             formData.append("subDepartment", subDepartment);
             formData.append("paymentMode", paymentMode);
+            formData.append("vendor", vendor)
             if (budget) formData.append("budgetId", budget);
             if (proof) formData.append("proof", proof);
 

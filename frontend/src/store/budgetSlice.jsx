@@ -39,7 +39,7 @@ export const allocateBudget = createAsyncThunk(
 export const fetchBudgets = createAsyncThunk(
   "budget/fetchAll",
   async (
-    { page = 1, limit = 10, month = "", year = "", userId, location = 'OVERALL' }, // Add location
+    { page = 1, limit = 10, month = "", year = "", company, userId, location = 'OVERALL' },
     { getState, rejectWithValue }
   ) => {
     try {
@@ -49,7 +49,8 @@ export const fetchBudgets = createAsyncThunk(
       if (userId) query.append("userId", String(userId));
       query.append("page", String(page));
       query.append("limit", String(limit));
-      query.append("location", String(location)); // Add location to query
+      query.append("location", String(location));
+      query.append("company", String(company))
 
       if (month) query.append("month", String(month));
       if (year) query.append("year", String(year));
@@ -84,6 +85,7 @@ export const searchBudgets = createAsyncThunk(
   "budget/search",
   async (
     {
+      company,
       userName = "",
       month = "",
       year = "",
@@ -107,9 +109,10 @@ export const searchBudgets = createAsyncThunk(
         ...(maxAllocated !== undefined && { maxAllocated }),
         ...(minSpent !== undefined && { minSpent }),
         ...(maxSpent !== undefined && { maxSpent }),
+        ...(company && { company }),
         page: String(page),
         limit: String(limit),
-        location: String(location), // Add location to query
+        location: String(location),
       });
 
       const response = await fetch(

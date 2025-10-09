@@ -44,6 +44,8 @@ export const useBudgeting = () => {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterYear, setFilterYear] = useState("");
 
+
+
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
   // debounce search
@@ -54,11 +56,14 @@ export const useBudgeting = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // ✅ FIXED: Add currentLoc to dependencies
   useEffect(() => {
-    const hasFilters = debouncedSearch?.trim() || filterMonth || filterYear;
+    const isFiltering =
+      !!debouncedSearch?.trim() ||
+      !!filterMonth ||
+      !!filterYear
 
-    if (hasFilters) {
+
+    if (isFiltering) {
       dispatch(
         searchBudgets({
           userName: debouncedSearch || undefined,
@@ -66,7 +71,8 @@ export const useBudgeting = () => {
           year: filterYear || undefined,
           page,
           limit,
-          location: currentLoc, // Pass current location
+          location: currentLoc,
+
         })
       );
     } else {
@@ -75,19 +81,17 @@ export const useBudgeting = () => {
           fetchBudgets({
             page,
             limit,
-            location: currentLoc, // Pass current location
+            location: currentLoc,
           })
         );
-      } else {
-        if (user?._id) {
-          dispatch(
-            fetchUserBudgets({
-              userId: user._id,
-              page,
-              limit,
-            })
-          );
-        }
+      } else if (user?._id) {
+        dispatch(
+          fetchUserBudgets({
+            userId: user._id,
+            page,
+            limit,
+          })
+        );
       }
     }
   }, [
@@ -97,11 +101,12 @@ export const useBudgeting = () => {
     debouncedSearch,
     filterMonth,
     filterYear,
-    user,
+    currentLoc,
+
     user?._id,
     user?.role,
-    currentLoc,
   ]);
+
 
   // Reset to first page when location changes
   useEffect(() => {
@@ -185,14 +190,12 @@ export const useBudgeting = () => {
     loading,
     meta,
     users,
-    year,
-    currentMonth,
-    page,
-    setPage,
-    setLimit,
-    limit,
     formData,
     setFormData,
+    page,
+    setPage,
+    limit,
+    setLimit,
     open,
     handleOpen,
     handleClose,
