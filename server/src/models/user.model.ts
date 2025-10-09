@@ -49,9 +49,9 @@ export class User extends Document {
 
   @Prop({
     enum: UserLocation,
-    required: true
+    default: UserLocation.OVERALL
   })
-  userLoc: UserLocation;
+  userLoc?: UserLocation;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Budget' }] })
   allocatedBudgets: Types.ObjectId[];
