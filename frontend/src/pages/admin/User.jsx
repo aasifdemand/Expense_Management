@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createUser, fetchAllUsers, resetUserPassword } from '../../store/authSlice';
 import { useToastMessage } from '../../hooks/useToast';
@@ -12,6 +12,10 @@ const UserDashboard = () => {
     const { users } = useSelector((state) => state.auth)
     const { success, error } = useToastMessage()
 
+
+    useEffect(() => {
+        fetchAllUsers()
+    }, [dispatch])
     const [newUser, setNewUser] = useState({
         name: '',
         password: '',
