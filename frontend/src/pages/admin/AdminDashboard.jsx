@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box, Typography, useTheme, Card, CardContent } from "@mui/material";
+import { Box, Typography, useTheme, Card, CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import DashboardBudgetChart from "../../components/admin/dashboard/DashboardBudgetChart";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
 import TabButtonsWithReport from "../../components/general/TabButtonsWithReport";
@@ -22,9 +22,10 @@ const AdminDashboard = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("budget");
-  const { currentLoc } = useLocation()
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { currentLoc } = useLocation();
 
-  const { users } = useSelector((state) => state?.auth);
   const { reimbursements } = useSelector((state) => state?.reimbursement);
 
   const {
@@ -32,7 +33,6 @@ const AdminDashboard = () => {
     budgets,
     loading: budgetLoading,
     meta: budgetMeta,
-    year,
     page: budgetPage,
     setPage: setBudgetPage,
     handleOpen: handleBudgetOpen,
@@ -45,8 +45,6 @@ const AdminDashboard = () => {
     getMonthByNumber: getBudgetMonthByNumber,
     setLimit: setBudgetLimit,
     limit: budgetLimit,
-    selectedMonth: budgetSelectedMonth,
-    setSelectedMonth: setBudgetSelectedMonth,
     formData: budgetFormData,
     handleClose: budgetHandleClose,
     handleSubmit: budgetHandleSubmit,
@@ -91,6 +89,115 @@ const AdminDashboard = () => {
   const totalExpenses = allBudgets?.reduce((acc, b) => acc + Number(b?.spentAmount), 0) + totalReimbursed;
   const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0) || 0;
 
+  // Get days in selected month
+  const getDaysInMonth = (month, year) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // Improved date parsing function with timezone handling
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+
+    try {
+      // Create date object
+      const date = new Date(dateString);
+
+      // If it's an ISO string, adjust for timezone to get local date
+      if (dateString.includes('T')) {
+        // Get local date components (this handles timezone automatically)
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return localDate;
+      }
+
+      return date;
+    } catch (error) {
+      console.warn('Invalid date:', dateString, error);
+      return null;
+    }
+  };
+
+  // Improved date comparison function
+  const isDateInSelectedMonth = (date, selectedMonth, selectedYear) => {
+    if (!date) return false;
+
+    const dateMonth = date.getMonth();
+    const dateYear = date.getFullYear();
+
+    return dateMonth === selectedMonth && dateYear === selectedYear;
+  };
+
+  // Prepare data for daily area chart - FIXED VERSION
+  const getDailyAreaChartData = () => {
+    const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
+    const dailyData = [];
+
+    // Initialize all days with 0 values
+    for (let day = 1; day <= daysInMonth; day++) {
+      dailyData.push({
+        day: day.toString(),
+        date: `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        displayDate: `${day}/${selectedMonth + 1}/${selectedYear}`,
+        fromAllocation: 0,
+        fromReimbursement: 0,
+        totalAmount: 0
+      });
+    }
+
+    console.log('All expenses to process:', allExpenses); // Debug log
+
+    // Process expenses for the selected month with proper date parsing
+    const monthlyExpenses = allExpenses?.filter(expense => {
+      const expenseDate = parseDate(expense.date);
+      const isInMonth = isDateInSelectedMonth(expenseDate, selectedMonth, selectedYear);
+
+      console.log('Expense date check:', { // Debug log
+        original: expense.date,
+        parsed: expenseDate,
+        day: expenseDate?.getDate(),
+        month: expenseDate?.getMonth(),
+        year: expenseDate?.getFullYear(),
+        selectedMonth,
+        selectedYear,
+        isInMonth
+      });
+
+      return isInMonth;
+    }) || [];
+
+    console.log('Filtered monthly expenses:', monthlyExpenses.length, monthlyExpenses); // Debug log
+
+    // Fill in expense data using the correct keys from your DB
+    monthlyExpenses.forEach(expense => {
+      const expenseDate = parseDate(expense.date);
+      if (!expenseDate) return;
+
+      const day = expenseDate.getDate();
+      const dayIndex = day - 1;
+
+      if (dailyData[dayIndex]) {
+        const fromAllocation = Number(expense.fromAllocation || 0);
+        const fromReimbursement = Number(expense.fromReimbursement || 0);
+        const totalAmount = Number(expense.amount || 0);
+
+        dailyData[dayIndex].fromAllocation += fromAllocation;
+        dailyData[dayIndex].fromReimbursement += fromReimbursement;
+        dailyData[dayIndex].totalAmount += totalAmount;
+
+        console.log(`Added expense to day ${day}:`, { // Debug log
+          fromAllocation,
+          fromReimbursement,
+          totalAmount,
+          finalValues: dailyData[dayIndex]
+        });
+      }
+    });
+
+    console.log('Final daily chart data:', dailyData); // Debug log
+    return dailyData;
+  };
+
+  const dailyAreaChartData = getDailyAreaChartData();
+
   const budgetStats = [
     {
       title: "Total Allocated",
@@ -126,12 +233,17 @@ const AdminDashboard = () => {
     },
   ];
 
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear - 1, currentYear, currentYear + 1];
 
   return (
     <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, minHeight: "100vh" }}>
       {/* Budget Stats Section */}
-
       <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Box
           sx={{
@@ -156,27 +268,130 @@ const AdminDashboard = () => {
         </Box>
       </Box>
 
-
-
-
-      {/* Charts Section */}
+      {/* Daily Area Chart Section */}
       <Box sx={{ mb: { xs: 3, sm: 4 } }}>
-        <Box sx={{
-          display: "flex",
-          flexDirection: { xs: "column", lg: "row" },
-          gap: { xs: 2, sm: 3 }
-        }}>
-          <Box sx={{ flex: 1, minHeight: { xs: 350, sm: 400 }, width: '100%' }}>
-            <DashboardBudgetChart
-              users={users}
-              budgets={allExpenses}
-              theme={theme}
-              year={year}
-              selectedMonth={budgetSelectedMonth}
-              setSelectedMonth={setBudgetSelectedMonth}
-            />
-          </Box>
-        </Box>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Expense Overview - {months[selectedMonth]} {selectedYear}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Month</InputLabel>
+                  <Select
+                    value={selectedMonth}
+                    label="Month"
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                  >
+                    {months.map((month, index) => (
+                      <MenuItem key={month} value={index}>
+                        {month}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel>Year</InputLabel>
+                  <Select
+                    value={selectedYear}
+                    label="Year"
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                  >
+                    {years.map((year) => (
+                      <MenuItem key={year} value={year}>
+                        {year}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+
+            <Box sx={{ width: '100%', height: 400 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={dailyAreaChartData}
+                  margin={{
+                    top: 10,
+                    right: 30,
+                    left: 0,
+                    bottom: 0,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fill: theme.palette.text.secondary }}
+                    label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
+                  />
+                  <YAxis
+                    tick={{ fill: theme.palette.text.secondary }}
+                    tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      const formattedValue = `₹${Number(value).toLocaleString()}`;
+                      const labelMap = {
+                        fromAllocation: 'From Allocation',
+                        fromReimbursement: 'From Reimbursement',
+                        totalAmount: 'Total Amount'
+                      };
+                      return [formattedValue, labelMap[name] || name];
+                    }}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload[0] && payload[0].payload.displayDate) {
+                        return `Date: ${payload[0].payload.displayDate}`;
+                      }
+                      return `Day: ${label}`;
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="fromAllocation"
+                    stackId="1"
+                    stroke={theme.palette.primary.main}
+                    fill={theme.palette.primary.light}
+                    fillOpacity={0.6}
+                    name="fromAllocation"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="fromReimbursement"
+                    stackId="1"
+                    stroke={theme.palette.secondary.main}
+                    fill={theme.palette.secondary.light}
+                    fillOpacity={0.6}
+                    name="fromReimbursement"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="totalAmount"
+                    stackId="1"
+                    stroke={theme.palette.success.main}
+                    fill={theme.palette.success.light}
+                    fillOpacity={0.4}
+                    name="totalAmount"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2, flexWrap: 'wrap' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.primary.main, borderRadius: 1 }} />
+                <Typography variant="body2" color="text.secondary">From Allocation</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.secondary.main, borderRadius: 1 }} />
+                <Typography variant="body2" color="text.secondary">From Reimbursement</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.success.main, borderRadius: 1 }} />
+                <Typography variant="body2" color="text.secondary">Total Amount</Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
 
       {/* Tabs */}
