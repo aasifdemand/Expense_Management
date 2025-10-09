@@ -66,6 +66,7 @@ export default function CreateExpenseForm() {
     // fetch departments when component mounts
     useEffect(() => {
         dispatch(fetchDepartments());
+
     }, [dispatch]);
 
     // handle input changes
@@ -252,7 +253,7 @@ export default function CreateExpenseForm() {
                                         }
                                     }}
                                 >
-                                    {departments.map((dept) => (
+                                    {departments?.map((dept) => (
                                         <MenuItem key={dept._id} value={dept._id}>
                                             <Box sx={{
                                                 display: "flex",
@@ -278,7 +279,7 @@ export default function CreateExpenseForm() {
                                     label="Payment Mode"
                                     variant="outlined"
                                 >
-                                    {paymentModes.map((mode) => (
+                                    {paymentModes?.map((mode) => (
                                         <MenuItem key={mode} value={mode}>
                                             <Box sx={{
                                                 display: "flex",
@@ -334,7 +335,7 @@ export default function CreateExpenseForm() {
                                         label="Sub-Department"
                                         variant="outlined"
                                     >
-                                        {reduxSubDept.map((sub) => (
+                                        {reduxSubDept?.map((sub) => (
                                             <MenuItem key={sub._id} value={sub._id}>
                                                 <Box sx={{
                                                     display: "flex",
@@ -342,7 +343,7 @@ export default function CreateExpenseForm() {
                                                     gap: 1.5
                                                 }}>
                                                     <FolderSpecial sx={{ fontSize: 20, color: 'info.main' }} />
-                                                    <Typography>{sub.name}</Typography>
+                                                    <Typography>{sub?.name}</Typography>
                                                 </Box>
                                             </MenuItem>
                                         ))}

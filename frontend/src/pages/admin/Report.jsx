@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Box,
     Card,
@@ -34,12 +34,26 @@ import {
 } from '@mui/icons-material';
 import { useBudgeting } from '../../hooks/useBudgeting';
 import { useExpenses } from '../../hooks/useExpenses';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { StyledTextField } from '../../styles/budgeting.styles';
+import { useLocation } from '../../contexts/LocationContext';
+import { fetchBudgets } from '../../store/budgetSlice';
+import { fetchExpenses } from '../../store/expenseSlice';
+import { fetchReimbursements } from '../../store/reimbursementSlice';
 
 const Reports = () => {
+    const { currentLoc } = useLocation()
+
+    const dispatch = useDispatch()
+    useEffect(() => {
+        dispatch(fetchBudgets({ location: currentLoc }));
+        dispatch(fetchExpenses({ location: currentLoc }));
+        dispatch(fetchReimbursements({ location: currentLoc }));
+    }, [dispatch, currentLoc]);
+
+
     const { allBudgets, budgets } = useBudgeting();
     const { allExpenses, expenses } = useExpenses();
     const { reimbursements } = useSelector((state) => state?.reimbursement);
@@ -125,7 +139,7 @@ const Reports = () => {
                 const logo = "/image.png";
                 doc.addImage(logo, "PNG", 14, 15, 40, 15);
             } catch (logoError) {
-                console.warn("Logo not found, continuing without logo");
+                console.warn("Logo not found, continuing without logo", logoError);
             }
 
             // Title Section
@@ -268,7 +282,7 @@ const Reports = () => {
                 }
                 else if (generatedReport.type === 'comparison') {
                     columns = ["Department", "Total Budget", "Total Expense"];
-                    generatedReport.items.forEach((item, index) => {
+                    generatedReport.items.forEach((item) => {
                         rows.push([
                             item.department || "N/A",
                             `${(item.totalBudget || 0)}`,
@@ -370,7 +384,7 @@ const Reports = () => {
                 });
             } else if (generatedReport.type === 'comparison') {
                 headers.push('Department', 'Total Budget', 'Total Expense');
-                generatedReport.items.forEach((item, index) => {
+                generatedReport.items.forEach((item) => {
                     rows.push([
                         `"${item.department || 'N/A'}"`,
                         item.totalBudget || 0,

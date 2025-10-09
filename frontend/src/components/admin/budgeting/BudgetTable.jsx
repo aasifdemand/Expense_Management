@@ -51,10 +51,7 @@ const BudgetTable = ({
         setSelectedBudget(null);
     };
 
-    const handleBudgetTypeClick = (event, budgetId) => {
-        setAnchorEl(event.currentTarget);
-        setSelectedBudgetId(budgetId);
-    };
+
 
     const handleBudgetTypeChange = (newType) => {
         if (selectedBudgetId) {
@@ -69,36 +66,7 @@ const BudgetTable = ({
         setSelectedBudgetId(null);
     };
 
-    const getBudgetTypeStyle = (type) => {
-        const baseStyle = {
 
-            borderRadius: "20px",
-            fontSize: "0.8rem",
-            fontWeight: 500,
-            cursor: "pointer",
-            display: "inline-block",
-            transition: "all 0.2s ease",
-            "&:hover": {
-                opacity: 0.9,
-                transform: "scale(1.05)",
-            },
-        };
-        if (type === "normal") {
-            return {
-                ...baseStyle,
-                backgroundColor: "#e8f5e9",
-                color: "#2e7d32",
-                border: "1px solid #c8e6c9",
-            };
-        } else {
-            return {
-                ...baseStyle,
-                backgroundColor: "#e3f2fd",
-                color: "#1565c0",
-                border: "1px solid #bbdefb",
-            };
-        }
-    };
 
     const getBudgetTypeDisplay = (type) => (type === "normal" ? "Normal" : "Reimbursed");
 
@@ -165,7 +133,7 @@ const BudgetTable = ({
                             <TableCell sx={{ fontWeight: "bold" }}>Remaining</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Company</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>Budget Type</TableCell>
+
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -213,14 +181,7 @@ const BudgetTable = ({
                                             })
                                             : "-"}
                                     </TableCell>
-                                    <TableCell>
-                                        <Box
-                                            sx={getBudgetTypeStyle(row?.budgetType || "normal")}
-                                            onClick={(e) => handleBudgetTypeClick(e, row._id)}
-                                        >
-                                            {getBudgetTypeDisplay(row?.budgetType || "normal")}
-                                        </Box>
-                                    </TableCell>
+
                                 </TableRow>
                             ))
                         ) : (
@@ -311,9 +272,7 @@ const BudgetTable = ({
                             <Typography>
                                 <strong>Allocated:</strong> ₹{selectedBudget?.allocatedAmount?.toLocaleString()}
                             </Typography>
-                            <Typography>
-                                <strong>Budget Type:</strong> {getBudgetTypeDisplay(selectedBudget?.budgetType || "normal")}
-                            </Typography>
+
                             <Typography>
                                 <strong>Date:</strong>{" "}
                                 {new Date(selectedBudget?.createdAt).toLocaleString("en-US", {

@@ -143,28 +143,19 @@ const AdminDashboard = () => {
       });
     }
 
-    console.log('All expenses to process:', allExpenses); // Debug log
+
 
     // Process expenses for the selected month with proper date parsing
     const monthlyExpenses = allExpenses?.filter(expense => {
       const expenseDate = parseDate(expense.date);
       const isInMonth = isDateInSelectedMonth(expenseDate, selectedMonth, selectedYear);
 
-      console.log('Expense date check:', { // Debug log
-        original: expense.date,
-        parsed: expenseDate,
-        day: expenseDate?.getDate(),
-        month: expenseDate?.getMonth(),
-        year: expenseDate?.getFullYear(),
-        selectedMonth,
-        selectedYear,
-        isInMonth
-      });
+
 
       return isInMonth;
     }) || [];
 
-    console.log('Filtered monthly expenses:', monthlyExpenses.length, monthlyExpenses); // Debug log
+    // console.log('Filtered monthly expenses:', monthlyExpenses.length, monthlyExpenses); // Debug log
 
     // Fill in expense data using the correct keys from your DB
     monthlyExpenses.forEach(expense => {
@@ -183,16 +174,11 @@ const AdminDashboard = () => {
         dailyData[dayIndex].fromReimbursement += fromReimbursement;
         dailyData[dayIndex].totalAmount += totalAmount;
 
-        console.log(`Added expense to day ${day}:`, { // Debug log
-          fromAllocation,
-          fromReimbursement,
-          totalAmount,
-          finalValues: dailyData[dayIndex]
-        });
+
       }
     });
 
-    console.log('Final daily chart data:', dailyData); // Debug log
+
     return dailyData;
   };
 
@@ -312,12 +298,7 @@ const AdminDashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={dailyAreaChartData}
-                  margin={{
-                    top: 10,
-                    right: 30,
-                    left: 0,
-                    bottom: 0,
-                  }}
+
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
