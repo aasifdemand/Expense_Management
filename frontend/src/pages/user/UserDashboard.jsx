@@ -4,6 +4,7 @@ import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import TabButtonsWithReport from "../../components/general/TabButtonsWithReport";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
@@ -197,9 +198,9 @@ const Dashboard = () => {
     {
       title: "Reimbursement Received",
       value: `₹${totalReimbursed || 0}`,
-      icon: <CreditCardIcon />,
-      color: "#10b981",
-      subtitle: "Reimbursed amount",
+      icon: <TimelineIcon />,
+      color: "#b96a10ff",
+      subtitle: "Available funds",
     },
   ];
 

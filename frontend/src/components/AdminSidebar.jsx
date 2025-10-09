@@ -111,25 +111,6 @@ const AdminSidebar = ({
                         };
                     }}
                 />
-                {/* <Box
-                    className="logo-fallback"
-                    sx={{
-                        display: 'none',
-                        width: '100%',
-                        height: '100%',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        // background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        fontSize: isSmallMobile ? '1rem' : '1.2rem',
-                        borderRadius: 1,
-                        textAlign: 'center',
-                        padding: '4px',
-                    }}
-                >
-                    Expense Manager
-                </Box> */}
             </Box>
         </Box>
     );
