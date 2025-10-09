@@ -208,6 +208,23 @@ async function seed() {
         sessions: [],
         spentAmount: 0
       },
+      {
+        name: 'Afroz Pasha',
+        password: 'Affu@dcm',
+        role: UserRole.USER,
+        userLoc: UserLocation.BENGALURU,
+        department: UserDepartment.SALES,
+        email: 'peter.anderson@demandcurvemarketing.com',
+        phone: '8971112188',
+        allocatedBudgets: [],
+        reimbursements: [],
+        expenses: [],
+        budgetLeft: 0,
+        reimbursedAmount: 0,
+        allocatedAmount: 0,
+        sessions: [],
+        spentAmount: 0
+      },
     ];
 
     // Hash passwords and insert users with ALL fields

@@ -324,8 +324,8 @@ const Login = () => {
                                     justifyContent: 'center',
                                     padding: 2,
                                     borderRadius: 3,
-                                    background: 'rgba(255, 255, 255, 0.8)',
-                                    boxShadow: '0 8px 20px rgba(76, 163, 245, 0.15)'
+                                    // background: 'rgba(255, 255, 255, 0.8)',
+                                    // boxShadow: '0 8px 20px rgba(76, 163, 245, 0.15)'
                                 }}
                             >
                                 <img
