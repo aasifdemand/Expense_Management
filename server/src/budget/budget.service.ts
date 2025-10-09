@@ -195,6 +195,7 @@ export class BudgetService {
       maxAllocated,
       minSpent,
       maxSpent,
+      company,
       page = 1,
       limit = 10,
     } = filters;
@@ -215,10 +216,12 @@ export class BudgetService {
     // Apply other filters
     if (month) query = query.where('month').equals(month);
     if (year) query = query.where('year').equals(year);
+    if (company) query = query.where("company").equals(company)
     if (minAllocated !== undefined) query = query.where('allocatedAmount').gte(minAllocated);
     if (maxAllocated !== undefined) query = query.where('allocatedAmount').lte(maxAllocated);
     if (minSpent !== undefined) query = query.where('spentAmount').gte(minSpent);
     if (maxSpent !== undefined) query = query.where('spentAmount').lte(maxSpent);
+
 
     // Update cache keys to include location
     const cacheKeyPage = `budgets:search:${sessionUser?.role}:${sessionUser?.id}:${location || 'overall'}:page:${safePage}:${safeLimit}:${JSON.stringify(filters)}`;

@@ -74,7 +74,7 @@ export default function UserLayout() {
                 <Box
                     sx={{
                         flex: 1,
-                        p: { xs: 1.5, sm: 2, md: 3 }, // ✅ Adaptive padding
+                        px: { xs: 1.5, sm: 2, md: 3 }, // ✅ Adaptive padding
                         width: "100%",
                         overflowY: "auto",
                         overflowX: "hidden",

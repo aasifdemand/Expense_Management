@@ -21,11 +21,13 @@ import {
     SectionCard,
     StyledTextField,
     StyledFormControl,
+    StyledSelect,
 } from "../../../styles/budgeting.styles";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 
 const BudgetTable = ({
+
     budgets,
     loading,
     meta,
@@ -36,6 +38,7 @@ const BudgetTable = ({
     limit = 5,
     setLimit,
     showPagination = false,
+
 }) => {
     const { role } = useSelector((state) => state?.auth);
     const [isOpen, setIsOpen] = useState(false);
@@ -126,10 +129,13 @@ const BudgetTable = ({
                     />
                 )}
 
+
+
                 {setLimit && showPagination && (
                     <StyledFormControl size="medium" >
                         <InputLabel>Rows per page</InputLabel>
-                        <Select
+                        <StyledSelect
+                            MenuProps={{ disableScrollLock: true }}
                             value={limit}
                             onChange={(e) => setLimit(Number(e.target.value))}
                             label="Rows per page"
@@ -139,7 +145,7 @@ const BudgetTable = ({
                                     {val}
                                 </MenuItem>
                             ))}
-                        </Select>
+                        </StyledSelect>
                     </StyledFormControl>
                 )}
             </Box>

@@ -2,6 +2,7 @@
 import { useBudgeting } from '../../hooks/useBudgeting.js'
 import BudgetTable from '../../components/admin/budgeting/BudgetTable.jsx';
 import EditBudgetModal from '../../components/admin/budgeting/BudgetEditModal.jsx';
+import { Box } from '@mui/material';
 
 
 const Budgetings = () => {
@@ -39,7 +40,7 @@ const Budgetings = () => {
 
 
   return (
-    <div>
+    <Box sx={{ margin: { xs: 1, sm: 1, md: 4 } }}>
 
       <BudgetTable
         limit={limit}
@@ -66,7 +67,7 @@ const Budgetings = () => {
         handleChange={handleChange}
         handleSubmit={handleSubmit}
       />
-    </div>
+    </Box>
   )
 }
 

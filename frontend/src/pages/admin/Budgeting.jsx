@@ -1,24 +1,21 @@
-import { Box, Typography, Card, CardContent, alpha } from "@mui/material";
+import { Box } from "@mui/material";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { fetchAllUsers } from "../../store/authSlice";
-
-// Icons
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import SavingsIcon from "@mui/icons-material/Savings";
 import GroupsIcon from "@mui/icons-material/Groups";
 import BudgetForm from "../../components/admin/budgeting/BudgetForm";
 import BudgetTable from "../../components/admin/budgeting/BudgetTable";
 import EditBudgetModal from "../../components/admin/budgeting/BudgetEditModal";
+import StatCard from "../../components/general/StatCard";
 
 const Budgeting = () => {
     const dispatch = useDispatch();
+
+
 
     const {
         allBudgets,
@@ -71,10 +68,7 @@ const Budgeting = () => {
         {
             title: "Total Expenses",
             value: `₹${totalSpent.toLocaleString()}`,
-            icon: <TrendingUpIcon />,
-            color: "#ef4444",
-            subtitle: "Total budget used",
-            bgGradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+
             icon: <MonetizationOnIcon />,
             color: "#ef4444", // Red
             subtitle: `Total budget used`,
@@ -92,8 +86,6 @@ const Budgeting = () => {
         {
             title: "Budget Allocations",
             value: allBudgets?.length || 0,
-            icon: <AttachMoneyIcon />,
-            color: "#f59e0b",
             icon: <GroupsIcon />,
             color: "#f59e0b", // Amber
             subtitle: "Total allocations",
@@ -101,121 +93,7 @@ const Budgeting = () => {
         },
     ];
 
-    // Enhanced StatCard
-    const StatCard = ({ stat }) => (
-        <Card
-            sx={{
-                background: "#ffffff",
-                borderRadius: "16px",
-                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-                border: "1px solid rgba(226, 232, 240, 0.8)",
-                height: { xs: "130px", sm: "140px", md: "150px" },
-                position: "relative",
-                overflow: "hidden",
-                flex: 1,
-                minWidth: 0,
-                maxWidth: "100%",
-                "&:hover": {
-                    transform: { xs: "none", sm: "translateY(-4px)" },
-                    boxShadow: {
-                        xs: "0 4px 20px rgba(0, 0, 0, 0.08)",
-                        sm: "0 8px 32px rgba(0, 0, 0, 0.12)",
-                    },
-                },
-                "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: "4px",
-                    background: stat.bgGradient,
-                    boxShadow: `0 2px 8px ${alpha(stat.color, 0.3)}`,
-                },
-            }}
-        >
-            <CardContent
-                sx={{
-                    p: { xs: 1.5, sm: 2, md: 2.5, lg: 3 },
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                }}
-            >
-                {/* Top Section - Icon + Value */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: { xs: 0.8, sm: 1.2, md: 1.5, lg: 2 },
-                    }}
-                >
-                    <Box
-                        sx={{
-                            backgroundColor: alpha(stat.color, 0.1),
-                            borderRadius: "12px",
-                            p: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: stat.color,
-                            minWidth: { xs: "40px", sm: "44px", md: "48px", lg: "52px" },
-                            minHeight: { xs: "40px", sm: "44px", md: "48px", lg: "52px" },
-                        }}
-                    >
-                        {stat.icon}
-                    </Box>
-                    <Typography
-                        variant="h4"
-                        sx={{
-                            color: "#000000",
-                            fontWeight: 700,
-                            fontSize: { xs: "0.95rem", sm: "1.1rem", md: "1.3rem", lg: "1.5rem" },
-                            lineHeight: 1.1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        {stat.value}
-                    </Typography>
-                </Box>
 
-                {/* Bottom Section - Title + Subtitle */}
-                <Box>
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            color: "#1e293b",
-                            fontWeight: 700,
-                            fontSize: { xs: "0.72rem", sm: "0.8rem", md: "0.85rem", lg: "0.95rem" },
-                            mt: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        {stat.title}
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: "#6b7280",
-                            fontSize: { xs: "0.62rem", sm: "0.68rem", md: "0.72rem", lg: "0.78rem" },
-                            fontWeight: 600,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            opacity: 0.8,
-                        }}
-                    >
-                        {stat.subtitle}
-                    </Typography>
-                </Box>
-            </CardContent>
-        </Card>
-    );
 
     return (
         <Box sx={{
@@ -248,7 +126,7 @@ const Budgeting = () => {
                         justifyContent: { xs: "center", sm: "flex-start" },
                     }}
                 >
-                    {budgetStats.map((stat, index) => (
+                    {budgetStats?.map((stat, index) => (
                         <Box
                             key={index}
                             sx={{
@@ -277,6 +155,7 @@ const Budgeting = () => {
             {/* Budget Table */}
             <Box>
                 <BudgetTable
+
                     showPagination
                     limit={limit}
                     setLimit={setLimit}

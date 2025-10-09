@@ -1,5 +1,5 @@
-import { Box, alpha, useTheme, useMediaQuery } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import { Box, useTheme, useMediaQuery } from "@mui/material";
+import { useEffect, useState } from "react";
 import { useBudgeting } from "../../hooks/useBudgeting";
 import { useExpenses } from "../../hooks/useExpenses";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
@@ -14,97 +14,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchReimbursementsForUser } from "../../store/reimbursementSlice";
 import { fetchExpensesForUser } from "../../store/expenseSlice";
 import { fetchUserBudgets } from "../../store/budgetSlice";
-import { Card, CardContent, Typography } from "@mui/material";
+import StatCard from "../../components/general/StatCard";
 
-// Single Stat Card
-const StatCard = ({ stat }) => (
-  <Card
-    sx={{
-      background: "#ffffff",
-      borderRadius: "16px",
-      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-      border: "1px solid rgba(226, 232, 240, 0.8)",
-      height: { xs: "auto", sm: "150px" },
-      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-      position: "relative",
-      overflow: "hidden",
-      mb: 2,
-      "&:hover": {
-        transform: { xs: "none", sm: "translateY(-4px)" },
-        boxShadow: { xs: "0 4px 20px rgba(0, 0, 0, 0.08)", sm: "0 8px 32px rgba(0, 0, 0, 0.12)" },
-      },
-      "&::before": {
-        content: '""',
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "3px",
-        background: `linear-gradient(90deg, ${stat.color} 0%, ${alpha(stat.color, 0.7)} 100%)`,
-      },
-    }}
-  >
-    <CardContent
-      sx={{
-        p: 2,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        height: "100%",
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Box
-          sx={{
-            backgroundColor: alpha(stat.color, 0.1),
-            borderRadius: "12px",
-            p: 1.5,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: `1px solid ${alpha(stat.color, 0.2)}`,
-          }}
-        >
-          {React.cloneElement(stat.icon, { sx: { color: stat.color, fontSize: 28 } })}
-        </Box>
-        <Typography
-          variant="h4"
-          sx={{
-            color: "#1e293b",
-            fontWeight: 700,
-            fontSize: { xs: "1.2rem", sm: "1.4rem", md: "1.6rem" },
-            lineHeight: 1.1,
-          }}
-        >
-          {stat.value}
-        </Typography>
-      </Box>
-      <Box>
-        <Typography
-          variant="h6"
-          sx={{
-            color: "#1e293b",
-            fontWeight: 700,
-            fontSize: { xs: "0.9rem", sm: "1rem" },
-            mb: 0.5,
-          }}
-        >
-          {stat.title}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: "#6b7280",
-            fontSize: { xs: "0.75rem", sm: "0.8rem" },
-            fontWeight: 600,
-          }}
-        >
-          {stat.subtitle}
-        </Typography>
-      </Box>
-    </CardContent>
-  </Card>
-);
+
 
 // Stats Cards Section
 const StatsCardsSection = ({ budgetStats }) => {
@@ -190,12 +102,14 @@ const Dashboard = () => {
     setSelectedMonth: setExpenseSelectedMonth,
   } = useExpenses();
 
+
+
   useEffect(() => {
     if (!user?._id) return
     if (user && user?._id) {
       dispatch(fetchExpensesForUser({ userId: user?._id, page: 1, limit: 20 }));
       dispatch(fetchReimbursementsForUser({
-        id: user?._id
+        id: user?._id,
       }))
       dispatch(fetchUserBudgets({
         userId: user._id
@@ -205,12 +119,6 @@ const Dashboard = () => {
   }, [dispatch, user])
 
 
-
-  // console.log("AllBudgets: ", allBudgets);
-
-  // console.log("user expenses: ", userExpenses);
-
-  console.log("userReimbursements: ", userReimbursements);
 
 
   // Budget Stats Calculations

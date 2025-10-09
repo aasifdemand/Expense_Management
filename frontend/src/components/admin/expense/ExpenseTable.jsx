@@ -447,6 +447,7 @@ const ExpenseTable = ({
                                 >
                                     <InputLabel>Department</InputLabel>
                                     <StyledSelect
+                                        MenuProps={{ disableScrollLock: true }}
                                         value={currentDepartment?._id || ""}
                                         onChange={(e) => {
                                             const dept = departments.find((d) => d._id === e.target.value);
@@ -454,6 +455,7 @@ const ExpenseTable = ({
                                             setCurrentSubDepartment(null);
                                         }}
                                         label="Department"
+
                                     >
                                         <MenuItem value="">
                                             <em>All Departments</em>
@@ -474,6 +476,7 @@ const ExpenseTable = ({
                                 >
                                     <InputLabel>Sub-Department</InputLabel>
                                     <StyledSelect
+                                        MenuProps={{ disableScrollLock: true }}
                                         value={currentSubDepartment?._id || ""}
                                         onChange={(e) => {
                                             const sub = subDepartments.find((s) => s._id === e.target.value);
@@ -503,13 +506,13 @@ const ExpenseTable = ({
                             }}
                         >
                             <InputLabel>Rows per page</InputLabel>
-                            <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
+                            <StyledSelect MenuProps={{ disableScrollLock: true }} value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
                                 {[5, 10, 20, 50].map((n) => (
                                     <MenuItem key={n} value={n}>
                                         {n}
                                     </MenuItem>
                                 ))}
-                            </Select>
+                            </StyledSelect>
                         </StyledFormControl>
                     </Stack>
 
