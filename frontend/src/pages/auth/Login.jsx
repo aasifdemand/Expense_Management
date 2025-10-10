@@ -453,6 +453,7 @@ const Login = () => {
                             />
 
                             {/* Enhanced Password Field */}
+                            {/* Enhanced Password Field */}
                             <FormControl
                                 variant="outlined"
                                 size="medium"
@@ -484,22 +485,25 @@ const Login = () => {
                                         </InputAdornment>
                                     }
                                     endAdornment={
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                aria-label={showPassword ? "Hide password" : "Show password"}
-                                                onClick={() => setShowPassword(!showPassword)}
-                                                edge="end"
-                                                size="medium"
-                                                sx={{
-                                                    color: errors.password ? "error.main" : "primary.main",
-                                                    "&:hover": {
-                                                        backgroundColor: "rgba(76, 163, 245, 0.1)"
-                                                    }
-                                                }}
-                                            >
-                                                {showPassword ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
+                                        // 🎯 Show eye icon only when password has content
+                                        formData.password && (
+                                            <InputAdornment position="end">
+                                                <IconButton
+                                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    edge="end"
+                                                    size="medium"
+                                                    sx={{
+                                                        color: errors.password ? "error.main" : "primary.main",
+                                                        "&:hover": {
+                                                            backgroundColor: "rgba(76, 163, 245, 0.1)"
+                                                        }
+                                                    }}
+                                                >
+                                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        )
                                     }
                                     label="Password"
                                     sx={{

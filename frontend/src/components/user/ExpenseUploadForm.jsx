@@ -228,7 +228,7 @@ export default function CreateExpenseForm() {
                             />
                         </Paper>
 
-                        {/* First Row: Department + Payment Mode */}
+                        {/* First Row: Department + Sub-Department */}
                         <Box
                             sx={{
                                 display: 'flex',
@@ -269,33 +269,37 @@ export default function CreateExpenseForm() {
                                 </StyledSelect>
                             </FormControl>
 
-                            {/* Payment Mode Dropdown */}
-                            <FormControl fullWidth required sx={{ flex: 1 }}>
-                                <InputLabel sx={{ fontWeight: 600 }}>Payment Mode</InputLabel>
-                                <StyledSelect
-                                    name="paymentMode"
-                                    value={form.paymentMode}
-                                    onChange={handleChange}
-                                    label="Payment Mode"
-                                    variant="outlined"
-                                >
-                                    {paymentModes?.map((mode) => (
-                                        <MenuItem key={mode} value={mode}>
-                                            <Box sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1.5
-                                            }}>
-                                                <PaymentIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
-                                                <Typography>{mode}</Typography>
-                                            </Box>
-                                        </MenuItem>
-                                    ))}
-                                </StyledSelect>
-                            </FormControl>
+                            {/* Sub-Department Dropdown - MOVED HERE */}
+                            {reduxSubDept.length > 0 ? (
+                                <FormControl fullWidth required sx={{ flex: 1 }}>
+                                    <InputLabel sx={{ fontWeight: 600 }}>Sub-Department</InputLabel>
+                                    <StyledSelect
+                                        name="subDepartment"
+                                        value={form.subDepartment}
+                                        onChange={handleChange}
+                                        label="Sub-Department"
+                                        variant="outlined"
+                                    >
+                                        {reduxSubDept?.map((sub) => (
+                                            <MenuItem key={sub._id} value={sub._id}>
+                                                <Box sx={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: 1.5
+                                                }}>
+                                                    <FolderSpecial sx={{ fontSize: 20, color: 'info.main' }} />
+                                                    <Typography>{sub?.name}</Typography>
+                                                </Box>
+                                            </MenuItem>
+                                        ))}
+                                    </StyledSelect>
+                                </FormControl>
+                            ) : (
+                                <Box sx={{ flex: 1 }} />
+                            )}
                         </Box>
 
-                        {/* Second Row: Vendor Name + Sub-Department */}
+                        {/* Second Row: Vendor Name + Payment Mode */}
                         <Box
                             sx={{
                                 display: 'flex',
@@ -324,34 +328,30 @@ export default function CreateExpenseForm() {
                                 />
                             </FormControl>
 
-                            {/* Sub-Department Dropdown */}
-                            {reduxSubDept.length > 0 ? (
-                                <FormControl fullWidth required sx={{ flex: 1 }}>
-                                    <InputLabel sx={{ fontWeight: 600 }}>Sub-Department</InputLabel>
-                                    <StyledSelect
-                                        name="subDepartment"
-                                        value={form.subDepartment}
-                                        onChange={handleChange}
-                                        label="Sub-Department"
-                                        variant="outlined"
-                                    >
-                                        {reduxSubDept?.map((sub) => (
-                                            <MenuItem key={sub._id} value={sub._id}>
-                                                <Box sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 1.5
-                                                }}>
-                                                    <FolderSpecial sx={{ fontSize: 20, color: 'info.main' }} />
-                                                    <Typography>{sub?.name}</Typography>
-                                                </Box>
-                                            </MenuItem>
-                                        ))}
-                                    </StyledSelect>
-                                </FormControl>
-                            ) : (
-                                <Box sx={{ flex: 1 }} />
-                            )}
+                            {/* Payment Mode Dropdown */}
+                            <FormControl fullWidth required sx={{ flex: 1 }}>
+                                <InputLabel sx={{ fontWeight: 600 }}>Payment Mode</InputLabel>
+                                <StyledSelect
+                                    name="paymentMode"
+                                    value={form.paymentMode}
+                                    onChange={handleChange}
+                                    label="Payment Mode"
+                                    variant="outlined"
+                                >
+                                    {paymentModes?.map((mode) => (
+                                        <MenuItem key={mode} value={mode}>
+                                            <Box sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5
+                                            }}>
+                                                <PaymentIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
+                                                <Typography>{mode}</Typography>
+                                            </Box>
+                                        </MenuItem>
+                                    ))}
+                                </StyledSelect>
+                            </FormControl>
                         </Box>
 
                         {/* Description Section */}
