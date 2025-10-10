@@ -94,39 +94,44 @@ const AdminDashboard = () => {
     return new Date(year, month + 1, 0).getDate();
   };
 
-  // Improved date parsing function with timezone handling
+  // 🎯 FIXED: Simplified date parsing without timezone issues
   const parseDate = (dateString) => {
     if (!dateString) return null;
 
     try {
-      // Create date object
-      const date = new Date(dateString);
-
-      // If it's an ISO string, adjust for timezone to get local date
+      // For ISO strings (from MongoDB), parse as UTC but treat as local date
       if (dateString.includes('T')) {
-        // Get local date components (this handles timezone automatically)
-        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-        return localDate;
+        const date = new Date(dateString);
+        // Create a new date using the UTC components but as local date
+        return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
       }
 
-      return date;
+      // For simple date strings (YYYY-MM-DD)
+      if (dateString.includes('-')) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day); // month is 0-indexed in JS Date
+      }
+
+      // Fallback
+      return new Date(dateString);
     } catch (error) {
       console.warn('Invalid date:', dateString, error);
       return null;
     }
   };
 
-  // Improved date comparison function
+  // 🎯 FIXED: Date comparison function
   const isDateInSelectedMonth = (date, selectedMonth, selectedYear) => {
     if (!date) return false;
 
+    // Use local date components
     const dateMonth = date.getMonth();
     const dateYear = date.getFullYear();
 
     return dateMonth === selectedMonth && dateYear === selectedYear;
   };
 
-  // Prepare data for daily area chart - FIXED VERSION
+  // 🎯 FIXED: Daily chart data preparation
   const getDailyAreaChartData = () => {
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
     const dailyData = [];
@@ -143,21 +148,27 @@ const AdminDashboard = () => {
       });
     }
 
-
-
     // Process expenses for the selected month with proper date parsing
     const monthlyExpenses = allExpenses?.filter(expense => {
       const expenseDate = parseDate(expense.date);
       const isInMonth = isDateInSelectedMonth(expenseDate, selectedMonth, selectedYear);
 
-
+      // Debug log to check date parsing
+      if (isInMonth && expense.date) {
+        console.log('Expense included:', {
+          originalDate: expense.date,
+          parsedDate: expenseDate?.toISOString(),
+          day: expenseDate?.getDate(),
+          amount: expense.amount
+        });
+      }
 
       return isInMonth;
     }) || [];
 
-    // console.log('Filtered monthly expenses:', monthlyExpenses.length, monthlyExpenses); // Debug log
+    console.log('Monthly expenses count:', monthlyExpenses.length); // Debug
 
-    // Fill in expense data using the correct keys from your DB
+    // Fill in expense data
     monthlyExpenses.forEach(expense => {
       const expenseDate = parseDate(expense.date);
       if (!expenseDate) return;
@@ -173,11 +184,11 @@ const AdminDashboard = () => {
         dailyData[dayIndex].fromAllocation += fromAllocation;
         dailyData[dayIndex].fromReimbursement += fromReimbursement;
         dailyData[dayIndex].totalAmount += totalAmount;
-
-
       }
     });
 
+    // Debug: Log the final data
+    console.log('Daily chart data:', dailyData);
 
     return dailyData;
   };
