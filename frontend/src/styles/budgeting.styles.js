@@ -7,7 +7,9 @@ import {
   Button as MuiButton,
   Select as MuiSelect,
   FormControl as MuiFormControl,
+  Box,
 } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 /* -------------------- Design Tokens / Variables -------------------- */
 const colors = {
@@ -327,6 +329,93 @@ export const StyledSelect = styled(MuiSelect)`
   &.MuiInputBase-root {
     border-radius: ${borderRadius.md};
     background: white;
+  }
+`;
+
+
+export const StyledDateRange = styled(Box)`
+  width: 100%;
+  
+  .date-range-label {
+    font-weight: 600;
+    color: ${colors.neutral[700]};
+    margin-bottom: 8px;
+    display: block;
+    font-size: ${typography.body};
+  }
+
+  .date-range-container {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+
+  .date-picker-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+export const StyledDatePicker = styled(DatePicker)`
+  & .MuiOutlinedInput-root {
+    border-radius: ${borderRadius.md};
+    background: white;
+    transition: all 0.2s ease;
+    width: 100%;
+    height:40px
+    
+    fieldset {
+      border: 2px solid ${colors.neutral[300]};
+      transition: border-color 0.2s ease;
+    }
+    
+    &:hover fieldset {
+      border-color: ${colors.neutral[400]};
+    }
+    
+    &.Mui-focused fieldset {
+      border-color: ${colors.primary.main};
+      box-shadow: ${shadows.focus};
+    }
+    
+    input {
+      padding: 14px 16px;
+      font-size: ${typography.body};
+      color: ${colors.neutral[800]};
+      font-weight: 500;
+      
+      &::placeholder {
+        color: ${colors.neutral[500]};
+        opacity: 1;
+      }
+    }
+  }
+
+  & .MuiInputLabel-root {
+    font-weight: 600;
+    color: ${colors.neutral[700]};
+    transform: translate(14px, 16px) scale(1);
+    
+    &.Mui-focused {
+      color: ${colors.primary.main};
+    }
+  }
+
+  & .MuiInputLabel-shrink {
+    transform: translate(14px, -9px) scale(0.85);
+    background: white;
+    padding: 0 8px;
+  }
+
+  & .MuiFormHelperText-root {
+    margin: 8px 0 0 4px;
+    font-size: ${typography.small};
+    color: ${colors.neutral[600]};
   }
 `;
 
