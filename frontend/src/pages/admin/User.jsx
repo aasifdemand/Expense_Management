@@ -34,7 +34,8 @@ import {
     Avatar,
     Stack,
     Tooltip,
-    CircularProgress
+    CircularProgress,
+    InputLabel
 } from '@mui/material';
 
 // Material-UI Icons
@@ -64,7 +65,7 @@ const UserDashboard = () => {
     ];
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
 
     // State management
     const dispatch = useDispatch();
@@ -213,7 +214,7 @@ const UserDashboard = () => {
     };
 
     return (
-        <Box sx={{ p: 3 }}>
+        <Box >
             {/* Add New User Section */}
             <Paper
                 elevation={0}
@@ -241,7 +242,7 @@ const UserDashboard = () => {
                     Add New User
                 </Typography>
 
-                <Box component="form" onSubmit={handleAddUser}>
+                <Box sx={{ mt: 2 }} component="form" onSubmit={handleAddUser}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -306,7 +307,9 @@ const UserDashboard = () => {
 
                         {/* Department Field - Takes available space */}
                         <StyledFormControl size="small" sx={{ flex: '1 1 180px' }}>
+                            <InputLabel sx={{ fontWeight: 600 }}>Department</InputLabel>
                             <StyledSelect
+                                MenuProps={{ disableScrollLock: true }}
                                 select
                                 label="Department"
                                 name="department"
@@ -339,7 +342,7 @@ const UserDashboard = () => {
                             size="medium"
                             startIcon={<AddIcon />}
                             sx={{
-                                height: '40px',
+                                height: '50px',
                                 borderRadius: 2,
                                 minWidth: '120px',
                                 flex: '0 0 auto'
@@ -355,10 +358,11 @@ const UserDashboard = () => {
             <Paper
                 elevation={0}
                 sx={{
-                    p: 3,
+                    p: { xs: 2, sm: 3 },
                     border: '1px solid',
                     borderColor: 'divider',
-                    borderRadius: 2
+                    borderRadius: 2,
+                    overflow: 'hidden' // Prevents horizontal scrolling issues
                 }}
             >
                 <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -387,17 +391,25 @@ const UserDashboard = () => {
                                 <CardContent>
                                     <Stack spacing={2}>
                                         {/* User Info */}
-                                        <Box>
-                                            <Typography variant="h6" fontWeight="600">
+                                        <Box sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+                                            <Typography variant="h6" fontWeight="600" noWrap>
                                                 {user?.name}
                                             </Typography>
                                             <Typography
                                                 variant="body2"
                                                 color="primary"
-                                                sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    mt: 0.5,
+                                                    minWidth: 0 // Important for flex truncation
+                                                }}
+                                                noWrap
                                             >
-                                                <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
-                                                {user?.email}
+                                                <EmailIcon fontSize="small" sx={{ mr: 0.5, flexShrink: 0 }} />
+                                                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {user?.email}
+                                                </Box>
                                             </Typography>
                                         </Box>
 
@@ -439,15 +451,24 @@ const UserDashboard = () => {
                         ))}
                     </Stack>
                 ) : (
-                    // Desktop Table View
-                    <TableContainer>
-                        <Table>
+                    // Desktop Table View - FIXED RESPONSIVENESS
+                    <TableContainer
+                        sx={{
+                            maxWidth: '100%',
+                            overflowX: 'auto',
+                            '& .MuiTableCell-root': {
+                                py: 2,
+                                px: { xs: 1, sm: 2 }
+                            }
+                        }}
+                    >
+                        <Table sx={{ minWidth: 800 }}> {/* Set minimum width for table */}
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 600 }}>User Information</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Contact & Department</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                                    <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                                    <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>User Information</TableCell>
+                                    <TableCell sx={{ fontWeight: 600, minWidth: 180 }}>Contact & Department</TableCell>
+                                    <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Status</TableCell>
+                                    <TableCell sx={{ fontWeight: 600, minWidth: 150 }}>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -459,23 +480,27 @@ const UserDashboard = () => {
                                     >
                                         <TableCell>
                                             <Box>
-                                                <Typography variant="subtitle1" fontWeight="600">
+                                                <Typography variant="subtitle1" fontWeight="600" noWrap>
                                                     {user?.name}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" color="text.secondary" noWrap>
                                                     <strong>Last Login:</strong> {formatLastLogin(user)}
                                                 </Typography>
                                             </Box>
                                         </TableCell>
                                         <TableCell>
-                                            <Box>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                                 <Typography
                                                     variant="body2"
                                                     color="primary"
-                                                    fontWeight="600"
-                                                    sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        fontWeight: 600
+                                                    }}
+                                                    noWrap
                                                 >
-                                                    <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
+                                                    <EmailIcon fontSize="small" sx={{ mr: 0.5, flexShrink: 0 }} />
                                                     {user?.email}
                                                 </Typography>
                                                 <Chip
@@ -483,6 +508,7 @@ const UserDashboard = () => {
                                                     label={user?.department}
                                                     size="small"
                                                     variant="outlined"
+                                                    sx={{ width: 'fit-content' }}
                                                 />
                                             </Box>
                                         </TableCell>
@@ -547,7 +573,7 @@ const UserDashboard = () => {
                     </IconButton>
                 </DialogTitle>
 
-                <DialogContent sx={{ pt: 3 }}>
+                <DialogContent sx={{ mt: 3 }}>
                     {/* User Info */}
                     <Paper
                         variant="outlined"
@@ -572,7 +598,7 @@ const UserDashboard = () => {
                     <Box component="form" onSubmit={handleResetPassword}>
                         <Stack spacing={3}>
                             {/* New Password Field */}
-                            <TextField
+                            <StyledTextField
                                 fullWidth
                                 label="New Password"
                                 name="newPassword"
@@ -602,7 +628,7 @@ const UserDashboard = () => {
                             />
 
                             {/* Confirm Password Field */}
-                            <TextField
+                            <StyledTextField
                                 fullWidth
                                 label="Confirm New Password"
                                 name="confirmPassword"
@@ -638,14 +664,14 @@ const UserDashboard = () => {
                     <Button onClick={closeResetPasswordModal} size="large">
                         Cancel
                     </Button>
-                    <Button
+                    <PrimaryButton
                         onClick={handleResetPassword}
                         variant="contained"
                         size="large"
                         startIcon={<LockResetIcon />}
                     >
                         Reset Password
-                    </Button>
+                    </PrimaryButton>
                 </DialogActions>
             </Dialog>
         </Box>
