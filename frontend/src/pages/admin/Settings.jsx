@@ -21,6 +21,7 @@ import {
   LocationOn as LocationIcon,
   AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
+import { PrimaryButton, StyledTextField } from '../../styles/budgeting.styles';
 
 const SettingsPage = () => {
   const dispatch = useDispatch();
@@ -100,7 +101,7 @@ const SettingsPage = () => {
         sx={{
           margin: '0 auto',
           p: { xs: 2, sm: 3 },
-          maxWidth: '1200px',
+
           width: '100%'
         }}
       >
@@ -276,7 +277,7 @@ const SettingsPage = () => {
                     </Box>
                   </Box>
 
-                  <Button
+                  <PrimaryButton
                     className="action-button primary"
                     variant="contained"
                     startIcon={<EditIcon />}
@@ -289,7 +290,7 @@ const SettingsPage = () => {
                     size={isMobile ? "small" : "medium"}
                   >
                     Edit Profile
-                  </Button>
+                  </PrimaryButton>
                 </Paper>
               ) : (
                 // Edit Mode - Improved responsive layout
@@ -314,7 +315,7 @@ const SettingsPage = () => {
                     >
                       Full Name
                     </Typography>
-                    <TextField
+                    <StyledTextField
                       fullWidth
                       type="text"
                       value={userProfile.name}
@@ -335,7 +336,7 @@ const SettingsPage = () => {
                     >
                       Email Address
                     </Typography>
-                    <TextField
+                    <StyledTextField
                       fullWidth
                       type="email"
                       value={userProfile.email}
@@ -356,7 +357,7 @@ const SettingsPage = () => {
                     >
                       Phone Number
                     </Typography>
-                    <TextField
+                    <StyledTextField
                       fullWidth
                       type="tel"
                       value={userProfile.phone}
@@ -376,7 +377,7 @@ const SettingsPage = () => {
                       flexDirection: { xs: 'column', sm: 'row' }
                     }}
                   >
-                    <Button
+                    <PrimaryButton
                       className="action-button primary"
                       variant="contained"
                       onClick={saveProfile}
@@ -385,7 +386,7 @@ const SettingsPage = () => {
                       sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                       {updateProfileLoading ? 'Saving...' : 'Save Changes'}
-                    </Button>
+                    </PrimaryButton>
                     <Button
                       className="action-button secondary"
                       variant="outlined"
