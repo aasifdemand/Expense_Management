@@ -105,18 +105,32 @@ const Dashboard = () => {
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
 
+  // 🎯 FIXED: Better date parsing without timezone issues
   const parseDate = (dateString) => {
     if (!dateString) return null;
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return null;
-    return date;
+
+    try {
+      // For ISO strings with timezone (from MongoDB)
+      if (dateString.includes('T')) {
+        const date = new Date(dateString);
+        // Use UTC components to avoid timezone shifts
+        return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+      }
+
+      // For simple date strings
+      return new Date(dateString);
+    } catch (error) {
+      console.warn('Invalid date:', dateString, error);
+      return null;
+    }
   };
 
-  // ✅ FIXED: Now using createdAt for date grouping
+  // 🎯 FIXED: Using direct string comparison for reliability
   const getDailyAreaChartData = () => {
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
     const dailyData = [];
 
+    // Initialize all days with 0 values
     for (let day = 1; day <= daysInMonth; day++) {
       dailyData.push({
         day: day.toString(),
@@ -127,30 +141,56 @@ const Dashboard = () => {
       });
     }
 
-    const monthlyExpenses =
-      allExpenses?.filter((expense) => {
-        if (!expense?.createdAt) return false;
-        const expenseDate = parseDate(expense.createdAt);
-        if (!expenseDate) return false;
-        return (
-          expenseDate.getMonth() === selectedMonth &&
-          expenseDate.getFullYear() === selectedYear
-        );
-      }) || [];
+    // 🎯 FIXED: Use direct string comparison to avoid timezone issues
+    const monthlyExpenses = allExpenses?.filter((expense) => {
+      if (!expense?.createdAt) return false;
 
+      const expenseDate = parseDate(expense.createdAt);
+      if (!expenseDate) return false;
+
+      const expenseMonth = expenseDate.getMonth();
+      const expenseYear = expenseDate.getFullYear();
+
+      return expenseMonth === selectedMonth && expenseYear === selectedYear;
+    }) || [];
+
+    // Debug: Check what dates are being processed
+    console.log('=== CHART DEBUG ===');
+    console.log('Selected Month/Year:', selectedMonth + 1, selectedYear);
+    console.log('Total expenses found:', monthlyExpenses.length);
+
+    // Log first few expenses to verify dates
+    monthlyExpenses.slice(0, 3).forEach((expense, index) => {
+      const expenseDate = parseDate(expense.createdAt);
+      console.log(`Expense ${index + 1}:`, {
+        originalDate: expense.createdAt,
+        parsedDate: expenseDate?.toISOString(),
+        day: expenseDate?.getDate(),
+        amount: expense.amount
+      });
+    });
+
+    // Fill in expense data
     monthlyExpenses.forEach((expense) => {
       const expenseDate = parseDate(expense.createdAt);
       if (!expenseDate) return;
+
       const day = expenseDate.getDate();
-      if (dailyData[day - 1]) {
+      const dayIndex = day - 1;
+
+      if (dailyData[dayIndex]) {
         const fromAllocation = Number(expense.fromAllocation || 0);
         const fromReimbursement = Number(expense.fromReimbursement || 0);
         const totalAmount = Number(expense.amount || 0);
-        dailyData[day - 1].fromAllocation += fromAllocation;
-        dailyData[day - 1].fromReimbursement += fromReimbursement;
-        dailyData[day - 1].totalAmount += totalAmount;
+
+        dailyData[dayIndex].fromAllocation += fromAllocation;
+        dailyData[dayIndex].fromReimbursement += fromReimbursement;
+        dailyData[dayIndex].totalAmount += totalAmount;
       }
     });
+
+    // Debug: Check final data
+    console.log('Final chart data:', dailyData.filter(day => day.totalAmount > 0));
 
     return dailyData;
   };
@@ -263,7 +303,7 @@ const Dashboard = () => {
               </Box>
             </Box>
 
-            {/* ✅ Chart without theme.palette */}
+            {/* Chart Section */}
             <Box sx={{ width: "100%", height: 400 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
