@@ -68,15 +68,21 @@ export class BudgetService {
       }
     }
 
+    // ====== FIXED: UTC-safe month/year for budget ======
+    const now = new Date();
+    const budgetDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const month = budgetDate.getUTCMonth() + 1;
+    const year = budgetDate.getUTCFullYear();
+
     // Create the budget
     const budget = await this.budgetModel.create({
       user: userId,
       allocatedAmount: amount,
       spentAmount: 0,
       remainingAmount: amount,
-      month: Number(new Date().getMonth() + 1),
-      year: Number(new Date().getFullYear()),
-      company
+      month,
+      year,
+      company,
     });
 
     // Update user
@@ -99,13 +105,16 @@ export class BudgetService {
     return {
       message: 'Budget allocated successfully',
       budget: populatedBudget,
-      reimbursementUpdate: reimbursementUpdate ? {
-        _id: reimbursementUpdate._id,
-        newAmount: reimbursementUpdate.amount,
-        previousAmount: existingReimbursement?.amount
-      } : null
+      reimbursementUpdate: reimbursementUpdate
+        ? {
+          _id: reimbursementUpdate._id,
+          newAmount: reimbursementUpdate.amount,
+          previousAmount: existingReimbursement?.amount,
+        }
+        : null,
     };
   }
+
 
 
 

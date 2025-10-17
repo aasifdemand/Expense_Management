@@ -16,7 +16,7 @@ export class Expense extends Document {
   @Prop({ default: 0 })
   fromReimbursement: number;
 
-  @Prop({ default: Date.now() })
+  @Prop({ default: () => new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000) })
   date: Date;
 
 
@@ -48,4 +48,9 @@ export class Expense extends Document {
   reimbursement?: Types.ObjectId
 }
 
+
+
 export const ExpenseSchema = SchemaFactory.createForClass(Expense);
+
+
+

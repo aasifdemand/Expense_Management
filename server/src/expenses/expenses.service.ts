@@ -62,7 +62,7 @@ export class ExpensesService {
       isReimbursed,
       subDepartment,
       paymentMode,
-      vendor
+      vendor,
     } = data;
 
     const user = await this.userModal
@@ -82,9 +82,11 @@ export class ExpensesService {
       proof = uploaded.url;
     }
 
+    // ====== FIXED: UTC-safe expense date ======
     const now = new Date();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
+    const expenseDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const month = expenseDate.getUTCMonth() + 1;
+    const year = expenseDate.getUTCFullYear();
 
     // Get CURRENT MONTH budgets only
     const currentMonthBudgets = await this.budgetModel
@@ -122,7 +124,7 @@ export class ExpensesService {
     // Get or create reimbursement document
     let reimbursement = await this.reimbursementModel.findOne({
       requestedBy: userId,
-      isReimbursed: false
+      isReimbursed: false,
     });
 
     let newReimbursementAmount = 0;
@@ -201,6 +203,7 @@ export class ExpensesService {
       description,
       year,
       month,
+      date: expenseDate, // ✅ UTC-safe date
       paymentMode,
       vendor,
       budgets: currentMonthBudgets.map(b => b._id),

@@ -50,5 +50,11 @@ export const BudgetSchema =
 
 BudgetSchema.pre("save", function (next) {
   this.remainingAmount = this.allocatedAmount - this.spentAmount
+
+  const now = new Date();
+  this.month = now.getMonth() + 1;
+  this.year = now.getFullYear();
+
+  next();
   next()
 })

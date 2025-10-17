@@ -11,17 +11,13 @@ import {
     Select,
     useMediaQuery,
     useTheme,
-    Switch,
+    Avatar,
 } from "@mui/material";
 import {
     MoreVert as MoreVertIcon,
     Menu as MenuIcon,
-    Settings as SettingsIcon,
-    AccountCircle as AccountIcon,
     Business as BusinessIcon,
     Logout as LogoutIcon,
-    DarkMode as DarkModeIcon,
-    LightMode as LightModeIcon
 } from "@mui/icons-material";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -269,6 +265,7 @@ const Navbar = ({
                 </Box>
 
                 {/* Enhanced Profile Menu */}
+                {/* Enhanced Profile Menu */}
                 <Menu
                     disableScrollLock
                     anchorEl={anchorEl}
@@ -287,11 +284,11 @@ const Navbar = ({
                     PaperProps={{
                         sx: {
                             mt: 4.5,
-                            minWidth: isMobile ? 200 : 220,
+                            minWidth: isMobile ? 200 : 240,
                             borderRadius: 2,
                             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
                             transition: 'all 0.3s ease',
-                            zIndex: (theme) => theme.zIndex.drawer + 2000, // Increased zIndex for dropdown
+                            zIndex: (theme) => theme.zIndex.drawer + 2000,
                             '@media (max-width: 480px)': {
                                 minWidth: '95vw',
                                 maxWidth: '95vw',
@@ -321,7 +318,7 @@ const Navbar = ({
                                     MenuProps={{
                                         disableScrollLock: true,
                                         sx: {
-                                            zIndex: (theme) => theme.zIndex.drawer + 3000, // Highest zIndex for select dropdown
+                                            zIndex: (theme) => theme.zIndex.drawer + 3000,
                                         }
                                     }}
                                 >
@@ -379,26 +376,59 @@ const Navbar = ({
                         </Box>
                     )}
 
-                    {/* Profile Menu Items */}
-                    {/* <MenuItem onClick={handleProfileClick} sx={{ transition: 'all 0.3s ease' }}>
-                        <AccountIcon sx={{
-                            mr: 2,
-                            fontSize: isMobile ? 18 : 20
-                        }} />
-                        <Typography variant="body2">Profile</Typography>
-                    </MenuItem> */}
+                    {/* 🧑‍💼 User Info Section */}
+                    <Box
+                        sx={{
+                            px: 2,
+                            py: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            borderBottom: 1,
+                            borderColor: 'divider',
+                            transition: 'all 0.3s ease',
+                        }}
+                    >
+                        <Avatar
+                            sx={{
+                                bgcolor: 'primary.main',
+                                width: 36,
+                                height: 36,
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                            }}
+                            src={user?.avatarUrl || ''}
+                        >
+                            {!user?.avatarUrl && user?.name
+                                ? user.name.charAt(0).toUpperCase()
+                                : 'U'}
+                        </Avatar>
+                        <Box>
+                            <Typography variant="subtitle2" fontWeight="bold">
+                                {user?.name || 'User'}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ textTransform: 'capitalize' }}
+                            >
+                                {user?.role || 'Member'}
+                            </Typography>
+                        </Box>
+                    </Box>
 
-
-
-
+                    {/* Profile and Logout Options */}
                     <MenuItem onClick={handleLogoutClick} sx={{ transition: 'all 0.3s ease' }}>
-                        <LogoutIcon sx={{
-                            mr: 2,
-                            fontSize: isMobile ? 18 : 20
-                        }} />
+                        <LogoutIcon
+                            sx={{
+                                mr: 2,
+                                fontSize: isMobile ? 18 : 20
+                            }}
+                        />
                         <Typography variant="body2">Logout</Typography>
                     </MenuItem>
                 </Menu>
+
             </Toolbar>
         </AppBar >
     );

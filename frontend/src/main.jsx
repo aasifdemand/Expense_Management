@@ -18,14 +18,10 @@ createRoot(document.getElementById('root')).render(
 
   <Provider store={store}>
     <BrowserRouter>
-
       <LocationProvider>
-        <ThemeProvider>
-          <App />
-          <Toaster />
-        </ThemeProvider>
+        <App />
+        <Toaster />
       </LocationProvider>
-
     </BrowserRouter>
   </Provider>
 
