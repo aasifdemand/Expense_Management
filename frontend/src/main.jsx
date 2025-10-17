@@ -21,14 +21,10 @@ createRoot(document.getElementById('root')).render(
 
   <Provider store={store}>
     <BrowserRouter>
-
       <LocationProvider>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <App />
-          <Toaster />
-        </LocalizationProvider>
+        <App />
+        <Toaster />
       </LocationProvider>
-
     </BrowserRouter>
   </Provider>
 

@@ -265,7 +265,6 @@ const AdminDashboard = () => {
         </Box>
       </Box>
 
-      {/* Daily Area Chart Section */}
       <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Card>
           <CardContent>
@@ -276,29 +275,17 @@ const AdminDashboard = () => {
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <InputLabel>Month</InputLabel>
-                  <Select
-                    value={selectedMonth}
-                    label="Month"
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  >
+                  <Select value={selectedMonth} label="Month" onChange={(e) => setSelectedMonth(e.target.value)}>
                     {months.map((month, index) => (
-                      <MenuItem key={month} value={index}>
-                        {month}
-                      </MenuItem>
+                      <MenuItem key={month} value={index}>{month}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
                 <FormControl size="small" sx={{ minWidth: 100 }}>
                   <InputLabel>Year</InputLabel>
-                  <Select
-                    value={selectedYear}
-                    label="Year"
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                  >
+                  <Select value={selectedYear} label="Year" onChange={(e) => setSelectedYear(e.target.value)}>
                     {years.map((year) => (
-                      <MenuItem key={year} value={year}>
-                        {year}
-                      </MenuItem>
+                      <MenuItem key={year} value={year}>{year}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
@@ -307,20 +294,28 @@ const AdminDashboard = () => {
 
             <Box sx={{ width: '100%', height: 400 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={dailyAreaChartData}
+                <AreaChart data={dailyAreaChartData}>
+                  <defs>
+                    {/* Gradient for Allocation */}
+                    <linearGradient id="colorAllocation" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
+                    </linearGradient>
+                    {/* Gradient for Reimbursement */}
+                    <linearGradient id="colorReimbursement" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.6} />
+                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.1} />
+                    </linearGradient>
+                    {/* Gradient for Total */}
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
 
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="day"
-                    tick={{ fill: theme.palette.text.secondary }}
-                    label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
-                  />
-                  <YAxis
-                    tick={{ fill: theme.palette.text.secondary }}
-                    tickFormatter={(value) => `₹${value.toLocaleString()}`}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis dataKey="day" tick={{ fill: theme.palette.text.secondary }} label={{ value: 'Days', position: 'insideBottom', offset: -5 }} />
+                  <YAxis tick={{ fill: theme.palette.text.secondary }} tickFormatter={(value) => `₹${value.toLocaleString()}`} />
                   <Tooltip
                     formatter={(value, name) => {
                       const formattedValue = `₹${Number(value).toLocaleString()}`;
@@ -338,53 +333,32 @@ const AdminDashboard = () => {
                       return `Day: ${label}`;
                     }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="fromAllocation"
-                    stackId="1"
-                    stroke={theme.palette.primary.main}
-                    fill={theme.palette.primary.light}
-                    fillOpacity={0.6}
-                    name="fromAllocation"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="fromReimbursement"
-                    stackId="1"
-                    stroke={theme.palette.secondary.main}
-                    fill={theme.palette.secondary.light}
-                    fillOpacity={0.6}
-                    name="fromReimbursement"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="totalAmount"
-                    stackId="1"
-                    stroke={theme.palette.success.main}
-                    fill={theme.palette.success.light}
-                    fillOpacity={0.4}
-                    name="totalAmount"
-                  />
+
+                  <Area type="monotone" dataKey="fromAllocation" stackId="1" stroke="#3b82f6" fill="url(#colorAllocation)" name="From Allocation" />
+                  <Area type="monotone" dataKey="fromReimbursement" stackId="1" stroke="#f59e0b" fill="url(#colorReimbursement)" name="From Reimbursement" />
+                  <Area type="monotone" dataKey="totalAmount" stackId="1" stroke="#10b981" fill="url(#colorTotal)" name="Total Amount" />
                 </AreaChart>
               </ResponsiveContainer>
             </Box>
+
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mt: 2, flexWrap: 'wrap' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.primary.main, borderRadius: 1 }} />
+                <Box sx={{ width: 12, height: 12, backgroundColor: '#3b82f6', borderRadius: 1 }} />
                 <Typography variant="body2" color="text.secondary">From Allocation</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.secondary.main, borderRadius: 1 }} />
+                <Box sx={{ width: 12, height: 12, backgroundColor: '#f59e0b', borderRadius: 1 }} />
                 <Typography variant="body2" color="text.secondary">From Reimbursement</Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 12, height: 12, backgroundColor: theme.palette.success.main, borderRadius: 1 }} />
+                <Box sx={{ width: 12, height: 12, backgroundColor: '#10b981', borderRadius: 1 }} />
                 <Typography variant="body2" color="text.secondary">Total Amount</Typography>
               </Box>
             </Box>
           </CardContent>
         </Card>
       </Box>
+
 
       {/* Tabs */}
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
