@@ -177,18 +177,8 @@ export default function CreateExpenseForm() {
                             </Typography>
                         </Box>
 
-                        {/* Amount Section - More Prominent */}
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 3,
-                                backgroundColor: 'primary.lightest',
-                                border: '2px solid',
-                                borderColor: 'primary.light',
-                                borderRadius: 2
-                            }}
-                        >
-                            <Typography
+
+                        {/* <Typography
                                 variant="subtitle2"
                                 sx={{
                                     fontWeight: 600,
@@ -197,36 +187,36 @@ export default function CreateExpenseForm() {
                                 }}
                             >
                                 AMOUNT
-                            </Typography>
-                            <StyledTextField
-                                fullWidth
-                                label="Amount"
-                                name="amount"
-                                type="number"
-                                value={form.amount}
-                                onChange={handleChange}
-                                required
-                                variant="outlined"
-                                placeholder="0.00"
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography variant="h6" color="primary.main">
-                                                ₹
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                                sx={{
-                                    maxWidth: { sm: '100%' },
-                                    '& .MuiOutlinedInput-root': {
-                                        backgroundColor: 'white',
-                                        fontSize: '1.2rem',
-                                        fontWeight: 600
-                                    }
-                                }}
-                            />
-                        </Paper>
+                            </Typography> */}
+                        <StyledTextField
+                            fullWidth
+                            label="Amount"
+                            name="amount"
+                            type="number"
+                            value={form.amount}
+                            onChange={handleChange}
+                            required
+                            variant="outlined"
+                            placeholder="0.00"
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Typography variant="h6" color="primary.main">
+                                            ₹
+                                        </Typography>
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{
+                                maxWidth: { sm: '100%' },
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: 'white',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 600
+                                }
+                            }}
+                        />
+
 
                         {/* First Row: Department + Sub-Department */}
                         <Box

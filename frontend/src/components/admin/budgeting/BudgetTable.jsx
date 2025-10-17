@@ -79,12 +79,12 @@ const BudgetTable = ({
             <Box
                 sx={{
                     display: "flex",
-                    flexDirection: "row",
+                    flexDirection: { xs: "column", sm: "row" },
                     flexWrap: "wrap",
                     alignItems: "center",
                     justifyContent: "space-between",
                     gap: 2,
-                    width: "100%"
+                    width: "100%",
                 }}
             >
                 {role === "superadmin" && (
@@ -93,14 +93,21 @@ const BudgetTable = ({
                         size="medium"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        sx={{ flex: "1 1 200px", minWidth: "150px" }}
+                        sx={{
+                            flex: 1,
+                            width: "100%", // ensures full width
+                        }}
                     />
                 )}
 
-
-
                 {setLimit && showPagination && (
-                    <StyledFormControl size="medium" >
+                    <StyledFormControl
+                        size="medium"
+                        sx={{
+                            flex: 1,
+                            width: "100%", // ensures full width
+                        }}
+                    >
                         <InputLabel>Rows per page</InputLabel>
                         <StyledSelect
                             MenuProps={{ disableScrollLock: true }}
@@ -117,6 +124,7 @@ const BudgetTable = ({
                     </StyledFormControl>
                 )}
             </Box>
+
 
             <Divider sx={{ py: 2 }} />
 
