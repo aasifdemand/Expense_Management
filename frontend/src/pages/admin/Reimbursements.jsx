@@ -186,32 +186,53 @@ const ReimbursementManagement = () => {
 
             {/* Filters and Controls */}
             <Card sx={{ mb: 3, p: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-
-
-                    <StyledFormControl size="small" sx={{ minWidth: 100 }}>
-                        <InputLabel>Per Page</InputLabel>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: { xs: "column", sm: "row" }, // stack on mobile, row on desktop
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                        width: "100%",
+                    }}
+                >
+                    <StyledFormControl
+                        size="small"
+                        sx={{
+                            flex: 1,
+                            width: "100%", // full width for small screens
+                            minWidth: 100,
+                        }}
+                    >
+                        <InputLabel>Rows Per Page</InputLabel>
                         <StyledSelect
                             MenuProps={{ disableScrollLock: true }}
                             value={itemsPerPage}
                             label="Per Page"
                             onChange={handleItemsPerPageChange}
                         >
-                            <MenuItem value={5}>5</MenuItem>
-                            <MenuItem value={10}>10</MenuItem>
-                            <MenuItem value={20}>20</MenuItem>
-                            <MenuItem value={50}>50</MenuItem>
-                            <MenuItem value={100}>100</MenuItem>
+                            {[5, 10, 20, 50, 100].map((num) => (
+                                <MenuItem key={num} value={num}>
+                                    {num}
+                                </MenuItem>
+                            ))}
                         </StyledSelect>
                     </StyledFormControl>
 
-                    <Box sx={{ flexGrow: 1 }} />
-
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                            flex: 1,
+                            width: "100%", // makes text span full width on mobile
+                            textAlign: { xs: "left", sm: "right" }, // align right on larger screens
+                        }}
+                    >
                         Showing {reimbursements.length} of {pagination.totalItems} reimbursements
                     </Typography>
                 </Box>
             </Card>
+
 
             {/* Reimbursements Table */}
             <Card

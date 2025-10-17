@@ -389,35 +389,7 @@ const Navbar = ({
                     </MenuItem> */}
 
 
-                    {/* Enhanced Dark Mode Toggle */}
-                    <Box sx={{
-                        px: 2,
-                        py: 1,
-                        borderTop: 1,
-                        borderBottom: 1,
-                        borderColor: 'divider',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.3s ease',
-                    }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                            {darkMode ? (
-                                <LightModeIcon sx={{ mr: 1.5, fontSize: 18, color: 'warning.main' }} />
-                            ) : (
-                                <DarkModeIcon sx={{ mr: 1.5, fontSize: 18, color: 'primary.main' }} />
-                            )}
-                            <Typography variant="body2">
-                                {darkMode ? 'Light Mode' : 'Dark Mode'}
-                            </Typography>
-                        </Box>
-                        <Switch
-                            checked={darkMode}
-                            onChange={handleDarkModeToggle}
-                            size="small"
-                            color="primary"
-                        />
-                    </Box>
+
 
                     <MenuItem onClick={handleLogoutClick} sx={{ transition: 'all 0.3s ease' }}>
                         <LogoutIcon sx={{
