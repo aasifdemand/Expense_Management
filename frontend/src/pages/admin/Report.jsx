@@ -64,6 +64,69 @@ const Reports = () => {
     const { reimbursements } = useSelector((state) => state?.reimbursement);
     const { departments: reduxDeps } = useSelector((state) => state.department);
 
+    // Sub-departments data structure
+    const subDepartmentsData = {
+        'sales': [
+            'G-Suite',
+            'Instantly',
+            'Domain',
+            'Contabo',
+            'Linkedin',
+            'Vendor G-Suite',
+            'Vendor Outlook',
+            'VPN',
+            'Zoom Calling',
+            'Ai Ark',
+            'Others'
+        ],
+        'office': [
+            'APNA',
+            'Naukri',
+            'Milk Bill/Tea etc.',
+            'Cake',
+            'Electricity Bill',
+            'Swiggy/Blinkit',
+            'Office Rent',
+            'Office Maintenance',
+            'Stationary',
+            'Courier Charges',
+            'Salaries',
+            'Salary Arrears',
+            'Incentive',
+            'Incentive Arrears',
+            'Internet Bill',
+            'Office Repairs & Butification',
+            'Chairs Purchase',
+            'Goodies/Bonuses/Bonanza',
+            'Event Exp',
+            'Cricket',
+            'Trainings',
+            'Employee Insurance',
+            'ID Cards',
+            'Laptop',
+            'Desktop',
+            'System Peripherals',
+            'Others'
+        ],
+        'data': [
+            'Apollo',
+            'Linkedin',
+            'Email Verifier',
+            'Zoominfo',
+            'VPN',
+            'Ai Ark',
+            'Domain',
+            'Others'
+        ],
+        'it': [
+            'Servers',
+            'Domain',
+            'Zoho',
+            'Instantly',
+            'Real Cloud',
+            'Others'
+        ]
+    };
 
     // Get current date for proper date initialization
     const getCurrentDateRange = () => {
@@ -85,6 +148,7 @@ const Reports = () => {
     const [filter, setFilter] = useState({
         type: 'expenses',
         department: 'all',
+        subDepartment: 'all',
         reimbursementStatus: 'all',
         dateRange: getCurrentDateRange()
     });
@@ -113,10 +177,28 @@ const Reports = () => {
         setFilter({
             type: 'expenses',
             department: 'all',
+            subDepartment: 'all',
             reimbursementStatus: 'all',
             dateRange: getCurrentDateRange()
         });
         setGeneratedReport(null);
+    };
+
+    // Get sub-departments for selected department
+    const getSubDepartments = () => {
+        if (filter.department === 'all' || !subDepartmentsData[filter.department]) {
+            return ['all'];
+        }
+        return ['all', ...subDepartmentsData[filter.department]];
+    };
+
+    // Handle department change
+    const handleDepartmentChange = (department) => {
+        setFilter({
+            ...filter,
+            department: department,
+            subDepartment: 'all'
+        });
     };
 
     // Format date for display
@@ -142,23 +224,18 @@ const Reports = () => {
             // Add company logo (with error handling)
             try {
                 const logo = "/image.png";
-                doc.addImage(logo, "PNG", 14, 15, 40, 15);
+                // Center the logo at the top
+                doc.addImage(logo, "PNG", 78, 15, 60, 20);
             } catch (logoError) {
                 console.warn("Logo not found, continuing without logo", logoError);
+                // If logo fails, add a centered title instead
+                doc.setFontSize(20);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont(undefined, 'bold');
+                doc.text('DEMANDCURVE', 105, 25, { align: 'center' });
             }
 
-            // Title Section
-            doc.setFontSize(20);
-            doc.setTextColor(40, 40, 40);
-            doc.setFont(undefined, 'bold');
-            doc.text('DEMANDCURVE', 105, 20, { align: 'center' });
-
-            doc.setFontSize(12);
-            doc.setTextColor(100, 100, 100);
-            doc.setFont(undefined, 'normal');
-            doc.text('TALENT INTERPRETED', 105, 28, { align: 'center' });
-
-            // Report Title
+            // Report Title - Moved below logo
             doc.setFontSize(16);
             doc.setTextColor(40, 40, 40);
             doc.setFont(undefined, 'bold');
@@ -168,7 +245,9 @@ const Reports = () => {
             doc.setFontSize(10);
             doc.setTextColor(100, 100, 100);
             doc.setFont(undefined, 'normal');
-            doc.text(`Generated on ${formatDate(new Date())} • Department: ${generatedReport.department || 'All'} • ${generatedReport.items?.length || 0} records found`, 105, 52, { align: 'center' });
+            const departmentInfo = generatedReport.department === 'all' ? 'All Departments' :
+                generatedReport.department + (generatedReport.subDepartment !== 'all' ? ` (${generatedReport.subDepartment})` : '');
+            doc.text(`Generated on ${formatDate(new Date())} • Department: ${departmentInfo} • ${generatedReport.items?.length || 0} records found`, 105, 52, { align: 'center' });
 
             // Add separator line
             doc.setDrawColor(200, 200, 200);
@@ -245,14 +324,15 @@ const Reports = () => {
                 doc.text("No data available for this report", 14, doc.lastAutoTable.finalY + 25);
             } else {
                 if (generatedReport.type === 'expenses') {
-                    columns = ["ID", "User", "Department", "Date", "Amount", "Description", "Payment Mode"];
+                    columns = ["ID", "User", "Department", "Categories", "Date", "Amount", "Description", "Payment Mode"];
                     generatedReport.items.forEach((item, index) => {
                         rows.push([
                             (index + 1).toString(),
                             item.user || "Unknown",
                             item.department || "N/A",
+                            item.subDepartment || "N/A",
                             item.date ? formatDate(item.date) : "N/A",
-                            `${(item.amount || 0)}`,
+                            `₹${(item.amount || 0)}`,
                             item.description || "N/A",
                             item.paymentMode || "N/A"
                         ]);
@@ -327,7 +407,7 @@ const Reports = () => {
                 doc.setFontSize(8);
                 doc.setTextColor(150, 150, 150);
                 doc.text(`Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
-                doc.text('Generated by DemandCurve Talent Management System', 105, 290, { align: 'center' });
+                doc.text('Generated by DemandCurve Monthly Expense Statement System', 105, 290, { align: 'center' });
             }
 
             doc.save(`${generatedReport.type}_report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -350,12 +430,13 @@ const Reports = () => {
             const rows = [];
 
             if (generatedReport.type === 'expenses') {
-                headers.push('ID', 'User', 'Department', 'Date', 'Amount', 'Description', 'Payment Mode');
+                headers.push('ID', 'User', 'Department', 'Categories', 'Date', 'Amount', 'Description', 'Payment Mode');
                 generatedReport.items.forEach((item, index) => {
                     rows.push([
                         index + 1,
                         `"${item.user || 'Unknown'}"`,
                         `"${item.department || 'N/A'}"`,
+                        `"${item.subDepartment || 'N/A'}"`,
                         item.date || 'N/A',
                         item.amount || 0,
                         `"${item.description || 'N/A'}"`,
@@ -401,7 +482,9 @@ const Reports = () => {
             csvContent += `DEMANDCURVE - TALENT INTERPRETED\n`;
             csvContent += `${generatedReport.title}\n`;
             csvContent += `Generated on: ${formatDate(new Date())}\n`;
-            csvContent += `Department: ${generatedReport.department}\n`;
+            const departmentInfo = generatedReport.department === 'all' ? 'All Departments' :
+                generatedReport.department + (generatedReport.subDepartment !== 'all' ? ` (${generatedReport.subDepartment})` : '');
+            csvContent += `Department: ${departmentInfo}\n`;
             csvContent += `Total Records: ${generatedReport.items.length}\n\n`;
 
             csvContent += `Dataset Report\n`;
@@ -473,6 +556,21 @@ const Reports = () => {
         return filtered;
     };
 
+    const filterBySubDepartment = (items) => {
+        if (filter.subDepartment === 'all' || !filter.subDepartment || filter.department === 'all') {
+            return items;
+        }
+
+        const filtered = items.filter(item => {
+            if (!item) return false;
+            const itemSubDept = item.subDepartment || item.subdepartment || '';
+            return itemSubDept === filter.subDepartment;
+        });
+
+        console.log(`Filtered to ${filtered.length} items by sub-department: ${filter.subDepartment}`);
+        return filtered;
+    };
+
     const getActualData = () => {
         const budgetData = Array.isArray(allBudgets) && allBudgets.length > 0 ? allBudgets :
             Array.isArray(budgets) && budgets.length > 0 ? budgets : [];
@@ -505,6 +603,7 @@ const Reports = () => {
 
         let filteredExpenses = filterByDateRange(expenseData);
         filteredExpenses = filterByDepartment(filteredExpenses);
+        filteredExpenses = filterBySubDepartment(filteredExpenses);
 
         const totalAmount = filteredExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
         const { month, year } = getCurrentMonthYear();
@@ -513,12 +612,14 @@ const Reports = () => {
             title: `Expense Report - ${month} ${year}`,
             type: 'expenses',
             department: filter.department === 'all' ? 'All Departments' : filter.department,
+            subDepartment: filter.subDepartment,
             date: new Date().toISOString(),
             totalAmount,
             items: filteredExpenses.map(expense => ({
                 id: expense._id || expense.id || `exp-${Math.random().toString(36).substr(2, 9)}`,
                 description: expense.description || 'No description',
                 department: expense.department?.name || expense.department || 'General',
+                subDepartment: expense.subDepartment || expense.subdepartment || 'General',
                 date: formatDate(expense.date || expense.createdAt),
                 amount: expense.amount || 0,
                 user: expense.user?.name || expense.user?.username || 'Unknown User',
@@ -582,6 +683,7 @@ const Reports = () => {
 
         let filteredReimbursements = filterByDateRange(reimbursementData);
         filteredReimbursements = filterByDepartment(filteredReimbursements);
+        filteredReimbursements = filterBySubDepartment(filteredReimbursements);
 
         if (filter.reimbursementStatus !== 'all') {
             filteredReimbursements = filteredReimbursements.filter(reimb => {
@@ -607,6 +709,8 @@ const Reports = () => {
             title: `Reimbursement Report - ${month} ${year}`,
             type: 'reimbursement',
             reimbursementStatus: filter.reimbursementStatus,
+            department: filter.department === 'all' ? 'All Departments' : filter.department,
+            subDepartment: filter.subDepartment,
             date: new Date().toISOString(),
             totalAmount,
             items: filteredReimbursements.map(reimb => ({
@@ -849,11 +953,7 @@ const Reports = () => {
                                     </InputLabel>
                                     <Select
                                         value={filter.type === 'budgets' ? 'all' : filter.department}
-                                        onChange={(e) => {
-                                            if (filter.type !== 'budgets') {
-                                                setFilter({ ...filter, department: e.target.value })
-                                            }
-                                        }}
+                                        onChange={(e) => handleDepartmentChange(e.target.value)}
                                         label="🏢 Department"
                                         sx={{
                                             borderRadius: '12px',
@@ -882,13 +982,56 @@ const Reports = () => {
                                 </FormControl>
                             </Box>
 
-                            {/* Second Row - Reimbursement Status and Date Range */}
+                            {/* Second Row - Sub-Department and Reimbursement Status */}
                             <Box sx={{
                                 display: 'flex',
                                 gap: isMobile ? 2 : 3,
                                 flexWrap: 'wrap',
                                 flexDirection: isMobile ? 'column' : 'row'
                             }}>
+                                {/* Sub-Department */}
+                                {filter.department !== 'all' && subDepartmentsData[filter.department] && (
+                                    <FormControl sx={{
+                                        minWidth: isMobile ? '100%' : 250,
+                                        flex: isMobile ? 'none' : 1
+                                    }} disabled={filter.type === 'budgets'}>
+                                        <InputLabel sx={{
+                                            fontWeight: '600',
+                                            color: '#4A5568'
+                                        }}>
+                                            Categories
+                                        </InputLabel>
+                                        <Select
+                                            value={filter.subDepartment}
+                                            onChange={(e) => setFilter({ ...filter, subDepartment: e.target.value })}
+                                            label="📊 Categories"
+                                            sx={{
+                                                borderRadius: '12px',
+                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#E2E8F0',
+                                                },
+                                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#4F46E5',
+                                                },
+                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                    borderColor: '#4F46E5',
+                                                    borderWidth: '2px'
+                                                }
+                                            }}
+                                        >
+                                            {getSubDepartments().map(subDept => (
+                                                <MenuItem key={subDept} value={subDept}>
+                                                    <Typography variant="body1" fontWeight="500" sx={{
+                                                        fontSize: isMobile ? '0.9rem' : '1rem'
+                                                    }}>
+                                                        {subDept === 'all' ? 'All Categories' : subDept}
+                                                    </Typography>
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+
                                 {/* Reimbursement Status */}
                                 {filter.type === 'reimbursement' && (
                                     <FormControl sx={{
@@ -933,7 +1076,15 @@ const Reports = () => {
                                         </Select>
                                     </FormControl>
                                 )}
+                            </Box>
 
+                            {/* Third Row - Date Range */}
+                            <Box sx={{
+                                display: 'flex',
+                                gap: isMobile ? 2 : 3,
+                                flexWrap: 'wrap',
+                                flexDirection: isMobile ? 'column' : 'row'
+                            }}>
                                 {/* Date Range */}
                                 <Box sx={{
                                     flex: isMobile ? 'none' : 1,
@@ -997,7 +1148,7 @@ const Reports = () => {
                                     borderRadius: '8px',
                                     fontSize: isMobile ? '0.75rem' : '0.875rem'
                                 }}>
-                                    Department filter is disabled for Budget Reports
+                                    Department and Categories filters are disabled for Budget Reports
                                 </Typography>
                             )}
                         </Stack>
@@ -1109,7 +1260,7 @@ const Reports = () => {
                                         Generated on {formatDate(generatedReport.date)} •
                                         {generatedReport.type === 'reimbursement' ?
                                             ` Status: ${generatedReport.reimbursementStatus}` :
-                                            ` Department: ${generatedReport.department}`
+                                            ` Department: ${generatedReport.department}${generatedReport.subDepartment !== 'all' ? ` (${generatedReport.subDepartment})` : ''}`
                                         } • {generatedReport.items.length} records found
                                     </Typography>
                                 </Box>
@@ -1269,6 +1420,7 @@ const Reports = () => {
                                                         <TableCell>ID</TableCell>
                                                         <TableCell>User</TableCell>
                                                         <TableCell>Department</TableCell>
+                                                        <TableCell>Categories</TableCell>
                                                         <TableCell>Date</TableCell>
                                                         <TableCell>Amount</TableCell>
                                                         <TableCell>Description</TableCell>
@@ -1333,6 +1485,19 @@ const Reports = () => {
                                                                     label={item.department}
                                                                     size="small"
                                                                     color="primary"
+                                                                    variant="outlined"
+                                                                    sx={{
+                                                                        fontSize: isMobile ? '10px' : '12px'
+                                                                    }}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell sx={{
+                                                                padding: isMobile ? '12px 8px' : '16px'
+                                                            }}>
+                                                                <Chip
+                                                                    label={item.subDepartment}
+                                                                    size="small"
+                                                                    color="secondary"
                                                                     variant="outlined"
                                                                     sx={{
                                                                         fontSize: isMobile ? '10px' : '12px'
