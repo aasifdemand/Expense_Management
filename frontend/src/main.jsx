@@ -9,8 +9,7 @@ import { Toaster } from 'react-hot-toast'
 import { LocationProvider } from './contexts/LocationContext.jsx'
 // import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
 
 
 
