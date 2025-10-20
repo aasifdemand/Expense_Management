@@ -48,29 +48,7 @@ const App = () => {
     }
   }, [dispatch, role, isAuthenticated, isTwoFactorPending, isTwoFactorVerified]);
 
-  // 🕒 Auto session check every 5 minutes
-  useEffect(() => {
-    if (!isAuthenticated) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const resultAction = await dispatch(fetchUser()).unwrap();
-
-        if (!resultAction) {
-          throw new Error("Session expired");
-        }
-      } catch (err) {
-        // If session expired or unauthorized
-        console.log("err: ", err);
-
-        toast.error("Session expired. Please log in again.");
-        dispatch(logout());
-        navigate("/login");
-      }
-    }, 5 * 60 * 1000); // every 5 minutes
-
-    return () => clearInterval(interval);
-  }, [dispatch, isAuthenticated, navigate]);
 
   const canAccessAdminRoutes =
     isAuthenticated &&

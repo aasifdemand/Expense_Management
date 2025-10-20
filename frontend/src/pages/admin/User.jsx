@@ -467,7 +467,6 @@ const UserDashboard = () => {
                                 <TableRow>
                                     <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>User Information</TableCell>
                                     <TableCell sx={{ fontWeight: 600, minWidth: 180 }}>Contact & Department</TableCell>
-                                    <TableCell sx={{ fontWeight: 600, minWidth: 120 }}>Status</TableCell>
                                     <TableCell sx={{ fontWeight: 600, minWidth: 150 }}>Actions</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -512,14 +511,7 @@ const UserDashboard = () => {
                                                 />
                                             </Box>
                                         </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                icon={<CheckCircleIcon />}
-                                                label="Active"
-                                                color="success"
-                                                size="small"
-                                            />
-                                        </TableCell>
+                                        {/*  */}
                                         <TableCell>
                                             <Tooltip title="Reset Password">
                                                 <Button
