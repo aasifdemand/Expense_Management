@@ -13,11 +13,11 @@ export enum UserLocation {
 }
 
 export enum UserDepartment {
-  SALES = "SALES",
-  DATA = "DATA",
-  IT = "IT",
-  HR = "HR",
-  GENERAL = "GENERAL"
+  SALES = 'SALES',
+  DATA = 'DATA',
+  IT = 'IT',
+  HR = 'HR',
+  GENERAL = 'GENERAL',
 }
 
 @Schema({ timestamps: true })
@@ -25,10 +25,10 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   name: string;
 
-  @Prop({ default: "" })
+  @Prop({ default: '' })
   email?: string;
 
-  @Prop({ default: "" })
+  @Prop({ default: '' })
   phone?: string;
 
   @Prop({ required: true })
@@ -37,20 +37,17 @@ export class User extends Document {
   @Prop({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  // 🚨 REMOVE this - secrets should only be in sessions
-  // @Prop({ default: '' })
-  // twoFactorSecret?: string;
+  // ✅ Single shared 2FA secret (used across all devices)
+  @Prop({ default: '' })
+  twoFactorSecret?: string;
 
   @Prop({ enum: UserDepartment, default: UserDepartment.GENERAL })
-  department: UserDepartment
+  department: UserDepartment;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Expense' }] })
   expenses?: Types.ObjectId[];
 
-  @Prop({
-    enum: UserLocation,
-    default: UserLocation.OVERALL
-  })
+  @Prop({ enum: UserLocation, default: UserLocation.OVERALL })
   userLoc?: UserLocation;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Budget' }] })
@@ -70,24 +67,6 @@ export class User extends Document {
 
   @Prop({ default: 0 })
   budgetLeft: number;
-
-  @Prop({
-    type: [
-      {
-        deviceId: { type: String, required: true },
-        lastLogin: { type: Date, default: Date.now },
-        twoFactorVerified: { type: Boolean, default: false },
-        twoFactorSecret: { type: String, required: true }, // 🚨 REQUIRED field
-      },
-    ],
-    default: [],
-  })
-  sessions: {
-    deviceId: string;
-    lastLogin: Date;
-    twoFactorVerified: boolean;
-    twoFactorSecret: string; // 🚨 REQUIRED - no longer optional
-  }[];
 }
 
 export const userSchema = SchemaFactory.createForClass(User);
