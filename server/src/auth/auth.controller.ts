@@ -1,4 +1,3 @@
-
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
@@ -32,6 +31,7 @@ export class AuthController {
   private logger = new Logger('auth_controller');
   constructor(private readonly authService: AuthService) { }
 
+  // 🔐 Login user
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async authUser(@Body() data: AuthDto, @Req() req: Request) {
@@ -39,39 +39,33 @@ export class AuthController {
     return await this.authService.auth(data, req);
   }
 
-  // 2FA verification route
+  // 🔢 2FA Verification
   @Post('2fa/verify')
   @HttpCode(HttpStatus.OK)
-  async verify2FA(
-    @Body() body: { token: string },
-    @Req() req: Request,
-  ) {
-    // Add validation
+  async verify2FA(@Body() body: { token: string }, @Req() req: Request) {
     if (!body.token || body.token.length !== 6) {
       throw new BadRequestException('Token must be 6 digits');
     }
 
-    return this.authService.verifyTwoFactorCode(body.token, req);
+    return this.authService.verify2fa(body.token, req);
   }
 
-  // In your AuthController
+  // 🛡️ Get CSRF token
   @Get('csrf-token')
   getCsrfToken(@Req() req: Request) {
-    // This will use the csrfSecret from the session
     const token = req.csrfToken();
     console.log('Generated CSRF token:', token);
-    console.log('Session CSRF secret:', req.session.twoFactorSecret);
     return { csrfToken: token };
   }
 
-  // Get current session info
+  // 👤 Get current session info
   @Get('session')
   @UseGuards(CsrfGuard)
   getSession(@Req() req: Request) {
     return this.authService.getSessionData(req);
   }
 
-  // Logout from current device
+  // 🚪 Logout current device
   @Post('logout')
   @UseGuards(CsrfGuard)
   async logout(@Req() req: Request, @Res() res: Response) {
@@ -89,71 +83,58 @@ export class AuthController {
     }
   }
 
-  // Logout from all other devices
-  @Post('logout-all')
-  @UseGuards(CsrfGuard)
-  async logoutAll(@Req() req: Request) {
-    return this.authService.logoutAllDevices(req);
-  }
 
-  // Get active sessions
-  @Get('sessions')
-  @UseGuards(CsrfGuard)
-  async getSessions(@Req() req: Request) {
-    return this.authService.getActiveSessions(req);
-  }
-
-  // Get list of users (superadmin only)
+  // 👥 Get list of users (superadmin only)
   @Get('users')
   @UseGuards(CsrfGuard)
   async getTheListOfUsers(@Req() req: Request) {
-    console.log('Session: ', req.session);
-
     if (req?.session?.user?.role !== UserRole.SUPERADMIN) {
-      throw new UnauthorizedException(
-        'Normal User is not allowed to get other db users',
-      );
+      throw new UnauthorizedException('Normal user not allowed to fetch users');
     }
     return this.authService.getAll();
   }
 
-  // Create user (superadmin only)
+  // ➕ Create user (superadmin only)
   @Post('users/create')
   @UseGuards(CsrfGuard)
   async createUser(
     @Session() session: Record<string, any>,
     @Body() data: CreateUserDto,
   ) {
-    if (session?.user?.role !== 'superadmin') {
-      throw new UnauthorizedException(
-        'Normal User is not allowed to create users',
-      );
+    if (session?.user?.role !== UserRole.SUPERADMIN) {
+      throw new UnauthorizedException('Only superadmin can create users');
     }
     return this.authService.createNewUser(data);
   }
 
-  // Reset password (superadmin only)
+  // 🔑 Reset password (superadmin only)
   @Patch('reset/:id')
   @UseGuards(CsrfGuard)
-  async resetPass(
+  async resetPassword(
     @Session() session: Record<string, any>,
-    @Body() newPass: any,
     @Param('id') id: string,
+    @Body() body: { password: string },
   ) {
-    if (session?.user?.role !== 'superadmin') {
+    if (session?.user?.role !== UserRole.SUPERADMIN) {
       throw new UnauthorizedException(
-        'Normal User is not allowed to do this operation',
+        'Only superadmin can reset user passwords',
       );
     }
-    return this.authService.resetUserPassword(id, newPass);
+
+    if (!body.password || body.password.trim().length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    return this.authService.resetUserPassword(id, body.password);
   }
 
+  // ✏️ Update own profile
   @Patch('profile/:id')
   @UseGuards(CsrfGuard)
   async updateProfile(
-    @Req() req,
+    @Req() req: Request,
+    @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto,
-    @Param("id") id: string
   ) {
     // Users can only update their own profile
     return this.authService.updateProfile(updateProfileDto, id);
