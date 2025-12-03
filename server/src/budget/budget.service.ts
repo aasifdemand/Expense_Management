@@ -70,9 +70,9 @@ export class BudgetService {
 
     // ====== FIXED: UTC-safe month/year for budget ======
     const now = new Date();
-    const budgetDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const month = budgetDate.getUTCMonth() + 1;
-    const year = budgetDate.getUTCFullYear();
+    const month = now.getMonth() + 1;   // LOCAL MONTH
+    const year = now.getFullYear();     // LOCAL YEAR
+
 
     // Create the budget
     const budget = await this.budgetModel.create({
