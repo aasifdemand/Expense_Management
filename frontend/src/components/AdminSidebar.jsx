@@ -75,7 +75,7 @@ const AdminSidebar = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: '100%',
-                padding: isSmallMobile ? '8px 0' : '16px 0',
+                padding: isSmallMobile ? '4px 0' : '6px 0',
             }}
         >
             <Box
@@ -129,12 +129,12 @@ const AdminSidebar = ({
         }}>
             {/* Header with Full Logo */}
             <Box sx={{
-                p: isSmallMobile ? 1.5 : 2,
+                p: isSmallMobile ? 0 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                minHeight: isSmallMobile ? '70px' : '90px',
+                minHeight: isSmallMobile ? '55px' : '97px',
                 background: 'rgba(255, 255, 255, 0.9)',
                 borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
             }}>
