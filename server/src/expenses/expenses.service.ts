@@ -82,20 +82,24 @@ export class ExpensesService {
       proof = uploaded.url;
     }
 
-    // ====== FIXED: UTC-safe expense date ======
+    // LOCAL TIME safe expense date
     const now = new Date();
-    const expenseDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const month = expenseDate.getUTCMonth() + 1;
-    const year = expenseDate.getUTCFullYear();
+    const expenseDate = now;
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
 
-    // Get CURRENT MONTH budgets only
+
+
     const currentMonthBudgets = await this.budgetModel
-      .find({ user: userId, month, year })
+      .find({ user: userId })
       .sort({ createdAt: 1 });
 
     console.log('=== BUDGET DEBUG INFO ===');
     console.log('Searching budgets for:', { userId, month, year });
     console.log('Found budgets:', currentMonthBudgets.length);
+
+
+
 
     // Calculate available budget from CURRENT MONTH only
     const currentMonthAvailableBudget = currentMonthBudgets.reduce(

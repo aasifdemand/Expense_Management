@@ -48,13 +48,27 @@ export const BudgetSchema =
   SchemaFactory.createForClass(Budget);
 
 
-BudgetSchema.pre("save", function (next) {
-  this.remainingAmount = this.allocatedAmount - this.spentAmount
+// safe pre-save hook — only set month/year on creation and compute remainingAmount
+BudgetSchema.pre('save', function (next) {
+  // Ensure numeric values
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  this.allocatedAmount = Number(this.allocatedAmount || 0);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  this.spentAmount = Number(this.spentAmount || 0);
 
-  const now = new Date();
-  this.month = now.getMonth() + 1;
-  this.year = now.getFullYear();
+  // Recompute remaining amount deterministically
+  this.remainingAmount = this.allocatedAmount - this.spentAmount;
+  if (this.remainingAmount < 0) this.remainingAmount = 0;
 
+  // Only set month/year once (when document is new or fields missing)
+  if (this.isNew || !this.month || !this.year) {
+    const now = new Date();
+    this.month = now.getMonth() + 1;
+    this.year = now.getFullYear();
+  }
+
+  // single next() call
   next();
-  next()
-})
+});
+
+
