@@ -98,7 +98,7 @@ const App = () => {
             }
           />
           <Route
-            path="add"
+            path="expenses/add"
             element={
               isRedirectToUserDashboard ? (
                 <ExpenseUploadForm />
@@ -140,6 +140,16 @@ const App = () => {
             path="expenses"
             element={
               canAccessAdminRoutes ? <Expenses /> : <Navigate to="/login" />
+            }
+          />
+           <Route
+            path="expenses/add"
+            element={
+              canAccessAdminRoutes ? (
+                <ExpenseUploadForm />
+              ) : (
+                <Navigate to="/login" />
+              )
             }
           />
           <Route

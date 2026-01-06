@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -21,14 +22,15 @@ import { Department } from 'src/models/department.model';
 import { SubDepartment } from 'src/models/sub-department.model';
 import { Reimbursement } from 'src/models/reimbursements.model';
 import { NotificationsService } from 'src/notifications/notifications.service';
-import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { MailService } from 'src/services/mail.service';
 import createExpenseEmailTemplate from './templates/create-expense.template';
+import { AdminExpense } from 'src/models/admin-expense.model';
 
 @Injectable()
 export class ExpensesService {
   constructor(
     @InjectModel(Expense.name) private readonly expenseModal: Model<Expense>,
+    @InjectModel(AdminExpense.name) private readonly adminExpenseModel: Model<AdminExpense>,
     @InjectModel(User.name) private readonly userModal: Model<User>,
     @InjectModel(Budget.name) private readonly budgetModel: Model<Budget>,
     @InjectModel(Department.name)
@@ -40,7 +42,6 @@ export class ExpensesService {
     private readonly mediaService: ImagekitService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly notificationService: NotificationsService,
-    private readonly notificationsGateway: NotificationsGateway,
     private readonly mailService: MailService
   ) { }
 
@@ -55,6 +56,69 @@ export class ExpensesService {
     userId: string,
     file?: Express.Multer.File,
   ) {
+    // 🔐 ADMIN expense — isolated path
+    if (data.expenseType === 'ADMIN') {
+      const user = await this.userModal.findById(userId).select('role');
+      if (!user || user.role !== UserRole.SUPERADMIN) {
+        throw new ForbiddenException(
+          'Only super admins can create admin expenses',
+        );
+      }
+
+      return this.createAdminExpense(data, file);
+    }
+
+    // ✅ USER expense — EXISTING PRODUCTION LOGIC
+    return this.createUserExpenseInternal(data, userId, file);
+  }
+
+
+  private async createAdminExpense(
+    data: CreateExpenseDto,
+    file?: Express.Multer.File,
+  ) {
+    let proof: string | undefined;
+
+    if (file) {
+      const uploaded = await this.mediaService.uploadFile(
+        file.buffer,
+        file.originalname,
+        '/admin-expenses',
+      );
+      proof = uploaded.url;
+    }
+
+    const deptExists = await this.departmentModel.findById(data.department);
+    if (!deptExists) throw new NotFoundException('Department not found');
+
+    if (data.subDepartment) {
+      const subDept = await this.subDepartmentModel.findById(data.subDepartment);
+      if (!subDept) throw new NotFoundException('SubDepartment not found');
+    }
+
+    const adminExpense = await this.adminExpenseModel.create({
+      amount: data.amount,
+      description: data.description,
+      department: data.department,
+      subDepartment: data.subDepartment,
+      paymentMode: data.paymentMode,
+      vendor: data.vendor,
+      proof,
+      date: new Date(),
+    });
+
+    return {
+      message: 'Admin expense created successfully',
+      expense: adminExpense,
+    };
+  }
+
+
+  async createUserExpenseInternal(
+    data: CreateExpenseDto,
+    userId: string,
+    file?: Express.Multer.File,
+  ) {
     const {
       amount,
       department,
@@ -63,7 +127,9 @@ export class ExpensesService {
       subDepartment,
       paymentMode,
       vendor,
+      expenseType
     } = data;
+
 
     const user = await this.userModal
       .findById(userId)
@@ -657,6 +723,64 @@ export class ExpensesService {
     await this.cacheManager.set(cacheKey, expense, 60_000);
     return { message: 'Expense returned successfully', expense };
   }
+
+  async getAdminExpenses(page = 1, limit = 20) {
+    const safePage = Math.max(page, 1);
+    const safeLimit = Math.max(limit, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [data, total] = await Promise.all([
+      this.adminExpenseModel
+        .find()
+        .populate('department', 'name')
+        .populate('subDepartment', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+
+      this.adminExpenseModel.countDocuments(),
+    ]);
+
+    const statsAgg = await this.adminExpenseModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: '$amount' },
+        },
+      },
+    ]);
+
+    return {
+      message: 'Fetched admin expenses successfully',
+      data,
+      stats: {
+        totalSpent: statsAgg[0]?.totalSpent || 0,
+      },
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+      },
+    };
+  }
+
+  async getAdminExpenseById(id: string) {
+    const expense = await this.adminExpenseModel
+      .findById(id)
+      .populate('department', 'name')
+      .populate('subDepartment', 'name');
+
+    if (!expense) {
+      throw new NotFoundException('Admin expense not found');
+    }
+
+    return {
+      message: 'Fetched admin expense successfully',
+      expense,
+    };
+  }
+
 
   async updateReimbursement(data: UpdateExpenseDto, id: string) {
     const updatedExpense = await this.expenseModal

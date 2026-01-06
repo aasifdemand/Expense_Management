@@ -1,48 +1,63 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const initialState = {
-    expenses: [],        // paginated (all or user)
-    allExpenses: [],     // full dataset for charts/stats
+    expenses: [],
+    allExpenses: [],
     expense: null,
-    loading: false,
-    error: null,
-    stats: {
+
+    // ✅ ADMIN EXPENSES (NEW – SEPARATE)
+    adminExpenses: [],
+    adminStats: {
         totalSpent: 0,
-        totalReimbursed: 0,
-        totalApproved: 0,
     },
-    meta: {
+    adminMeta: {
         total: 0,
         page: 1,
         limit: 20,
     },
 
+    loading: false,
+    error: null,
+
+    stats: {
+        totalSpent: 0,
+        totalReimbursed: 0,
+        totalApproved: 0,
+    },
+
+    meta: {
+        total: 0,
+        page: 1,
+        limit: 20,
+    },
 };
+
 
 // ===================== ADD EXPENSE =====================
 export const addExpense = createAsyncThunk(
     "expenses/addExpense",
-    async (data, { getState, rejectWithValue }) => {
+    async (formData, { getState, rejectWithValue }) => {
         try {
-            const { description, amount, department, proof, subDepartment, paymentMode, budget, vendor } = data;
-            const formData = new FormData();
-            formData.append("description", description);
-            formData.append("amount", amount);
-            formData.append("department", department);
-            formData.append("subDepartment", subDepartment);
-            formData.append("paymentMode", paymentMode);
-            formData.append("vendor", vendor)
-            if (budget) formData.append("budgetId", budget);
-            if (proof) formData.append("proof", proof);
-
             const csrf = getState().auth.csrf;
-            const response = await fetch(`${import.meta.env.VITE_API_BASEURL}/expenses/create`, {
-                method: "POST",
-                credentials: "include",
-                headers: { "x-csrf-token": csrf },
-                body: formData,
-            });
-            if (!response.ok) throw new Error("Failed to add expense");
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASEURL}/expenses/create`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "x-csrf-token": csrf,
+                        // ❌ DO NOT set Content-Type for FormData
+                    },
+                    body: formData, // ✅ use FormData directly
+                }
+            );
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err?.message || "Failed to add expense");
+            }
+
             const result = await response.json();
             return result?.expense;
         } catch (error) {
@@ -50,6 +65,7 @@ export const addExpense = createAsyncThunk(
         }
     }
 );
+
 
 // ===================== UPDATE EXPENSE =====================
 export const updateExpense = createAsyncThunk(
@@ -69,6 +85,45 @@ export const updateExpense = createAsyncThunk(
             if (!response.ok) throw new Error("Failed to update expense");
             const data = await response.json();
             return data?.expense;
+        } catch (error) {
+            return rejectWithValue(error.message || "Unexpected error");
+        }
+    }
+);
+
+
+// ===================== FETCH ADMIN EXPENSES =====================
+export const fetchAdminExpenses = createAsyncThunk(
+    "expenses/fetchAdminExpenses",
+    async ({ page = 1, limit = 20 }, { getState, rejectWithValue }) => {
+        try {
+            const csrf = getState().auth.csrf;
+
+            const query = new URLSearchParams({
+                page: String(page),
+                limit: String(limit),
+            });
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASEURL}/expenses/admin?${query}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-csrf-token": csrf,
+                    },
+                }
+            );
+
+            if (!response.ok) throw new Error("Failed to fetch admin expenses");
+
+            const data = await response.json();
+            return {
+                data: data?.data || [],
+                stats: data?.stats || { totalSpent: 0 },
+                meta: data?.meta || { total: 0, page, limit },
+            };
         } catch (error) {
             return rejectWithValue(error.message || "Unexpected error");
         }
@@ -283,6 +338,8 @@ const expenseSlice = createSlice({
                 state.error = action.payload;
             })
 
+
+
             // Search Expenses
             .addCase(searchExpenses.pending, (state) => {
                 state.loading = true;
@@ -290,16 +347,40 @@ const expenseSlice = createSlice({
             })
             .addCase(searchExpenses.fulfilled, (state, action) => {
                 state.loading = false;
+
+                // 🔥 SINGLE SOURCE OF TRUTH
                 state.expenses = action.payload.data;
                 state.allExpenses = action.payload.allExpenses;
+
+                // ⛔ Clear admin-only lists to prevent stale UI
+                state.adminExpenses = [];
+                state.adminMeta = { total: 0, page: 1, limit: 20 };
+
                 state.stats = action.payload.stats;
                 state.meta = action.payload.meta;
                 state.location = action.payload.location;
             })
+
             .addCase(searchExpenses.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
+            })
+            // ===================== ADMIN EXPENSES =====================
+            .addCase(fetchAdminExpenses.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchAdminExpenses.fulfilled, (state, action) => {
+                state.loading = false;
+                state.adminExpenses = action.payload.data;
+                state.adminStats = action.payload.stats;
+                state.adminMeta = action.payload.meta;
+            })
+            .addCase(fetchAdminExpenses.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
             });
+
     },
 });
 

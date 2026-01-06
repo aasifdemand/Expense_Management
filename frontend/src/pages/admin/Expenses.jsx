@@ -1,8 +1,9 @@
-import { Box, } from "@mui/material";
+import { Box, Button, Tabs, Tab } from "@mui/material";
 import { useExpenses } from "../../hooks/useExpenses";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
-
-// MUI Icons (same style as AdminDashboard)
+import { useNavigate } from "react-router-dom";
+import React from "react";
+// Icons
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
@@ -11,16 +12,15 @@ import BusinessIcon from "@mui/icons-material/Business";
 import StatCard from "../../components/general/StatCard";
 
 const Expenses = () => {
-  // const theme = useTheme();
+  const navigate = useNavigate();
 
   const {
-    allExpenses,
     expenses,
+    adminExpenses,
     loading,
     meta,
     page,
     setPage,
-    handleOpen,
     search,
     setSearch,
     filterMonth,
@@ -30,116 +30,147 @@ const Expenses = () => {
     getMonthByNumber,
     setLimit,
     limit,
+    handleOpen,
   } = useExpenses();
 
+  // ===================== TABS =====================
+  const [tab, setTab] = React.useState(0); // 0 = User, 1 = Admin
 
-  console.log("expenses: ", expenses);
+  const isUserTab = tab === 0;
+  const isAdminTab = tab === 1;
 
+  // ===================== STATS SOURCE =====================
+  const statsSource = isUserTab ? expenses : adminExpenses;
+  const safeExpenses = statsSource || [];
 
-  // ✅ Calculations
-  const totalExpenses =
-    (allExpenses || []).reduce((acc, expense) => acc + Number(expense.amount), 0) || 0;
+  // ===================== STATS =====================
+  const totalExpenses = safeExpenses.reduce(
+    (acc, e) => acc + Number(e.amount || 0),
+    0
+  );
 
+  const salesExpenses = safeExpenses
+    .filter((e) => e?.department?.name === "Sales")
+    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
 
+  const dataExpenses = safeExpenses
+    .filter((e) => e?.department?.name === "Data")
+    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
 
-  const salesExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Sales")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
+  const itExpenses = safeExpenses
+    .filter((e) => e?.department?.name === "IT")
+    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
 
+  const officeExpenses = safeExpenses
+    .filter((e) => e?.department?.name === "Office")
+    .reduce((acc, e) => acc + Number(e.amount || 0), 0);
 
-  const dataExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Data")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
-
-  const itExpenses = allExpenses?.filter((sale) => sale?.department?.name === "IT")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
-
-  const officeExpenses = allExpenses?.filter((sale) => sale?.department?.name === "Office")?.reduce((acc, expense) => acc + Number(expense.amount), 0) || 0
-
-  // ✅ Stats Array with 5 cards as requested
   const expenseStats = [
     {
       title: "Total Expenses",
       value: `₹${totalExpenses.toLocaleString()}`,
       color: "#3b82f6",
       icon: <MonetizationOnIcon />,
-      subtitle: "Total expenses amount",
-      trend: "-2.1%",
-      trendColor: "#ef4444",
+      subtitle: isUserTab ? "User Expenses" : "Admin Expenses",
     },
     {
       title: "Sales",
       value: `₹${salesExpenses.toLocaleString()}`,
       color: "#10b981",
       icon: <ReceiptIcon />,
-      subtitle: "Sales related expenses",
-      trend: "+18.5%",
-      trendColor: "#10b981",
     },
     {
       title: "Data",
       value: `₹${dataExpenses.toLocaleString()}`,
       color: "#8b5cf6",
       icon: <PendingActionsIcon />,
-      subtitle: "Data management costs",
-      trend: "+12.3%",
-      trendColor: "#10b981",
     },
     {
       title: "IT",
       value: `₹${itExpenses.toLocaleString()}`,
       color: "#f59e0b",
       icon: <AttachMoneyIcon />,
-      subtitle: "IT infrastructure expenses",
-      trend: "+8.7%",
-      trendColor: "#10b981",
     },
     {
-      title: "Office Expenses",
+      title: "Office",
       value: `₹${officeExpenses.toLocaleString()}`,
       color: "#ef4444",
       icon: <BusinessIcon />,
-      subtitle: "Office maintenance costs",
-      trend: "-5.2%",
-      trendColor: "#ef4444",
     },
   ];
 
   return (
-    <Box
-      sx={{
-        p: { xs: 1.5, sm: 2, md: 3 },
-        minHeight: "100vh",
-      }}
-    >
-      <Box sx={{ mb: { xs: 2, sm: 2.5, md: 3, lg: 4 } }}>
+    <Box sx={{ p: { xs: 1.5, sm: 2, md: 3 }, minHeight: "100vh" }}>
+      {/* ===================== TABS ===================== */}
+      <Tabs
+        value={tab}
+        onChange={(_, val) => {
+          setTab(val);
+          setPage(1); // reset pagination when switching tabs
+        }}
+        sx={{ mb: 3 }}
+      >
+        <Tab label="User Expenses" />
+        <Tab label="Admin Expenses" />
+      </Tabs>
+
+      {/* ===================== STATS ===================== */}
+      <Box sx={{ mb: 3 }}>
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" }, // Column on mobile, row on desktop
-            flexWrap: { xs: "nowrap", md: "nowrap" },
-            gap: { xs: 1.5, sm: 2, md: 2, lg: 2.5 },
-            width: "100%",
+            flexDirection: { xs: "column", md: "row" },
+            gap: { xs: 1.5, md: 2.5 },
           }}
         >
-          {expenseStats?.map((stat, index) => (
-            <Box
-              key={index}
-              sx={{
-                flex: { xs: "0 0 auto", md: "1" },
-                width: { xs: "100%", md: "auto" }
-              }}
-            >
+          {expenseStats.map((stat, index) => (
+            <Box key={index} sx={{ flex: 1 }}>
               <StatCard stat={stat} />
             </Box>
           ))}
         </Box>
       </Box>
 
-      {/* Expense Table */}
+      {/* ===================== ACTION ===================== */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{
+            textTransform: "none",
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            fontWeight: 600,
+            boxShadow: 2,
+            "&:hover": { boxShadow: 4 },
+          }}
+          onClick={() =>
+            navigate(
+              isAdminTab ? "/admin/expenses/add" : "/user/expenses/add"
+            )
+          }
+        >
+          + Upload New Expense
+        </Button>
+      </Box>
+
+      {/* ===================== TABLE ===================== */}
       <ExpenseTable
-        limit={limit}
-        setLimit={setLimit}
-        expenses={expenses}
+        expenses={isUserTab ? expenses : adminExpenses}
         loading={loading}
         meta={meta}
         page={page}
         setPage={setPage}
+        limit={limit}
+        setLimit={setLimit}
         search={search}
         setSearch={setSearch}
         filterMonth={filterMonth}
@@ -148,6 +179,7 @@ const Expenses = () => {
         setFilterYear={setFilterYear}
         getMonthByNumber={getMonthByNumber}
         handleOpen={handleOpen}
+        disableFilters={isAdminTab} // 🔑 KEY
       />
     </Box>
   );

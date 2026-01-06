@@ -17,8 +17,6 @@ import {
     InputAdornment,
     CircularProgress,
 } from "@mui/material";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
-import AddIcon from "@mui/icons-material/Add";
 import PaymentIcon from "@mui/icons-material/Payment";
 import { useDispatch, useSelector } from "react-redux";
 import { addExpense } from "../../store/expenseSlice";
@@ -27,7 +25,7 @@ import {
     fetchDepartments,
     fetchSubDepartments,
 } from "../../store/departmentSlice";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AccountBalance, Add, Business, Check, CheckCircle, Description, FolderSpecial, UploadFile } from "@mui/icons-material";
 
 const paymentModes = [
@@ -46,6 +44,18 @@ export default function CreateExpenseForm() {
     const { departments, subDepartments: reduxSubDept } = useSelector(
         (state) => state?.department
     );
+
+    const { pathname } = useLocation()
+
+    // console.log("pathname in CreateExpenseForm: ", pathname)
+
+    const isAdminExpense = pathname.includes("/admin/expenses/add");
+
+    // const isUserExpense = pathname.includes("/user/expenses/add");
+
+    // console.log("isAdminExpense: ", isAdminExpense);
+
+    // console.log("isUserExpense: ", isUserExpense);
 
     const [form, setForm] = useState({
         description: "",
@@ -86,14 +96,11 @@ export default function CreateExpenseForm() {
         }
     };
 
-    // handle submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
         setResponse(null);
-        console.log("form: ", form);
-
 
         if (!form.proof) {
             setError("Please upload proof/bill for the expense");
@@ -101,11 +108,7 @@ export default function CreateExpenseForm() {
             return;
         }
 
-        if (
-            !form.amount ||
-            !form.department ||
-            !form.paymentMode || !form.vendorName
-        ) {
+        if (!form.amount || !form.department || !form.paymentMode || !form.vendorName) {
             setError("Please fill all required fields");
             setLoading(false);
             return;
@@ -118,14 +121,37 @@ export default function CreateExpenseForm() {
         }
 
         try {
-            const resultAction = await dispatch(addExpense({ ...form, vendor: form?.vendorName }));
+            const formData = new FormData();
+
+            // 🔑 REQUIRED FOR BACKEND VALIDATION
+            formData.append("expenseType", isAdminExpense ? "ADMIN" : "USER");
+
+            formData.append("amount", String(form.amount));
+            formData.append("department", form.department);
+            formData.append("paymentMode", form.paymentMode);
+            formData.append("vendor", form.vendorName);
+            formData.append("description", form.description || "");
+
+            if (form.subDepartment) {
+                formData.append("subDepartment", form.subDepartment);
+            }
+
+            if (!isAdminExpense) {
+                formData.append("isReimbursed", String(form.isReimbursed));
+            }
+
+            if (form.proof) {
+                formData.append("proof", form.proof);
+            }
+
+            const resultAction = await dispatch(addExpense(formData));
             if (addExpense.rejected.match(resultAction)) {
                 throw new Error(resultAction.payload || "Failed to add expense");
             }
 
-            navigation("/user/expenses")
-
+            navigation("/user/expenses");
             setResponse("Expense created successfully!");
+
             setForm({
                 description: "",
                 amount: "",
@@ -231,6 +257,7 @@ export default function CreateExpenseForm() {
                             <FormControl fullWidth required sx={{ flex: 1 }}>
                                 <InputLabel sx={{ fontWeight: 600 }}>Department</InputLabel>
                                 <StyledSelect
+                                
                                     name="department"
                                     value={form.department}
                                     onChange={handleChange}

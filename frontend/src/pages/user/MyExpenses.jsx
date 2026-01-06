@@ -1,161 +1,65 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { useExpenses } from "../../hooks/useExpenses";
 import ExpenseTable from "../../components/admin/expense/ExpenseTable";
-import { useNavigate } from "react-router-dom"
-import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
-import { fetchExpensesForUser } from "../../store/expenseSlice";
+import StatCard from "../../components/general/StatCard";
+import { useNavigate } from "react-router-dom";
 
-export default function MyExpenses() {
-    const { user } = useSelector((state) => state?.auth)
+import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 
-
+const Expenses = () => {
+    const navigate = useNavigate();
 
     const {
-        expenses,
+        adminExpenses,
+        adminStats,
+        adminMeta,
         loading,
-        meta,
         page,
         setPage,
-        open,
-        handleOpen,
-        handleClose,
-        handleSubmit,
-        search,
-        setSearch,
-        filterMonth,
-        setFilterMonth,
-        filterYear,
-        setFilterYear,
-        getMonthByNumber,
+        limit,
         setLimit,
-        limit, selectedExpense, setSelectedExpense } = useExpenses();
+    } = useExpenses({ mode: "admin" });
 
-
-
-    const navigate = useNavigate()
-
-    const dispatch = useDispatch()
-
-    useEffect(() => {
-        dispatch(fetchExpensesForUser({
-            userId: user?._id,
-            search,
-            month: filterMonth,
-            year: filterYear
-        }))
-    }, [dispatch, search, filterMonth, filterYear, user])
-
-
-    // console.log("user expenses: ", userExpenses);
-
-
-
+    const expenseStats = [
+        {
+            title: "Total Admin Expenses",
+            value: `₹${adminStats?.totalSpent?.toLocaleString() || 0}`,
+            color: "#3b82f6",
+            icon: <MonetizationOnIcon />,
+            subtitle: "Company expenses",
+        },
+    ];
 
     return (
-        <Box sx={{ margin: { xs: 1, sm: 1, md: 4 } }}>
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    mb: 2,
-                }}
-            >
+        <Box sx={{ p: { xs: 1.5, md: 3 }, minHeight: "100vh" }}>
+            <Box sx={{ mb: 3, display: "flex", gap: 2 }}>
+                {expenseStats.map((stat, i) => (
+                    <StatCard key={i} stat={stat} />
+                ))}
+            </Box>
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
                 <Button
                     variant="contained"
-                    color="primary"
-                    sx={{
-                        textTransform: "none",
-                        borderRadius: 2,
-                        px: 3,
-                        py: 1,
-                        fontWeight: 600,
-                        boxShadow: 2,
-                        "&:hover": {
-                            boxShadow: 4,
-                        },
-                    }}
-                    onClick={() => navigate("/user/add")}
+                    onClick={() => navigate("/admin/expenses/add")}
                 >
                     + Upload New Expense
                 </Button>
             </Box>
 
-            {/* <ExpenseUploadForm /> */}
             <ExpenseTable
-                limit={limit}
-                setLimit={setLimit}
-                expenses={expenses}
+                expenses={adminExpenses}
                 loading={loading}
-                meta={meta}
+                meta={adminMeta}
                 page={page}
                 setPage={setPage}
-                search={search}
-                setSearch={setSearch}
-                filterMonth={filterMonth}
-                setFilterMonth={setFilterMonth}
-                filterYear={filterYear}
-                setFilterYear={setFilterYear}
-                getMonthByNumber={getMonthByNumber}
-                handleOpen={handleOpen}
+                limit={limit}
+                setLimit={setLimit}
+                disableSearch
+                disableFilters
             />
-
-            <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-                <DialogTitle>Edit Expense</DialogTitle>
-                <DialogContent>
-                    {selectedExpense && (
-                        <>
-                            <TextField
-                                label="Payee"
-                                value={user?.name || ""}
-                                onChange={(e) =>
-                                    setSelectedExpense({
-                                        ...selectedExpense,
-                                        user: { ...selectedExpense.user, name: e.target.value },
-                                    })
-                                }
-                                fullWidth
-                                margin="normal"
-                            />
-                            <TextField
-                                label="Amount"
-                                type="number"
-                                value={selectedExpense.amount}
-                                onChange={(e) =>
-                                    setSelectedExpense({
-                                        ...selectedExpense,
-                                        amount: Number(e.target.value),
-                                    })
-                                }
-                                fullWidth
-                                margin="normal"
-                            />
-                            <TextField
-                                label="Department"
-                                value={selectedExpense.department || ""}
-                                onChange={(e) =>
-                                    setSelectedExpense({
-                                        ...selectedExpense,
-                                        department: e.target.value,
-                                    })
-                                }
-                                fullWidth
-                                margin="normal"
-                            />
-                        </>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose} color="secondary">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSubmit} variant="contained" color="primary">
-                        Save
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
-
     );
-}
+};
+
+export default Expenses;

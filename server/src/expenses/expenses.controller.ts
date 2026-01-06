@@ -128,6 +128,53 @@ export class ExpensesController {
     );
   }
 
+  // ADD BELOW EXISTING ROUTES
+
+  @Get('admin')
+  @UseGuards(CsrfGuard)
+  async getAdminExpenses(
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+    @Req() req: Request,
+  ) {
+    const { session } = req;
+
+    if (
+      session?.twoFactorPending ||
+      !session?.twoFactorVerified ||
+      !session?.authenticated ||
+      session?.user?.role !== 'superadmin'
+    ) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    return this.expensesService.getAdminExpenses(
+      Number(page),
+      Number(limit),
+    );
+  }
+
+  @Get('admin/:id')
+  @UseGuards(CsrfGuard)
+  async getAdminExpenseById(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
+    const { session } = req;
+
+    if (
+      session?.twoFactorPending ||
+      !session?.twoFactorVerified ||
+      !session?.authenticated ||
+      session?.user?.role !== 'superadmin'
+    ) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+
+    return this.expensesService.getAdminExpenseById(id);
+  }
+
+
   @Get('user/:id')
   @UseGuards(CsrfGuard)
   async getExpensesForUser(

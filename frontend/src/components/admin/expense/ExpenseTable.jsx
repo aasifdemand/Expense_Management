@@ -52,6 +52,7 @@ const ExpenseTable = ({
 
     setLimit,
     limit,
+    disableFilters = false,
 }) => {
     const { pathname } = useLocation();
 
@@ -427,7 +428,7 @@ const ExpenseTable = ({
                         gap={2}
                     >
                         {/* Superadmin Filters */}
-                        {role === "superadmin" && (
+                        {role === "superadmin" && !disableFilters && (
                             <>
                                 <StyledTextField
                                     placeholder="Search By Name..."

@@ -6,6 +6,7 @@ import {
   searchExpenses,
   fetchExpenses,
   fetchExpensesForUser,
+  fetchAdminExpenses,
 } from "../store/expenseSlice";
 import { getMonthByNumber } from "../utils/get-month";
 import { fetchBudgets } from "../store/budgetSlice";
@@ -19,9 +20,19 @@ import { useLocation } from "../contexts/LocationContext";
 
 export const useExpenses = () => {
   const dispatch = useDispatch();
-  const { expenses, loading, meta, stats, allExpenses } = useSelector(
-    (state) => state.expense
-  );
+  const {
+    expenses,
+    allExpenses,
+    loading,
+    meta,
+    stats,
+
+    // ✅ ADMIN (NEW)
+    adminExpenses,
+    adminStats,
+    adminMeta,
+  } = useSelector((state) => state.expense);
+
   const { role, user, users } = useSelector((state) => state.auth);
   const { departments, subDepartments } = useSelector(
     (state) => state.department
@@ -89,20 +100,34 @@ export const useExpenses = () => {
 
     if (role === "superadmin") {
       if (hasFilters) {
-        dispatch(searchExpenses({
-          ...filters,
-          page,
-          limit,
-          location: currentLoc
-        }));
+        // 🔥 searchExpenses already includes ADMIN + USER
+        dispatch(
+          searchExpenses({
+            ...filters,
+            page,
+            limit,
+            location: currentLoc,
+          })
+        );
       } else {
-        dispatch(fetchExpenses({
-          page,
-          limit,
-          location: currentLoc
-        }));
+        // Normal listing (separate calls)
+        dispatch(
+          fetchExpenses({
+            page,
+            limit,
+            location: currentLoc,
+          })
+        );
+
+        dispatch(
+          fetchAdminExpenses({
+            page,
+            limit,
+          })
+        );
       }
-    } else {
+    }
+    else {
       dispatch(fetchExpensesForUser({ userId: user?._id, page, limit }));
     }
   }, [
@@ -116,8 +141,9 @@ export const useExpenses = () => {
     currentDepartment,
     currentSubDepartment,
     currentLoc,
-    user?._id
+    user?._id,
   ]);
+
 
   // Reset to first page when location changes for better UX
   useEffect(() => {
@@ -188,17 +214,25 @@ export const useExpenses = () => {
   };
 
   return {
+    // existing exports
     departments,
     subDepartments,
     currentDepartment,
     setCurrentDepartment,
     currentSubDepartment,
     setCurrentSubDepartment,
+
+    expenses,
     allExpenses,
     stats,
-    expenses,
-    loading,
     meta,
+
+    // ✅ ADMIN EXPORTS (NEW)
+    adminExpenses,
+    adminStats,
+    adminMeta,
+
+    loading,
     users,
     year,
     currentMonth,
@@ -227,4 +261,5 @@ export const useExpenses = () => {
     getMonthByNumber,
     currentLocation: currentLoc,
   };
+
 };

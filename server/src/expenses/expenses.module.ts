@@ -16,6 +16,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/gateways/notifications/notifications.gateway';
 import { MailService } from 'src/services/mail.service';
+import { AdminExpense, AdminExpenseSchema } from 'src/models/admin-expense.model';
 
 
 @Module({
@@ -48,6 +49,10 @@ import { MailService } from 'src/services/mail.service';
       {
         name: Reimbursement.name,
         schema: ReimbursementSchema
+      },
+      {
+        name: AdminExpense.name,
+        schema: AdminExpenseSchema
       }
     ]),
     NotificationsModule,

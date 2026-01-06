@@ -54,6 +54,7 @@ const AdminDashboard = () => {
 
   const {
     allExpenses,
+    adminExpenses,
     expenses,
     loading: expenseLoading,
     meta: expenseMeta,
@@ -86,7 +87,7 @@ const AdminDashboard = () => {
     ?.filter(item => item?.isReimbursed)
     .reduce((acc, reimbursement) => acc + Number(reimbursement?.expense?.fromReimbursement || 0), 0) || 0;
 
-  const totalExpenses = allExpenses.reduce((acc, b) => acc + Number(b?.amount), 0);
+  const totalExpenses = adminExpenses.reduce((acc, b) => acc + Number(b?.amount), 0) + allExpenses.reduce((acc, b) => acc + Number(b?.amount), 0);
   const totalAllocated = allBudgets?.reduce((acc, b) => acc + Number(b?.allocatedAmount), 0) || 0;
 
   // Get days in selected month
